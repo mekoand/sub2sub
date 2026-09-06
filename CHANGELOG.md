@@ -5,6 +5,7 @@
 - Save available stage results when a turn reaches its 30-minute limit, report the interruption, and wait for the user to choose continuation. Failed saving can be retried without rerunning the task.
 - Give new tasks an internal disposable cache directory that does not block delivery or work-copy cleanup. Preserve existing rules for older tasks and other excluded files.
 - Tell the executing agent its deadline and require each final answer to describe current deliverables, completed checks, and unfinished work for every task type.
+- Validate a simple Claude Code → Codex task and follow-up through a temporary MCP setup. The installer still targets Codex.
 
 ## 0.5.1 — 2026-09-06
 

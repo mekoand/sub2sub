@@ -79,7 +79,7 @@ irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | ie
 
 ## 兼容性
 
-提供 macOS 和 Windows x64 安装包。已在 Codex 桌面端及 macOS 的 Codex CLI 中验证；Claude、WorkBuddy 等其他 harness 尚未实测。[验证详情](docs/validation.md)
+提供 macOS 和 Windows x64 安装包。已在 Codex 桌面端及 macOS 的 Codex CLI 中验证。Claude Code 也已通过 MCP 完成首次任务与追加修改测试；现有安装器仍面向 Codex。WorkBuddy 尚未实测。[验证详情](docs/validation.md)
 
 ## 开发
 

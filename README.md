@@ -79,7 +79,7 @@ Use [Tailscale](https://tailscale.com/) to connect participating devices across 
 
 ## Compatibility
 
-Packages are available for macOS and Windows x64. Validated with Codex Desktop and with Codex CLI on macOS; other harnesses, including Claude and WorkBuddy, have not been tested. [Validation details](docs/validation.md)
+Packages are available for macOS and Windows x64. Validated with Codex Desktop and with Codex CLI on macOS. Claude Code has also passed an initial task-and-follow-up test through MCP; the installer currently configures Codex. WorkBuddy remains untested. [Validation details](docs/validation.md)
 
 ## Development
 

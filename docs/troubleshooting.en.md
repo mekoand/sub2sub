@@ -11,7 +11,7 @@ Check both peers' plugin, Node, and Codex versions and actual executable paths. 
 | Invalid or expired invitation | Request a new invitation; it lasts 10 minutes, is single-use, and replaces the previous one |
 | Provider busy | Inspect the existing task; one provider executes one active task |
 | Unsupported model or effort | Choose from returned actual options; pairing does not prove model access or remaining usage |
-| `Turn exceeded 30 minutes` | Inspect the original task, collect recovery files if appropriate, and resume in smaller phases |
+| Turn reaches the 30-minute limit | In 0.5.2+, available stage results are saved automatically. Read the saved files and unfinished status, then choose whether to continue the same task. Retry `collect_result` if saving failed |
 | Result limit exceeded | Remove unnecessary task-generated temporary output or explicitly adjust both peers' limits; preserve needed files |
 | Save confirmation failed | Retry `collect_result` on the same task, not a duplicate execution |
 | Cleanup refused | Check unsaved outputs, running state, filesystem permissions, and host approval feedback |
@@ -31,7 +31,7 @@ Deleted native history, missing local restoration files, or explicitly discarded
 
 Delegated execution disables built-in browser, app, and network integrations. A browser executable can still fail under the host sandbox or GPU environment; no valid page output means no browser acceptance.
 
-A real complex-task trial generated browser profiles exceeding the default result limit, and the task's deletion policy refused cleanup. Separate temporary output from deliverables and check the final directory. The current version cannot guarantee unattended cleanup in every environment. Do not deliver a user's browser profile or disable the sandbox as a workaround.
+New tasks provide an internal `.sub2sub` directory for disposable caches and temporary files. These files do not count toward delivery limits and follow the existing work-copy cleanup. Keep deliverables and files needed for continuation outside it. Older tasks and other excluded directories retain their existing rules; sub2sub does not guess which files can be discarded.
 
 ## Report an issue
 

@@ -29,6 +29,8 @@ npm run package -- /absolute/new/location/sub2sub
 
 The parent must exist and the target must be new. This copies production dependencies, skills, manifests, and user documentation. Run `npm ci --omit=dev --ignore-scripts` before preparing a distribution. A source package uses your existing Node runtime.
 
+For real task tests, use the standalone Node included in a release package. Some system builds, such as Homebrew Node, depend on external dynamic libraries that a delegated task cannot read, even when the plugin itself starts successfully.
+
 On Windows, packaging writes the current Node.exe path into `.mcp.json`. For a known destination path when packaging elsewhere:
 
 ```sh
