@@ -1,8 +1,8 @@
 # Install, update, and remove
 
-[简体中文](install.md) · [Back to README](../README.en.md)
+[简体中文](install.md) · [Back to README](../README.md)
 
-Install sub2sub on both computers. The work node signs in with its own Codex account and stays online while working.
+Install sub2sub on each computer that will send or receive tasks. Add as many devices as you need: one computer can connect to several work nodes and can act as both caller and provider. Each work node signs in with its own Codex account and stays online while working.
 
 ## One-command installation
 
@@ -39,6 +39,8 @@ Download archives from [Releases](https://github.com/mekoand/sub2sub/releases). 
 
 Invitations are single-use and expire after 10 minutes. Paired connections can be reused. If the operating system asks for network access, allow the work node to accept connections on the private network you use. The default port is `47631`.
 
+Repeat pairing to add other nodes, give each a name, then choose a node for each task. Each node runs one task at a time.
+
 ## Using the CLI
 
 Run `codex` after installation and use the same invitation, delegation, and follow-up prompts in the interactive session. Keep the work node's CLI session open: exiting closes the sharing process it hosts. `codex exec` can send tasks, but should not host a work node that needs to stay online.
@@ -47,7 +49,7 @@ Run `codex` after installation and use the same invitation, delegation, and foll
 
 For computers on different networks, [Tailscale](https://tailscale.com/download) can provide connectivity:
 
-1. Install Tailscale on both devices and join a network where they can reach each other. Teams can invite members or share individual devices.
+1. Install Tailscale on the devices that need cross-network connections and join a network where they can reach each other. Teams can invite members or share individual devices.
 2. Find the work node's IPv4 address in Tailscale.
 3. Ask it to generate a sub2sub invitation using that address, for example `100.x.x.x` with the actual address substituted.
 4. Paste the invitation as usual. Keep Tailscale connected and allow the caller to reach the work node's sharing port.
@@ -58,7 +60,7 @@ Version 0.5 accepts the usual Tailscale `100.64.0.0/10` range, with automated ad
 
 ## Update
 
-Finish or cancel active work and save its results, then run the installation command again. The installer refreshes cached plugin files and startup paths while keeping pairings, certificates, and task data. Older program versions remain available; existing sessions are not forcibly terminated. Start new conversations on both devices after updating.
+Finish or cancel active work and save its results, then run the installation command again. The installer refreshes cached plugin files and startup paths while keeping pairings, certificates, and task data. Older program versions remain available; existing sessions are not forcibly terminated. Start a new conversation on each updated device.
 
 The installer uses the plugin ID `sub2sub@sub2sub`. After confirming the new installation is enabled, it removes older sub2sub installations from other sources to prevent duplicate loading. Other plugins and old marketplace catalogs remain unchanged.
 

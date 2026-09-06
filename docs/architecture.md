@@ -1,6 +1,6 @@
 # 架构
 
-[返回 README](../README.md)
+[返回 README](../README.zh-CN.md)
 
 sub2sub 是一个通过 stdio 暴露工具的本地 MCP 服务。调用方和提供方运行同一套程序，LAN协议连接两端，提供方通过自己的 Codex App Server 执行任务。
 

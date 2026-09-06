@@ -1,6 +1,6 @@
 # Usage
 
-[README](../README.en.md) · [简体中文](usage.md) · [Install](install.en.md)
+[README](../README.md) · [简体中文](usage.md) · [Install](install.en.md)
 
 ## Roles and consent
 
@@ -11,6 +11,8 @@ Pair with the provider's invitation and give the connection a name. Confirm task
 Keep invitations private. Do not publish them in issues, documentation, or screenshots.
 
 ## Delegate and follow up
+
+Each turn can run for up to 30 minutes; longer work can continue in phases. Tasks run in a separate work copy with task network access, MCP, app, and browser integrations disabled. Prepare the required inputs and local tools before delegating.
 
 State the goal, input scope, output, and expected checks:
 

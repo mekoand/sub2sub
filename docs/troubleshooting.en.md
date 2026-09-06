@@ -1,6 +1,6 @@
 # Troubleshooting
 
-[README](../README.en.md) · [简体中文](troubleshooting.md) · [Install](install.en.md)
+[README](../README.md) · [简体中文](troubleshooting.md) · [Install](install.en.md)
 
 Check both peers' plugin, Node, and Codex versions and actual executable paths. Remove invitations, tokens, personal paths, and project content before sharing diagnostics.
 

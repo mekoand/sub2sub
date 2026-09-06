@@ -1,6 +1,6 @@
 # Development and packaging
 
-[README](../README.en.md) · [中文 README](../README.md)
+[README](../README.md) · [中文 README](../README.zh-CN.md)
 
 End users should use the [installer](install.en.md). Source development requires Node.js 22+, npm, and Git.
 
@@ -35,7 +35,7 @@ On Windows, packaging writes the current Node.exe path into `.mcp.json`. For a k
 node scripts/package.mjs /absolute/new/location/sub2sub --windows-node 'C:\Program Files\nodejs\node.exe'
 ```
 
-Register source packages through a local Codex marketplace using [OpenAI's plugin instructions](https://developers.openai.com/plugins/build/plugins). The example in [examples/marketplace.json](../examples/marketplace.json) expects `./plugins/sub2sub` relative to the marketplace root. The public installer uses a separate `sub2sub` marketplace and handles this setup automatically.
+Register source packages through a local Codex marketplace using [OpenAI's plugin instructions](https://developers.openai.com/plugins/build/plugins). The example in [examples/marketplace.json](https://github.com/mekoand/sub2sub/blob/main/examples/marketplace.json) expects `./plugins/sub2sub` relative to the marketplace root. The public installer uses a separate `sub2sub` marketplace and handles this setup automatically.
 
 ## Complete releases
 

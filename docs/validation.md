@@ -1,6 +1,6 @@
 # 兼容性与验证范围
 
-[返回 README](../README.md) · [故障排查](troubleshooting.md)
+[返回 README](../README.zh-CN.md) · [故障排查](troubleshooting.md)
 
 以下为截至2026-09-06的验证范围。自动测试、原生双机流程和生成应用的浏览器验收是不同层次，不互相代替。
 

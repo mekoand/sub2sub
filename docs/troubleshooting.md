@@ -2,7 +2,7 @@
 
 [English](troubleshooting.en.md)
 
-[返回 README](../README.md) · [安装指南](install.md)
+[返回 README](../README.zh-CN.md) · [安装指南](install.md)
 
 先确认两端的插件版本、Node/Codex版本和实际运行路径。提供诊断时移除邀请码、token、个人路径和项目内容。
 

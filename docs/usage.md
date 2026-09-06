@@ -2,7 +2,7 @@
 
 [English](usage.en.md)
 
-[返回 README](../README.md) · [安装](install.md) · [排查问题](troubleshooting.md)
+[返回 README](../README.zh-CN.md) · [安装](install.md) · [排查问题](troubleshooting.md)
 
 ## 角色与授权
 
@@ -13,6 +13,8 @@
 邀请码包含连接所需信息，只应私下发给指定使用者；不要放到 README、Issue 或截图中。
 
 ## 派发和追加需求
+
+每轮最长 30 分钟，较长工作可分阶段继续。任务使用独立工作副本，任务网络、MCP、应用和浏览器集成关闭；委托前准备好所需输入和本地工具。
 
 推荐在任务中说清目标、输入范围、产物及验证要求，例如：
 
