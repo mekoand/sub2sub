@@ -1,6 +1,6 @@
 {
   "name": "sub2sub",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "private": true,
   "description": "Delegate tasks across devices on LAN or Tailscale, continue the same task, and save complete results locally.",
   "license": "MIT",

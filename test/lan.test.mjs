@@ -13,11 +13,12 @@ import { Client, connect } from '../lib/client.mjs';
 import { Config } from '../lib/config.mjs';
 import { Sharing } from '../lib/lan.mjs';
 
-async function setup(t, { clock = false } = {}) {
+async function setup(t, { clock = false, deadline = false } = {}) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'sub2sub-lan-test-'));
   const clockFile = path.join(root, 'clock.txt'), initialTime = Date.now();
   if (clock) await fs.writeFile(clockFile, String(initialTime));
   const ownerOptions = clock ? { args: ['--import', fileURLToPath(new URL('./fixtures/clock.mjs', import.meta.url)), fileURLToPath(new URL('../bin/mcp.mjs', import.meta.url))], env: { SUB2SUB_TEST_CLOCK: clockFile } } : {};
+  if (deadline) Object.assign(ownerOptions, { args: ['--import', fileURLToPath(new URL('./fixtures/deadline.mjs', import.meta.url)), fileURLToPath(new URL('../bin/mcp.mjs', import.meta.url))], env: { SUB2SUB_TEST_DEADLINE: path.join(root, 'deadline') } });
   const processes = [];
   t.after(async () => { await Promise.all(processes.map(p => p.close())); await fs.rm(root, { recursive: true, force: true }); });
   const device = async name => {
@@ -361,12 +362,66 @@ test('work copy cleanup requires saved results and restores the same native task
   assert.equal((await caller.tool('collect_result', { taskId: task.taskId })).removed[0], 'temporary.txt');
 });
 
+for (const scenario of ['initial', 'follow-up', 'save failure']) test(`execution deadline saves partial delivery without rerunning: ${scenario}`, async t => {
+  const { root, owner, caller, source } = await setup(t, { deadline: true });
+  const pair = await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  let previous;
+  if (scenario === 'follow-up') {
+    previous = await caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'first delivery' });
+    await caller.tool('collect_result', { taskId: previous.taskId });
+  }
+  if (scenario === 'save failure') {
+    let failOnce = true;
+    await interceptPeer(t, root, input => {
+      if (input.action === 'result' && failOnce) { failOnce = false; return 'disconnect'; }
+    });
+  }
+  const running = previous
+    ? caller.tool('continue_task', { taskId: previous.taskId, prompt: 'partial-wait' })
+    : caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'partial-wait' });
+  running.catch(() => {});
+  let task;
+  for (let attempts = 0; attempts < 100; attempts++) {
+    [task] = (await caller.tool('list_tasks')).tasks;
+    if (task) {
+      try { await fs.stat(path.join(root, 'owner/sharing/tasks', pair.pairId, task.taskId, 'work/partial.txt')); break; }
+      catch (error) { if (error.code !== 'ENOENT') throw error; }
+    }
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
+  await fs.writeFile(path.join(root, 'deadline'), 'expire');
+  let saved;
+  if (scenario === 'save failure') {
+    await assert.rejects(running, /saving stage results failed.*Retry collect_result/);
+    assert.equal((await caller.tool('list_tasks')).tasks[0].deliveryPending, true);
+    saved = await caller.tool('collect_result', { taskId: task.taskId });
+  } else saved = await running;
+  assert.equal(saved.status, 'interrupted');
+  assert.equal(saved.stopReason, 'time_limit');
+  assert.equal(saved.deliveryPending, false);
+  assert.equal(await fs.readFile(path.join(saved.workCopyDirectory, 'partial.txt'), 'utf8'), 'Stage one is on disk; further work remains.');
+  assert.match(await fs.readFile(saved.responseFile, 'utf8'), /30 minutes/);
+  const stopped = await caller.tool('task_status', { taskId: task.taskId });
+  assert.equal(stopped.executionActive, false);
+  assert.equal(stopped.revision, previous ? 2 : 1);
+  assert.equal(stopped.savedRevision, stopped.revision);
+  if (previous) assert.equal(stopped.threadId, previous.threadId);
+  await fs.unlink(path.join(root, 'deadline'));
+  const resumed = await caller.tool('continue_task', { taskId: task.taskId, prompt: 'complete the remaining work' });
+  assert.equal(resumed.threadId, stopped.threadId);
+  assert.equal(resumed.stopReason, undefined);
+  assert.equal(resumed.error, undefined);
+  assert.equal(resumed.revision, stopped.revision + 1);
+});
+
 test('idle expiry catches up after restart and preserves unsaved tasks and existing retention choices', async t => {
   const { root, owner, caller, source, processes, clockFile, initialTime, ownerOptions } = await setup(t, { clock: true });
   assert.equal((await owner.tool('provider_settings')).advanced.retentionDays, 7);
-  await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  const pair = await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
   const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
   const saved = await caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'saved' });
+  await fs.writeFile(path.join(root, 'owner/sharing/tasks', pair.pairId, saved.taskId, 'work/.sub2sub/cache'), 'disposable');
   await caller.tool('collect_result', { taskId: saved.taskId });
   await owner.tool('provider_settings', { retentionDays: 1 });
   const kept = await caller.tool('finish_task', { taskId: saved.taskId, cleanup: 'keep' });

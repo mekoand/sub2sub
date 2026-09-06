@@ -14,6 +14,12 @@ Keep invitations private. Do not publish them in issues, documentation, or scree
 
 Each turn can run for up to 30 minutes; longer work can continue in phases. Tasks run in a separate work copy with task network access, MCP, app, and browser integrations disabled. Prepare the required inputs and local tools before delegating.
 
+When the time limit is reached, execution stops and sub2sub saves the available stage results locally. It reports unfinished work and waits for you to choose whether to continue the same task. If saving fails, retry collection; running the task again is not needed to retry a download. Files not yet written by the executing tool cannot be recovered by transfer.
+
+Each delivery includes the current files, the provider's completed checks, and remaining work or checks with reasons. Checks follow the task: code tests, document review, data reconciliation, or other requested verification. Saving the files does not mean every requirement has been completed.
+
+New task work copies have an internal `.sub2sub` directory for disposable tool caches. It is omitted from delivery and removed with the work copy. No additional setting is needed. Required outputs and files needed to continue stay outside that directory. Older tasks and other excluded paths keep their existing handling.
+
 State the goal, input scope, output, and expected checks:
 
 > Delegate the docs directory to work-computer. Build offline help pages without installing dependencies or using the network. Implement and test there, then return the pages and usage instructions.

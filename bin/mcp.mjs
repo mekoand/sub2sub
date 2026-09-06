@@ -33,8 +33,8 @@ const definitions = [
   ['delete_peer', '使用方：删除前说明旧任务将失去续作关联，同一台设备重新配对也不恢复。先处理活动任务和未取回成果，再删除本地连接。远端配对与文件、本地成果保留。abandonTasks 仅用于用户已明确放弃的指定任务；仍在运行的任务必须先停止。', { peer: string('Connection to delete.'), abandonTasks: { type: 'array', minItems: 1, maxItems: 2000, items: task, description: 'Specific task IDs explicitly abandoned after disclosing uncollected or unknown remote results.' } }, ['peer']],
   ['check_peer', 'Check a configured provider connection without starting a Codex task.', { peer: string('Configured provider name.') }, ['peer']],
   ['prepare_work_copy', 'Prepare task files locally and show the file list, size, destination and saved transfer consent. Pass the known peer to include consent context for the host’s review. Nothing is sent. Default: current Git-tracked contents with exclusions.', { workspace: string('Absolute source workspace path.'), peer: string('Known destination peer, to show its identity and saved consent with this preview.'), paths: { type: 'array', minItems: 1, maxItems: SUPPORT_FILES, items: string('Relative file or directory. No symlinks.') } }, ['workspace']],
-  ['start_task', 'Send a prepared copy to an authorized peer and run a Codex task. Checks model and effort before uploading; mismatches list choices and wait for the user. Waits for completion. Keep the task ID if the connection fails.', { peer: string('Authorized configured provider.'), snapshotId: string('Prepared snapshot ID.'), prompt, ...execution }, ['peer', 'snapshotId', 'prompt']],
-  ['continue_task', 'Continue the same task using its saved model and effort; change only if the user explicitly chooses another combination. Checks current provider capabilities before execution.', { taskId: task, prompt, ...execution }, ['taskId', 'prompt']],
+  ['start_task', 'Send a prepared copy to an authorized peer and run a Codex task. Checks model and effort before uploading; mismatches list choices and wait for the user. Waits for this turn. At its time limit, stops and saves available stage results, then waits for the user to choose continuation. Keep the task ID if the connection fails.', { peer: string('Authorized configured provider.'), snapshotId: string('Prepared snapshot ID.'), prompt, ...execution }, ['peer', 'snapshotId', 'prompt']],
+  ['continue_task', 'Continue the same task using its saved model and effort; change only if the user explicitly chooses another combination. Checks current provider capabilities before execution. At the time limit, saves available stage results and waits; never automatically repeat a turn.', { taskId: task, prompt, ...execution }, ['taskId', 'prompt']],
   ['task_status', '查询远端任务记录与实际工作副本情况。details=true 时统计文件数与占用，并对已清理任务进行实时核查；普通查询已清理任务时仅报告本地记录。', { taskId: task, details: { type: 'boolean' } }, ['taskId']],
   ['cancel_task', 'Request interruption of an active remote task. Read status afterwards to confirm it stopped.', { taskId: task }, ['taskId']],
   ['collect_result', '委托或续作形成阶段成果后，在交付前同步到本地，返回完整文件目录 workCopyDirectory 和文字答复 responseFile，及删除、跳过文件与本轮错误。无文件变化时复用完整副本，答复仍更新。查看已保存成果用 list_tasks，不重新下载。只检查交付完整性；质量验证交给提供方。', { taskId: task }, ['taskId']],
@@ -69,7 +69,7 @@ lines.on('line', async line => {
     if (message.id === undefined) return;
     if (message.method === 'initialize') {
       initialized = true;
-      send({ id: message.id, result: { protocolVersion: '2024-11-05', capabilities: { tools: {} }, serverInfo: { name: 'sub2sub', version: '0.5.1' } } });
+      send({ id: message.id, result: { protocolVersion: '2024-11-05', capabilities: { tools: {} }, serverInfo: { name: 'sub2sub', version: '0.5.2' } } });
       return;
     }
     if (!initialized) throw new Error('Initialize the MCP connection first.');

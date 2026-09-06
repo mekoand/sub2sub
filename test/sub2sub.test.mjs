@@ -132,6 +132,40 @@ test('build deliverables download and skipped paths must be resolved before clea
   await fs.stat(path.join(latest.workCopyDirectory, 'build/report.pdf'));
 });
 
+test('task temporary files do not block delivery, cleanup or same-session restoration', async t => {
+  const { root, source, client } = await setup(t);
+  const prepared = await client.call('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  const task = await client.call('start_task', { peer: 'demo', snapshotId: prepared.snapshotId, prompt: 'deliverable' });
+  const work = path.join(root, 'provider', task.taskId, 'work');
+  await fs.mkdir(path.join(work, '.sub2sub'), { recursive: true });
+  await fs.writeFile(path.join(work, '.sub2sub/cache.bin'), Buffer.alloc(MAX_BYTES + 1));
+  const saved = await client.call('collect_result', { taskId: task.taskId });
+  assert.deepEqual(saved.skipped, []);
+  assert.equal(await fs.readFile(path.join(saved.workCopyDirectory, 'answer.txt'), 'utf8'), 'deliverable');
+  await client.call('finish_task', { taskId: task.taskId, cleanup: 'workcopy' });
+  await assert.rejects(fs.stat(work), { code: 'ENOENT' });
+  const resumed = await client.call('continue_task', { taskId: task.taskId, prompt: 'refined deliverable' });
+  assert.equal(resumed.threadId, task.threadId);
+  const latest = await client.call('collect_result', { taskId: task.taskId });
+  assert.deepEqual(latest.skipped, []);
+  assert.equal(await fs.readFile(path.join(latest.workCopyDirectory, 'answer.txt'), 'utf8'), 'refined deliverable');
+});
+
+test('legacy tasks do not silently discard previously excluded task files', async t => {
+  const { root, source, client } = await setup(t);
+  const copy = await client.call('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  const task = await client.call('start_task', { peer: 'demo', snapshotId: copy.snapshotId, prompt: 'legacy' });
+  const directory = path.join(root, 'provider', task.taskId);
+  const legacy = await readJson(path.join(directory, 'state.json'));
+  delete legacy.temporaryFiles;
+  await fs.writeFile(path.join(directory, 'state.json'), JSON.stringify(legacy));
+  await fs.writeFile(path.join(directory, 'work/.sub2sub/needed.txt'), 'previously uncollected');
+  const saved = await client.call('collect_result', { taskId: task.taskId });
+  assert.deepEqual(saved.skipped, ['.sub2sub']);
+  await assert.rejects(client.call('finish_task', { taskId: task.taskId, cleanup: 'workcopy' }), /Resolve skipped paths/);
+  assert.equal(await fs.readFile(path.join(directory, 'work/.sub2sub/needed.txt'), 'utf8'), 'previously uncollected');
+});
+
 test('cleanup honors skipped paths in an older download after result rules change', async t => {
   const { root, source, client } = await setup(t);
   const prepared = await client.call('prepare_work_copy', { workspace: source, paths: ['input.txt'] });

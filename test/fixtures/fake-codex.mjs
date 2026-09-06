@@ -65,6 +65,10 @@ lines.on('line', async line => {
         break;
       }
       reply({ turn: { id: 'turn-1', status: 'inProgress' } });
+      if (prompt === 'partial-wait') {
+        await fs.writeFile('partial.txt', 'Stage one is on disk; further work remains.');
+        break;
+      }
       if (prompt === 'message-phases' || prompt === 'unknown-message-phase') {
         for (const [id, phase, text] of [
           ['progress-1', 'commentary', 'Still checking.'],
