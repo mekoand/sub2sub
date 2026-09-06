@@ -2,9 +2,12 @@
 # Download a complete release; no system Node.js, npm or OpenSSL is required.
 set -eu
 install_sub2sub() {
+  target=${1:-codex}
+  case "$target" in codex|claude) ;; *) echo 'Choose an installation target: codex or claude.' >&2; return 1 ;; esac
+  [ "$#" -le 1 ] || { echo 'Usage: install.sh [codex|claude]' >&2; return 1; }
   [ "$(uname -s)" = Darwin ] || { echo 'This installer supports macOS. On Windows use install.ps1.' >&2; return 1; }
   case "$(uname -m)" in arm64) arch=arm64 ;; x86_64) arch=x64 ;; *) echo 'Unsupported Mac architecture.' >&2; return 1 ;; esac
-  version=${SUB2SUB_VERSION:-0.5.2}
+  version=${SUB2SUB_VERSION:-0.5.3}
   case "$version" in ''|*[!0-9.]*) echo 'Invalid SUB2SUB_VERSION.' >&2; return 1 ;; esac
   base="https://github.com/mekoand/sub2sub/releases/download/v$version"
   asset="sub2sub-darwin-$arch.tar.gz"
@@ -16,6 +19,6 @@ install_sub2sub() {
   (cd "$work" && awk -v name="$asset" '$2 == name { print }' SHA256SUMS > selected.sha256 && test -s selected.sha256 && shasum -a 256 -c selected.sha256)
   mkdir "$work/payload"
   tar -xzf "$work/$asset" -C "$work/payload"
-  "$work/payload/runtime/bin/node" "$work/payload/plugins/sub2sub/scripts/install.mjs" "$work/payload" "${SUB2SUB_INSTALL_DIR:-$HOME/.local/share/sub2sub}"
+  "$work/payload/runtime/bin/node" "$work/payload/plugins/sub2sub/scripts/install.mjs" "$work/payload" "${SUB2SUB_INSTALL_DIR:-$HOME/.local/share/sub2sub}" "$target"
 }
-install_sub2sub
+install_sub2sub "$@"

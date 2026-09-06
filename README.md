@@ -12,7 +12,7 @@
 Task delegation across your devices and team.
 
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.5.2-6366f1)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.5.3-6366f1)](CHANGELOG.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 **English** · [简体中文](README.zh-CN.md) · [Install](docs/install.en.md)
@@ -29,7 +29,7 @@ One computer can connect to several work nodes, and any device can send or recei
 
 Install sub2sub on each computer where you want to send or receive tasks. Start with the devices you need and add more whenever you want.
 
-Install Codex and sign in first, then run the command for your system. Packages include Node and certificate generation.
+For Codex, install it and sign in first, then run the command for your system. Packages include Node and certificate generation. Claude Code callers can use the [Claude installation commands](docs/install.en.md#claude-code) without installing Codex locally; receiving work nodes still use Codex.
 
 **macOS · Terminal**
 
@@ -79,7 +79,7 @@ Use [Tailscale](https://tailscale.com/) to connect participating devices across 
 
 ## Compatibility
 
-Packages are available for macOS and Windows x64. Validated with Codex Desktop and with Codex CLI on macOS. Claude Code has also passed an initial task-and-follow-up test through MCP; the installer currently configures Codex. WorkBuddy remains untested. [Validation details](docs/validation.md)
+Packages are available for macOS and Windows x64, with installation targets for Codex and Claude Code. Task delegation is validated with Codex Desktop and with Codex CLI and Claude Code on macOS. WorkBuddy remains untested. [Validation details](docs/validation.md)
 
 ## Development
 

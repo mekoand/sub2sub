@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.3 — 2026-09-07
+
+- Add a Claude Code installation target using the existing bundled runtime, task service and Skill. Caller-only installation does not require local Codex, and both hosts can coexist.
+- Refresh the Claude plugin on repeat installation and updates while preserving pairings and saved results.
+- Present verified local deliverables and the saved answer with complete absolute links, including when viewing results after the work node goes offline.
+
 ## 0.5.2 — 2026-09-07
 
 - Save available stage results when a turn reaches its 30-minute limit, report the interruption, and wait for the user to choose continuation. Failed saving can be retried without rerunning the task.

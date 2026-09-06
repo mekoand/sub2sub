@@ -12,7 +12,7 @@
 面向团队和多设备用户的任务委托工具。
 
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.5.2-6366f1)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.5.3-6366f1)](CHANGELOG.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 [English](README.md) · **简体中文** · [安装](docs/install.md)
@@ -29,7 +29,7 @@
 
 在需要发起或接收任务的电脑上安装 sub2sub。按需安装，可以随时加入更多设备。
 
-先安装并登录 Codex，再运行对应命令。安装包自带 Node 和证书生成能力。
+使用 Codex 时，先安装并登录 Codex，再运行对应命令。安装包自带 Node 和证书生成能力。Claude Code 使用者可以选择 [Claude 安装命令](docs/install.md#claude-code)，发起端无需安装 Codex；接收任务的工作节点仍使用 Codex。
 
 **macOS · Terminal**
 
@@ -79,7 +79,7 @@ irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | ie
 
 ## 兼容性
 
-提供 macOS 和 Windows x64 安装包。已在 Codex 桌面端及 macOS 的 Codex CLI 中验证。Claude Code 也已通过 MCP 完成首次任务与追加修改测试；现有安装器仍面向 Codex。WorkBuddy 尚未实测。[验证详情](docs/validation.md)
+提供 macOS 和 Windows x64 安装包，可选择安装到 Codex 或 Claude Code。任务委托已在 Codex 桌面端及 macOS 的 Codex CLI、Claude Code 中验证。WorkBuddy 尚未实测。[验证详情](docs/validation.md)
 
 ## 开发
 

@@ -4,7 +4,7 @@
 
 在需要发起或接收任务的电脑上安装 sub2sub，可以按需加入多台设备。一台电脑可以连接多个工作节点，也可以同时承担使用方和提供方角色。执行任务的电脑登录自己的 Codex 账号，并在工作期间保持在线。
 
-## 一条命令安装
+## Codex
 
 先安装并登录支持插件的 Codex。安装包适用于 macOS（Apple Silicon / Intel）和 Windows x64，包含 Node 运行时和证书生成依赖。
 
@@ -30,6 +30,26 @@ irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | ie
 - Windows：`%LOCALAPPDATA%\sub2sub`
 
 发行包下载见 [Releases](https://github.com/mekoand/sub2sub/releases)。源码开发与手动打包见[开发说明](development.md)。
+
+## Claude Code
+
+先安装并登录原生 Claude Code CLI，再运行对应命令。只从 Claude Code 发起任务的电脑无需安装 Codex；接收任务的工作节点仍使用自己的 Codex 账号执行。
+
+macOS：
+
+```sh
+/bin/bash -o pipefail -c 'curl -fsSL https://github.com/mekoand/sub2sub/releases/latest/download/install.sh | /bin/bash -s -- claude'
+```
+
+Windows PowerShell：
+
+```powershell
+& ([scriptblock]::Create((irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1))) -Target claude
+```
+
+安装后启动新的 `claude` 会话，`claude plugin list` 应显示 `sub2sub@sub2sub` 已启用。粘贴工作节点的邀请码，随后在当前对话中委托任务。安装器遵循 [Claude 插件机制](https://code.claude.com/docs/en/plugins-reference#mcp-servers)，通过本地 marketplace 注册携带现有 Skill 和 MCP 服务的原生插件。
+
+两个宿主可以共用程序目录、配对和本地成果。使用哪个宿主，就运行它对应的安装命令；也可以两个都装。更新时保持原命令和目标，更新 Claude 不会同时更新 Codex 的插件缓存，反之亦然。
 
 ## 首次连接
 
@@ -62,7 +82,7 @@ irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | ie
 
 先完成或取消活动任务、保存成果，再次运行安装命令。安装器会刷新插件缓存和启动路径，保留已有配对、证书和任务数据。旧版程序目录保留，当前会话不会被强行终止。更新后，各设备开启新对话。
 
-安装器使用 `sub2sub@sub2sub` 作为插件标识。如果发现其他来源的旧 sub2sub 安装，会在新安装确认启用后移除旧插件，避免同时加载两份。其他插件和旧 marketplace 列表不变。
+两个宿主均使用 `sub2sub@sub2sub` 作为插件标识。Codex 安装器还会在确认新安装启用后迁移其他来源的旧 sub2sub；Claude 安装器只管理其用户级安装。其他插件不变。
 
 需要指定已发布版本时，先设置 `SUB2SUB_VERSION`，再运行同一命令。只有包含一键安装发行包的版本才支持此方式。跨大版本回退前查看对应版本说明，避免旧程序操作不兼容的任务数据。
 
@@ -70,6 +90,7 @@ irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | ie
 
 - **下载失败：**确认当前网络可访问 GitHub Releases，再次运行安装命令。
 - **找不到 Codex：**先打开并登录 Codex。特殊安装位置可设置 `SUB2SUB_CODEX` 为原生可执行文件的绝对路径，再重试；Windows 需要 `codex.exe`，不能填写 `.cmd` / `.bat`。
+- **找不到 Claude：**安装原生 Claude Code CLI 后重新打开终端。特殊位置可用 `SUB2SUB_CLAUDE` 指定可执行文件的绝对路径；Windows 需要 `claude.exe`。
 - **安装成功但没有工具：**开启新对话或重启 CLI，通过 `codex plugin list` 检查 `sub2sub@sub2sub` 是否安装并启用。
 - **Windows SSH 环境拒绝访问桌面包：**在桌面用户的 PowerShell 中安装与运行。SSH 系统会话与桌面会话的应用权限、沙箱行为可能不同。
 
@@ -84,5 +105,7 @@ irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | ie
 ```sh
 codex plugin remove sub2sub@sub2sub
 ```
+
+Claude Code 使用 `claude plugin uninstall sub2sub@sub2sub --scope user`。每条命令只卸载对应宿主中的插件。
 
 程序、任务记录和本地成果是分开的。卸载插件不会替你删除成果；任务与原生会话的删除按[清理选择](usage.md#任务生命周期)处理。需要释放旧程序占用时，在相关会话退出后删除安装目录中的旧 `versions` 子目录，保留当前安装使用的版本。

@@ -57,4 +57,6 @@ The builder downloads Node from nodejs.org, checks its published checksum, and c
 
 Each archive contains the plugin, its dependencies, and a private Node runtime with the Node license. It contains no credentials, pairings, task history, or user files. Installation generates machine-specific startup paths.
 
+The installer accepts an optional `codex` or `claude` target. Both use the same release directory and runtime. Claude receives a small plugin directory containing the shared Skill, documentation and an MCP entry pointing to that runtime and task service. Its local marketplace is separate from Codex's; updates register only the selected host. No separate task executor is involved.
+
 Keep the version in `package.json`, `.codex-plugin/plugin.json`, and both bootstrap scripts aligned. The release workflow builds assets as a draft release. Publish that draft after reviewing CI and installer smoke tests so the README's `latest/download` links remain usable.

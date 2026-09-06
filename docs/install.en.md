@@ -4,7 +4,7 @@
 
 Install sub2sub on each computer that will send or receive tasks. Add as many devices as you need: one computer can connect to several work nodes and can act as both caller and provider. Each work node signs in with its own Codex account and stays online while working.
 
-## One-command installation
+## Codex
 
 Install and sign in to a plugin-capable Codex version first. Packages support Apple Silicon / Intel Macs and Windows x64, and include Node and certificate-generation dependencies.
 
@@ -30,6 +30,26 @@ Default program locations:
 - Windows: `%LOCALAPPDATA%\sub2sub`
 
 Download archives from [Releases](https://github.com/mekoand/sub2sub/releases). See [development](development.md) for source installation and packaging.
+
+## Claude Code
+
+Install the native Claude Code CLI and sign in, then run the command for your system. A computer that only sends tasks from Claude Code does not need Codex installed. The receiving work node still executes through its own Codex account.
+
+macOS:
+
+```sh
+/bin/bash -o pipefail -c 'curl -fsSL https://github.com/mekoand/sub2sub/releases/latest/download/install.sh | /bin/bash -s -- claude'
+```
+
+Windows PowerShell:
+
+```powershell
+& ([scriptblock]::Create((irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1))) -Target claude
+```
+
+Start a new `claude` session after installation. `claude plugin list` should show `sub2sub@sub2sub` enabled. Connect an invitation from a work node and delegate tasks in the same conversation. The installer registers a native Claude plugin with the existing Skill and MCP service through a local marketplace, following [Claude's plugin model](https://code.claude.com/docs/en/plugins-reference#mcp-servers).
+
+Both installation targets can coexist in the same program directory and reuse pairings and saved results. Run the command for each host you use. Updates use the same command and target; a Claude update does not update Codex's cached plugin, or vice versa.
 
 ## First connection
 
@@ -62,7 +82,7 @@ Version 0.5 accepts the usual Tailscale `100.64.0.0/10` range, with automated ad
 
 Finish or cancel active work and save its results, then run the installation command again. The installer refreshes cached plugin files and startup paths while keeping pairings, certificates, and task data. Older program versions remain available; existing sessions are not forcibly terminated. Start a new conversation on each updated device.
 
-The installer uses the plugin ID `sub2sub@sub2sub`. After confirming the new installation is enabled, it removes older sub2sub installations from other sources to prevent duplicate loading. Other plugins and old marketplace catalogs remain unchanged.
+Both hosts use the plugin ID `sub2sub@sub2sub`. The Codex installer also migrates older sub2sub installations from other sources after confirming the replacement is enabled. The Claude installer manages its user-scope installation only. Other plugins remain unchanged.
 
 Set `SUB2SUB_VERSION` before running the same command to select a published version that includes installer assets. Check release notes before downgrading across major versions so older code does not operate on incompatible task data.
 
@@ -70,6 +90,7 @@ Set `SUB2SUB_VERSION` before running the same command to select a published vers
 
 - **Download failed:** check access to GitHub Releases, then run the command again.
 - **Codex not found:** open and sign in to Codex first. For custom locations, set `SUB2SUB_CODEX` to the native executable's absolute path. Windows requires `codex.exe`, not a `.cmd` or `.bat` launcher.
+- **Claude not found:** restart your terminal after installing the native Claude Code CLI. For a custom location, set `SUB2SUB_CLAUDE` to the executable's absolute path; Windows requires `claude.exe`.
 - **Installed but no tools:** start a new conversation or restart the CLI. `codex plugin list` should show `sub2sub@sub2sub` installed and enabled.
 - **Windows SSH cannot access the desktop package:** install and run from the desktop user's PowerShell. SSH system sessions can have different app access and sandbox behavior.
 
@@ -84,5 +105,7 @@ Save the results you need, then uninstall in the plugin directory or run:
 ```sh
 codex plugin remove sub2sub@sub2sub
 ```
+
+For Claude Code, use `claude plugin uninstall sub2sub@sub2sub --scope user`. Each command removes only that host's plugin registration.
 
 Uninstalling the plugin does not delete saved results. Use the [cleanup options](usage.en.md#task-lifecycle) for tasks and native history. To reclaim old program storage, close sessions using those versions and remove their subdirectories under `versions`, keeping the currently installed version.

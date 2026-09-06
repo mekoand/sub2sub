@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { Config, codexExecutable } from '../lib/config.mjs';
+import { Config, codexExecutable, executableOnPath } from '../lib/config.mjs';
 import { processLock } from '../lib/lock.mjs';
 
 const exec = promisify(execFile);
@@ -52,17 +52,75 @@ async function findCodex(config) {
   throw new Error(`Codex was not found or could not start. Install/open Codex first, or set SUB2SUB_CODEX to the native codex.exe. ${failures.join('\n')}`);
 }
 
-export async function install(payload, root, log = console.log) {
+async function prepareRelease(payload, root, release) {
+  const destination = path.join(root, 'versions', release.version);
+  const exists = await readOptional(path.join(destination, 'release.json'));
+  if (exists === undefined) {
+    await fs.mkdir(path.dirname(destination), { recursive: true });
+    const staging = await fs.mkdtemp(path.join(root, '.prepare-'));
+    try {
+      await fs.cp(payload, staging, { recursive: true });
+      await fs.rename(staging, destination);
+    } finally { await fs.rm(staging, { recursive: true, force: true }); }
+  } else if (JSON.parse(exists).version !== release.version) throw new Error(`Unexpected contents in ${destination}.`);
+  return { destination, node: path.join(destination, 'runtime', process.platform === 'win32' ? 'node.exe' : 'bin/node'), plugin: path.join(destination, 'plugins/sub2sub') };
+}
+
+async function installClaude(payload, root, release, run, log) {
+  await run(['plugin', 'install', '--help']);
+  await fs.mkdir(root, { recursive: true });
+  const unlock = await processLock(path.join(root, 'install'));
+  try {
+    const marketplaceFile = path.join(root, '.claude-plugin/marketplace.json');
+    const previous = await readOptional(marketplaceFile);
+    if (previous !== undefined && JSON.parse(previous).name !== marketplaceName) throw new Error(`Another marketplace owns ${root}. Choose a different SUB2SUB_INSTALL_DIR.`);
+    const marketplaces = JSON.parse(await run(['plugin', 'marketplace', 'list', '--json']));
+    const registered = marketplaces.find(m => m.name === marketplaceName);
+    if (registered && (registered.source !== 'directory' || path.resolve(registered.path) !== root)) throw new Error(`Claude already has a sub2sub marketplace at ${registered.installLocation}. Use that installation directory or resolve the existing marketplace first.`);
+    const before = JSON.parse(await run(['plugin', 'list', '--json'])).find(p => p.id === pluginId && p.scope === 'user');
+    const { destination, node, plugin } = await prepareRelease(payload, root, release);
+    const adapter = path.join(destination, 'claude/sub2sub');
+    await fs.mkdir(path.join(adapter, '.claude-plugin'), { recursive: true });
+    for (const name of ['skills', 'docs', 'LICENSE']) await fs.cp(path.join(plugin, name), path.join(adapter, name), { recursive: true });
+    const version = `${release.version}+claude.${Date.now()}`;
+    await fs.writeFile(path.join(adapter, '.claude-plugin/plugin.json'), JSON.stringify({ name: 'sub2sub', version, description: 'Delegate tasks to Codex nodes and receive complete results locally.', license: 'MIT' }, null, 2) + '\n');
+    await fs.writeFile(path.join(adapter, '.mcp.json'), JSON.stringify({ mcpServers: { sub2sub: { command: node, args: [path.join(plugin, 'bin/mcp.mjs')], timeout: 1900000 } } }, null, 2) + '\n');
+    await fs.mkdir(path.dirname(marketplaceFile), { recursive: true });
+    await fs.writeFile(marketplaceFile, JSON.stringify({ name: marketplaceName, owner: { name: 'mekoand' }, plugins: [{ name: 'sub2sub', source: `./versions/${release.version}/claude/sub2sub` }] }, null, 2) + '\n');
+    try {
+      if (registered) await run(['plugin', 'marketplace', 'update', marketplaceName]);
+      else await run(['plugin', 'marketplace', 'add', root]);
+      await run(['plugin', before ? 'update' : 'install', pluginId, '--scope', 'user']);
+      let installed = JSON.parse(await run(['plugin', 'list', '--json'])).find(p => p.id === pluginId && p.scope === 'user');
+      if (installed && !installed.enabled) {
+        await run(['plugin', 'enable', pluginId, '--scope', 'user']);
+        installed = JSON.parse(await run(['plugin', 'list', '--json'])).find(p => p.id === pluginId && p.scope === 'user');
+      }
+      if (!installed?.enabled || installed.version !== version) throw new Error('Claude did not report the requested plugin version as installed and enabled.');
+    } catch (error) {
+      if (previous === undefined) await fs.rm(marketplaceFile, { force: true });
+      else await fs.writeFile(marketplaceFile, previous);
+      throw error;
+    }
+    log(`Installed sub2sub ${release.version} for Claude Code. Start a NEW Claude Code session.\nProgram files: ${destination}\nPairings and saved results stay in their existing locations.`);
+    return { version: release.version, root, node, host: 'claude', pluginId };
+  } finally { await unlock(); }
+}
+
+export async function install(payload, root, log = console.log, target = 'codex') {
+  if (!['codex', 'claude'].includes(target)) throw new Error('Choose an installation target: codex or claude.');
   payload = path.resolve(payload); root = path.resolve(root);
   const release = await json(path.join(payload, 'release.json'));
   if (!/^\d+\.\d+\.\d+$/.test(release.version) || release.platform !== process.platform || release.arch !== process.arch) throw new Error('This release does not match this operating system and architecture.');
   const configFile = process.env.SUB2SUB_CONFIG || path.join(os.homedir(), '.config/sub2sub/config.json');
   const config = await new Config(configFile).read();
-  const codex = await findCodex(config);
+  const executable = target === 'claude' ? process.env.SUB2SUB_CLAUDE || await executableOnPath('claude') : await findCodex(config);
+  if (target === 'claude' && process.platform === 'win32' && /\.(cmd|bat)$/i.test(executable)) throw new Error('SUB2SUB_CLAUDE must point to native claude.exe, not a .cmd or .bat launcher.');
   const run = async args => {
-    try { return (await exec(codex, args, { windowsHide: true, timeout: 120000, maxBuffer: 8 * 1024 * 1024 })).stdout; }
-    catch (error) { throw new Error(`Codex ${args.join(' ')} failed: ${error.stderr || error.message}`, { cause: error }); }
+    try { return (await exec(executable, args, { windowsHide: true, timeout: 120000, maxBuffer: 8 * 1024 * 1024 })).stdout; }
+    catch (error) { throw new Error(`${target} ${args.join(' ')} failed: ${error.stderr || error.message}`, { cause: error }); }
   };
+  if (target === 'claude') return installClaude(payload, root, release, run, log);
   await run(['plugin', 'add', '--help']);
   await fs.mkdir(root, { recursive: true });
   const unlock = await processLock(path.join(root, 'install'));
@@ -75,21 +133,10 @@ export async function install(payload, root, log = console.log) {
     if (registered && path.resolve(registered.root) !== root) throw new Error(`The sub2sub marketplace is already registered at ${registered.root}. Set SUB2SUB_INSTALL_DIR to that directory.`);
     const before = JSON.parse(await run(['plugin', 'list', '--json'])).installed;
     const duplicates = before.filter(p => p.name === 'sub2sub' && p.pluginId !== pluginId && p.installed);
-    const destination = path.join(root, 'versions', release.version);
-    const node = path.join(destination, 'runtime', process.platform === 'win32' ? 'node.exe' : 'bin/node');
-    const plugin = path.join(destination, 'plugins/sub2sub');
-    const exists = await readOptional(path.join(destination, 'release.json'));
-    if (exists === undefined) {
-      await fs.mkdir(path.dirname(destination), { recursive: true });
-      const staging = await fs.mkdtemp(path.join(root, '.prepare-'));
-      try {
-        await fs.cp(payload, staging, { recursive: true });
-        await fs.rename(staging, destination);
-      } finally { await fs.rm(staging, { recursive: true, force: true }); }
-    } else if (JSON.parse(exists).version !== release.version) throw new Error(`Unexpected contents in ${destination}.`);
+    const { destination, node, plugin } = await prepareRelease(payload, root, release);
     const manifestFile = path.join(plugin, '.mcp.json');
     const manifest = await json(manifestFile);
-    Object.assign(manifest.mcpServers.sub2sub, { command: node, args: ['./bin/mcp.mjs'], env: { SUB2SUB_CODEX: codex } });
+    Object.assign(manifest.mcpServers.sub2sub, { command: node, args: ['./bin/mcp.mjs'], env: { SUB2SUB_CODEX: executable } });
     manifest.mcpServers.sub2sub.env_vars = [...new Set([...manifest.mcpServers.sub2sub.env_vars, 'USERPROFILE', 'SystemRoot', 'LOCALAPPDATA', 'APPDATA', 'TEMP', 'TMP'])];
     await fs.writeFile(manifestFile, JSON.stringify(manifest, null, 2) + '\n');
     // Refresh Codex's cached startup paths even when reinstalling the same release.
@@ -98,7 +145,7 @@ export async function install(payload, root, log = console.log) {
     pluginManifest.version = `${release.version}+codex.${Date.now()}`;
     await fs.writeFile(pluginManifestFile, JSON.stringify(pluginManifest, null, 2) + '\n');
     const { stdout: check } = await exec(node, [path.join(plugin, 'scripts/setup-check.mjs')], {
-      env: { ...process.env, SUB2SUB_CODEX: codex }, windowsHide: true, timeout: 30000
+      env: { ...process.env, SUB2SUB_CODEX: executable }, windowsHide: true, timeout: 30000
     });
     JSON.parse(check);
     log(`Installing sub2sub ${release.version} for ${process.platform}/${process.arch}...`);
@@ -121,13 +168,13 @@ export async function install(payload, root, log = console.log) {
     // Finish migration only after the replacement is confirmed usable.
     for (const old of duplicates) { log(`Replacing ${old.pluginId}...`); await run(['plugin', 'remove', old.pluginId]); }
     log(`Installed sub2sub ${release.version}. Open a NEW Codex conversation or restart the CLI session.\nProgram files: ${destination}\nPairings and saved results stay in their existing locations.`);
-    return { version: release.version, root, node, codex, pluginId };
+    return { version: release.version, root, node, codex: executable, pluginId };
   } finally { await unlock(); }
 }
 
 if (process.argv[1] && await fs.realpath(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
-    if (process.argv.length !== 4) throw new Error('Usage: node install.mjs <extracted-release> <installation-directory>');
-    await install(process.argv[2], process.argv[3]);
+    if (![4, 5].includes(process.argv.length)) throw new Error('Usage: node install.mjs <extracted-release> <installation-directory> [codex|claude]');
+    await install(process.argv[2], process.argv[3], console.log, process.argv[4]);
   } catch (error) { console.error(`sub2sub install: ${error.message}`); process.exitCode = 1; }
 }

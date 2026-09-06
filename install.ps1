@@ -1,10 +1,11 @@
 # Run in the Windows desktop user's PowerShell session.
+param([ValidateSet('codex', 'claude')][string]$Target = 'codex')
 & {
     $ErrorActionPreference = 'Stop'
     $ProgressPreference = 'SilentlyContinue'
     $architecture = if ($env:PROCESSOR_ARCHITEW6432) { $env:PROCESSOR_ARCHITEW6432 } else { $env:PROCESSOR_ARCHITECTURE }
     if ($architecture -ne 'AMD64') { throw 'This release supports Windows x64.' }
-    $version = if ($env:SUB2SUB_VERSION) { $env:SUB2SUB_VERSION } else { '0.5.2' }
+    $version = if ($env:SUB2SUB_VERSION) { $env:SUB2SUB_VERSION } else { '0.5.3' }
     if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'Invalid SUB2SUB_VERSION.' }
     $base = "https://github.com/mekoand/sub2sub/releases/download/v$version"
     $asset = 'sub2sub-win32-x64.zip'
@@ -22,7 +23,7 @@
         $payload = Join-Path $work 'payload'
         Expand-Archive -LiteralPath (Join-Path $work $asset) -DestinationPath $payload
         $installRoot = if ($env:SUB2SUB_INSTALL_DIR) { $env:SUB2SUB_INSTALL_DIR } else { Join-Path $env:LOCALAPPDATA 'sub2sub' }
-        & (Join-Path $payload 'runtime\node.exe') (Join-Path $payload 'plugins\sub2sub\scripts\install.mjs') $payload $installRoot
+        & (Join-Path $payload 'runtime\node.exe') (Join-Path $payload 'plugins\sub2sub\scripts\install.mjs') $payload $installRoot $Target
         if ($LASTEXITCODE -ne 0) { throw "sub2sub installation failed (exit $LASTEXITCODE)." }
     } finally { Remove-Item -LiteralPath $work -Recurse -Force }
 }
