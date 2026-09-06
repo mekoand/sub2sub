@@ -378,18 +378,24 @@ test('a rejected first-turn configuration retains its task but discards the unst
   assert.equal(calls.filter(call => call.method === 'thread/resume').length, 0);
 });
 
-test('MCP first use lists no peers and explains setup without a configuration error', async () => {
+test('MCP first use lists no peers and explains setup without a configuration error', { timeout: 5000 }, async t => {
   const child = spawn(process.execPath, [mcp], { env: { ...process.env, SUB2SUB_CONFIG: '/no-such-sub2sub-config.json' }, stdio: ['pipe', 'pipe', 'pipe'] });
-  let output = '';
-  child.stdout.on('data', d => { output += d; });
+  t.after(() => child.kill('SIGKILL'));
+  const responses = [];
+  const listed = new Promise(resolve => {
+    createInterface({ input: child.stdout }).on('line', line => {
+      const response = JSON.parse(line);
+      responses.push(response);
+      if (response.id === 3) resolve();
+    });
+  });
   const closed = new Promise(resolve => child.on('close', resolve));
   child.stdin.write(JSON.stringify({ id: 1, method: 'initialize', params: { protocolVersion: '2024-11-05' } }) + '\n');
   child.stdin.write(JSON.stringify({ id: 2, method: 'tools/list' }) + '\n');
   child.stdin.write(JSON.stringify({ id: 3, method: 'tools/call', params: { name: 'list_peers', arguments: {} } }) + '\n');
-  await new Promise(r => setTimeout(r, 150));
+  await listed;
   child.stdin.end();
   assert.equal(await closed, 0);
-  const responses = output.trim().split('\n').map(JSON.parse);
   assert.ok(responses.find(r => r.id === 2).result.tools.some(t => t.name === 'finish_task'));
   const result = responses.find(r => r.id === 3).result;
   assert.notEqual(result.isError, true);
