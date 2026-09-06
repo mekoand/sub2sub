@@ -1,0 +1,24 @@
+name: Release packages
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci --omit=dev --ignore-scripts
+      - run: npm run check
+      - run: npm test
+      - run: npm run release -- dist
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          version=$(node -p 'require("./package.json").version')
+          gh release create "v$version" dist/sub2sub-*.tar.gz dist/sub2sub-*.zip dist/install.sh dist/install.ps1 dist/SHA256SUMS --draft --title "sub2sub $version" --notes "One-command installation packages. See CHANGELOG.md for changes."

@@ -1,5 +1,15 @@
 # Changelog
 
+
+## 0.5.0 — 2026-09-06
+
+- One-command installation for Apple Silicon / Intel Macs and Windows x64. Release packages include a private Node runtime and production dependencies.
+- Native Codex plugin installation, repeat installation, startup-path refresh, and migration from older plugin sources. Pairings and saved results are preserved.
+- Sharing certificates are generated in-process; external OpenSSL is no longer required. Existing identities are reused.
+- Task execution can use the bundled Node runtime for local scripts and checks. The native Codex CLI delegation and continuation flow has been exercised on macOS.
+- Tailscale IPv4 address support (`100.64.0.0/10`). Real cross-network testing is scheduled for a later release.
+- Bilingual README and installation guides now focus on tasks, team use, and local deliverables.
+
 ## 0.4.3 — 2026-09-06
 
 - Preserve the order of sharing controls while discovering an existing listener; a delayed start cannot override a later stop.

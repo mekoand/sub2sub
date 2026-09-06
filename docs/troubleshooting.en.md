@@ -16,7 +16,7 @@ Check both peers' plugin, Node, and Codex versions and actual executable paths. 
 | Save confirmation failed | Retry `collect_result` on the same task, not a duplicate execution |
 | Cleanup refused | Check unsaved outputs, running state, filesystem permissions, and host approval feedback |
 | Native Codex not found on Windows | Use actual `codex.exe`, not an npm `.cmd` or `.bat` shim |
-| Windows certificate generation fails | Update to 0.4.2 and inspect the reported OpenSSL executable/configuration and underlying error |
+| Windows certificate generation fails | Update to 0.5, which includes certificate generation and no longer needs external OpenSSL; include the underlying error if it persists |
 | Windows sandbox initialization fails | Use the desktop login session; SSH system sessions are an observed limitation |
 | Browser not found | Inspect standard installation locations as well as PATH; installed does not mean callable in the sandbox |
 | New version not loaded | Update the installed cache and start a new conversation; source edits do not update running processes |

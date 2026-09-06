@@ -250,6 +250,8 @@ test('round trip and follow-up preserve session; collect then finish removes onl
   const scope = start.config?.permissions?.[start.permissions];
   assert.equal(scope?.filesystem[':root'], 'deny');
   assert.equal(scope.filesystem[':minimal'], 'read');
+  assert.equal(scope.filesystem[process.execPath], 'read');
+  assert.ok(start.developerInstructions.includes(JSON.stringify(process.execPath)));
   assert.equal(scope.filesystem[await fs.realpath(path.join(root, 'provider', first.taskId, 'work'))], 'write');
   assert.equal(scope.network.enabled, false);
   assert.equal(turn.permissions, start.permissions);

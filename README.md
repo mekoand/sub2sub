@@ -12,101 +12,109 @@
 面向团队和多设备用户的任务委托工具。
 
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.4.3-6366f1)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.5.0-6366f1)](CHANGELOG.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 **简体中文** · [English](README.en.md) · [安装](docs/install.md)
 
 </div>
 
-sub2sub 让你在当前对话里，把一项工作连同需要的文件交给另一台电脑。任务在那里执行，成果回到本地。后续修改沿用同一份工作文件和任务上下文。
+sub2sub 让你在当前对话里，把任务和选定的文件交给另一台电脑上的 AI 执行，再把成果带回本地。你可以接着提出修改，也可以将完整成果保存下来，继续自己的工作。
 
-## 团队与多设备
+## 为什么用 sub2sub
 
-**团队共用工作节点。** 成员可以开放自己的设备，供同事按任务选择。何时接收任务、开放哪些模型，由设备拥有者决定；发起人负责说明目标、选择文件和接收成果。已有的连接可以继续使用，登录由各自管理。
+**让团队已有的工作环境用起来。** 同事可以把一台电脑开放为工作节点，大家按任务使用。设备拥有者决定何时接收工作、开放哪些模型；每个人管理自己的登录，使用者通过邀请码获得连接。
 
-**自己的电脑分工。** 在笔记本上提出需求，让台式机完成一项代码修改、文档整理或数据处理。你留在当前对话里查看结果、追加要求，已保存的成果直接从本地打开。
+**多台电脑，保持一条工作线。** 在笔记本上提出需求，把代码修改、文档整理或数据处理交给工作机。完成后，文件和答复回到当前对话；补需求时继续原来的任务，不用重新整理输入。
 
-每个节点一次执行一个任务。sub2sub 按你指定的设备派发工作，适合有明确输入和产出的独立任务。
+**交到手的是完整成果。** 阶段结果保存在本地，执行设备离线后仍能打开。源项目不会被自动覆盖，你决定何时采用这些修改。
 
-## 一次任务，接着做完
+sub2sub 负责连接、传递任务和带回成果。任务由目标设备上的 AI 工作环境完成；它适合输入、目标和交付物明确的工作。每台工作节点同时执行一个任务，由你指定目标设备。
 
-例如，把项目文档交给一台名为「工作机」的设备：
+## 三步开始
+
+### 1. 两台电脑各安装一次
+
+先安装并登录 Codex，然后运行对应命令。安装包自带 Node 和证书生成能力，不需要下载源码、手工打包或安装 OpenSSL。
+
+**macOS · Terminal**
+
+```sh
+/bin/bash -o pipefail -c 'curl -fsSL https://github.com/mekoand/sub2sub/releases/latest/download/install.sh | /bin/bash'
+```
+
+**Windows x64 · PowerShell**
+
+```powershell
+irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | iex
+```
+
+安装完成后，开启新的 Codex 对话，或在终端启动 `codex`。再次运行同一条命令即可更新，保留已有配对和成果。[安装与卸载](docs/install.md)
+
+### 2. 连接工作机
+
+在执行任务的电脑上说：
+
+> 生成 sub2sub 邀请码。
+
+把邀请码私下发给使用者。在发起任务的电脑上说：
+
+> 连接这个 sub2sub 邀请码，把它叫作「工作机」。
+
+按提示确认文件传输范围。配对只需一次，后续任务直接使用这个名字。
+
+### 3. 交给它一项工作
 
 ```text
-把 docs 目录交给「工作机」，做成一个离线帮助站点，完成后检查链接。
+用 sub2sub 把 docs 目录交给「工作机」，做成一个离线帮助站点，完成后检查链接。
 
 继续这个任务，补上搜索和移动端排版。
 
 保存最新成果，结束任务并清理远端工作副本。
 ```
 
-第一次传送选定的文件。接着修改时，远端继续使用原来的工作副本；阶段结束后，只回传发生变化的内容。本地得到完整文件和文字答复，源项目由你决定何时合入。
+收到的交付包含文字答复和本地完整文件。连续修改复用原来的远端工作副本，只回传变化的内容。
 
-```mermaid
-flowchart LR
-    A[选定文件与任务] --> B[指定工作节点]
-    B --> C[执行与追加修改]
-    C --> D[保存完整成果到本地]
-```
+## 不在同一个局域网？
 
-## 开始使用
+可以配合 **Tailscale** 使用：两台电脑先加入可互通的 Tailscale 网络，再让工作机使用自己的 Tailscale IPv4 地址生成邀请码。之后的连接、派发和续作步骤相同。
 
-当前安装包接入 **Codex**。两端准备 Codex、Node.js 22+ 和 Git；执行任务的设备登录自己的 ChatGPT 账号，并安装 OpenSSL 用于首次生成共享身份。设备之间通过局域网连接，默认端口为 `47631`。
+> 用 Tailscale 地址 100.x.x.x 生成 sub2sub 邀请码。
 
-```sh
-git clone https://github.com/mekoand/sub2sub.git
-cd sub2sub
-```
+将示例地址换成工作机的实际地址。两端保持 Tailscale 在线，并允许访问共享端口（默认 `47631`）。[Tailscale 使用说明](docs/install.md#跨网络使用-tailscale)
 
-按 [macOS / Windows 安装指南](docs/install.md)完成两端安装，然后在对话中：
+## 日常直接问
 
-1. 在工作节点说“生成 sub2sub 邀请码”，将邀请码私下发给使用者。
-2. 使用者粘贴邀请码，给设备取名，并确认任务文件的传输范围。
-3. 指定这台设备和要完成的工作。收到成果后，可以继续修改或结束任务。
+| 想做的事 | 可以这样说 |
+| --- | --- |
+| 查看设备 | 查看 sub2sub 可用的工作节点。 |
+| 查看成果 | 打开这个任务已保存到本地的成果。 |
+| 调整默认模型 | 修改 sub2sub 的默认模型和思考强度。 |
+| 限定本机提供的模型 | 设置这台电脑允许共享的模型。 |
+| 停止接收新任务 | 停止 sub2sub 共享。 |
 
-邀请码 10 分钟有效，使用一次后失效。配对完成后，后续任务继续使用这条连接。
+远端工作副本默认在最后一轮结束、闲置 7 天后具备清理条件，且必须已经确认保存成果。也可以像上面的例子一样，明确结束并立即清理。完整选项见[使用手册](docs/usage.md)。
 
-## 设置与成果
+## 兼容范围
 
-发起方共用一套默认模型和思考强度，也可以为单个任务指定。工作节点选择开放全部可用模型或指定列表。可用设备、当前任务和共享状态，都可以在对话中查询。
+**已在 Codex 桌面端验证双机完整流程，并在 macOS 的 Codex CLI 中完成实际任务派发、续作、回传和清理。** 各平台的具体覆盖见[验证记录](docs/validation.md)。Claude、WorkBuddy 等其他 harness 尚未实测，当前安装器面向 Codex。
 
-每次成果保存后，本地都有完整任务副本。节点离线时，已保存文件仍可查看。默认输入和单次回传的上限分别为 20 MiB、2,000 个文件，可在高级设置中调整。
+- 安装包支持 Apple Silicon／Intel Mac 和 Windows x64。
+- 支持局域网 IPv4，并已加入 Tailscale IPv4 地址支持；真实跨网络连接验证安排在后续版本。
+- 执行设备需要保持共享进程运行。每轮最长 30 分钟，可分阶段继续。
+- 当前任务使用独立文件副本，任务网络、MCP、应用和浏览器集成关闭。任务需要的资料和工具应事先准备好。
+- 默认输入和单次回传分别限制为 20 MiB、2,000 个文件，可在高级设置中调整。
 
-远端工作副本默认保留到最后一轮结束后闲置 7 天；成果已确认保存、执行已停止时才清理。也可以明确结束后立即清理。保留任务记录与原生会话时，之后可从本地副本恢复续作。详细的保留、恢复与删除选项见[使用手册](docs/usage.md)。
-
-## 连接与执行
-
-- 设备通过私有 IPv4 网络直连，工作节点的共享进程需要保持运行。
-- 每个节点同时执行一个任务，每轮最长 30 分钟；较长工作可以分阶段续做。
-- 任务使用独立工作副本。当前执行环境关闭任务网络、MCP、应用和浏览器集成，适合在已有工具与所选文件内完成的工作。
-- macOS 与 Windows 已完成双机流程验证。平台要求、测试覆盖和运行细节见[安装指南](docs/install.md)与[验证记录](docs/validation.md)。
-
-## 打包与开发
-
-使用 Node.js 内置模块，没有第三方 npm 运行依赖。在源码根目录打包：
+## 参与开发
 
 ```sh
-npm run package -- /absolute/new/location/sub2sub
-```
-
-父目录须存在，目标目录须尚未创建。Windows 包在目标设备上准备，会写入该机实际 Node 路径。安装、更新与卸载步骤见[安装指南](docs/install.md)。
-
-macOS / Linux 开发检查：
-
-```sh
+npm ci
 npm run check
 npm test
 ```
 
-Windows 平台检查：
+[源码开发与打包](docs/development.md) · [架构](docs/architecture.md) · [贡献指南](CONTRIBUTING.md) · [版本记录](CHANGELOG.md)
 
-```powershell
-node --test test/platform.test.mjs
-```
-
-[架构说明](docs/architecture.md)介绍模块划分；[贡献指南](CONTRIBUTING.md)说明如何提交修改。反馈问题请附上复现步骤、系统和版本，并移除邀请码及个人配置。
-
-[使用手册](docs/usage.md) · [故障排查](docs/troubleshooting.md) · [版本记录](CHANGELOG.md) · [Issues](https://github.com/mekoand/sub2sub/issues)
+遇到问题请查看[故障排查](docs/troubleshooting.md)，或在 [Issues](https://github.com/mekoand/sub2sub/issues) 提供系统、版本和复现步骤。
 
 [MIT](LICENSE) © 2026 mekoand

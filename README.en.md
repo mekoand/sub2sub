@@ -12,101 +12,109 @@
 Task delegation for teams and people who work across computers.
 
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.4.3-6366f1)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.5.0-6366f1)](CHANGELOG.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 [简体中文](README.md) · **English** · [Install](docs/install.en.md)
 
 </div>
 
-sub2sub lets you send a task and its working files to another computer from your current conversation. The work runs there, and the results come back to you. Follow-up requests keep the same files and conversation context.
+sub2sub sends a task and selected files to an AI working on another computer, then brings the results back to your current conversation. Ask for another change, or save the complete result and carry on with your work.
 
-## For your team. For your own computers.
+## Why sub2sub
 
-**Share a work node with teammates.** Members can make a device available for others to use on selected tasks. Its owner decides when to accept work and which models to offer. The caller supplies the goal and files, then receives the results. Connections can be reused, and each person manages their own login.
+**Make your team's working environments available.** A teammate can share a computer as a work node. Its owner decides when to accept tasks and which models to offer. Everyone manages their own login; invitations authorize connections.
 
-**Put your computers to work together.** Ask for a code change, a documentation update, or a data-processing task from your laptop and send it to your desktop. Stay in the same conversation to review the result or request changes. Saved files open locally.
+**Keep one workflow across your computers.** Describe a code change, documentation update, or data-processing task on your laptop and send it to your workstation. Files and a written response return to your conversation. Follow-ups continue the same task without preparing the inputs again.
 
-Each node runs one task at a time. You choose the destination. sub2sub works well for self-contained jobs with clear inputs and deliverables.
+**Keep the complete result.** Saved results stay on your computer and remain readable when the work node goes offline. Your source project is not overwritten automatically. You decide when to adopt the changes.
 
-## Keep working on the same task
+sub2sub connects devices, delivers tasks, and returns results. The AI environment on the selected device does the work. Use it for tasks with clear inputs, goals, and deliverables. You choose the destination; each work node runs one task at a time.
 
-For example, send project documentation to a device named `workstation`:
+## Start in three steps
+
+### 1. Install on both computers
+
+Install Codex and sign in first, then run the command for your system. Release packages include Node and certificate generation. No source checkout, manual packaging, or OpenSSL installation is needed.
+
+**macOS · Terminal**
+
+```sh
+/bin/bash -o pipefail -c 'curl -fsSL https://github.com/mekoand/sub2sub/releases/latest/download/install.sh | /bin/bash'
+```
+
+**Windows x64 · PowerShell**
+
+```powershell
+irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | iex
+```
+
+Open a new Codex conversation after installation, or start `codex` in your terminal. Run the same command again to update while keeping existing pairings and results. [Installation and removal](docs/install.en.md)
+
+### 2. Connect a work node
+
+On the computer that will execute tasks, say:
+
+> Generate a sub2sub invitation.
+
+Share the invitation privately. On the computer sending the work, say:
+
+> Connect this sub2sub invitation and name it workstation.
+
+Confirm the file-transfer scope when prompted. Pair once, then use the name for later tasks.
+
+### 3. Give it a task
 
 ```text
-Send the docs directory to workstation. Build an offline help site and check its links.
+Use sub2sub to send the docs directory to workstation. Build an offline help site and check its links.
 
 Continue that task. Add search and a mobile layout.
 
 Save the latest results, finish the task, and clean up its remote work copy.
 ```
 
-The first transfer sends your selected files. Follow-ups reuse the remote work copy, and completed phases return only what changed. You receive complete local files and a written response. You decide when to merge the work into your source project.
+Delivery includes a written response and complete local files. Follow-ups reuse the remote work copy and return only the changes.
 
-```mermaid
-flowchart LR
-    A[Select files and a task] --> B[Choose a work node]
-    B --> C[Execute and follow up]
-    C --> D[Save complete results locally]
-```
+## Working from different networks?
 
-## Get started
+Use **Tailscale** to connect the computers. Join a Tailscale network where both devices can reach each other, then generate the invitation using the work node's Tailscale IPv4 address. Pairing, delegation, and follow-ups work the same way.
 
-The current package integrates with **Codex**. Both devices need Codex, Node.js 22+, and Git. The device executing tasks signs in with its own ChatGPT account and uses OpenSSL to create its initial sharing identity. Devices connect over a local network; the default port is `47631`.
+> Generate a sub2sub invitation using the Tailscale address 100.x.x.x.
 
-```sh
-git clone https://github.com/mekoand/sub2sub.git
-cd sub2sub
-```
+Replace the example with the node's actual address. Keep Tailscale connected and allow access to the sharing port, `47631` by default. [Tailscale setup](docs/install.en.md#connecting-over-tailscale)
 
-Follow the [macOS / Windows installation guide](docs/install.en.md) on both devices. Then, in your conversation:
+## Just ask
 
-1. Ask the work node to generate a sub2sub invitation and share it privately with the caller.
-2. Paste the invitation on the calling device, name the connection, and confirm the task-file transfer scope.
-3. Choose that device and describe the work. Once the results arrive, continue the task or finish it.
+| What you need | Example |
+| --- | --- |
+| Available devices | Show available sub2sub work nodes. |
+| Saved results | Open the results already saved on this computer. |
+| Default model | Change the default sub2sub model and reasoning effort. |
+| Models this computer offers | Set the models this computer allows others to use. |
+| Stop accepting new work | Stop sub2sub sharing. |
 
-Invitations last 10 minutes and work once. Later tasks reuse the paired connection.
+Remote work copies become eligible for cleanup after 7 idle days following the last turn, once the results are confirmed saved. You can also finish and clean up explicitly, as in the example above. See the [usage guide](docs/usage.en.md) for all options.
 
-## Settings and results
+## Compatibility
 
-Callers share one default model and reasoning-effort setting across nodes, with overrides for individual tasks. Node owners can offer all available models or a selected list. Ask in the conversation to see available devices, task status, or sharing settings.
+**The full two-device workflow has been validated in Codex Desktop. Task delegation, follow-ups, result delivery, and cleanup have also been exercised through Codex CLI on macOS.** See the [validation record](docs/validation.md) for platform coverage. Other harnesses, including Claude and WorkBuddy, have not been tested. The current installer targets Codex.
 
-Each saved result includes a complete local work copy that remains available when the node goes offline. Input and individual result transfers each default to 20 MiB and 2,000 files and can be changed in advanced settings.
+- Release packages support Apple Silicon / Intel Macs and Windows x64.
+- LAN IPv4 is supported, along with Tailscale IPv4 address handling. Real cross-network testing is planned for a later release.
+- The work node's sharing process must stay running. Each turn can run for up to 30 minutes; longer work can continue in phases.
+- Tasks use separate work copies. Task network access, MCP, app, and browser integrations are disabled. Prepare the required inputs and local tools beforehand.
+- Input and individual result transfers each default to 20 MiB and 2,000 files. Advanced settings can adjust these limits.
 
-Remote work copies become eligible for cleanup after 7 idle days following the last turn, once the results are confirmed saved and execution has stopped. You can also finish and clean up explicitly. Keeping the task record and native conversation lets you restore the local copy and resume later. See the [usage guide](docs/usage.en.md) for retention, restoration, and deletion options.
-
-## Connections and execution
-
-- Devices connect directly over a private IPv4 network. The work node's sharing process stays running.
-- Each node executes one task at a time, with up to 30 minutes per turn. Longer work can continue in phases.
-- Tasks run in a separate work copy. Task network access, MCP, app, and browser integrations are disabled in the current execution environment. Work uses the selected files and available local tools.
-- Two-device workflows have been validated on macOS and Windows. See [installation requirements](docs/install.en.md) and [validation records](docs/validation.md) for platform details and test coverage.
-
-## Packaging and development
-
-sub2sub uses Node.js built-ins and has no third-party npm runtime dependencies. Package it from the source repository root:
+## Contribute
 
 ```sh
-npm run package -- /absolute/new/location/sub2sub
-```
-
-The parent directory must exist and the target must be new. Prepare Windows packages on the destination device so they use its actual Node path. The [installation guide](docs/install.en.md) covers installation, updates, and removal.
-
-Development checks on macOS / Linux:
-
-```sh
+npm ci
 npm run check
 npm test
 ```
 
-Windows platform checks:
+[Development and packaging](docs/development.md) · [Architecture](docs/architecture.md) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
-```powershell
-node --test test/platform.test.mjs
-```
-
-Read the [architecture notes](docs/architecture.md) for the module layout and the [contribution guide](CONTRIBUTING.md) before submitting changes. For bug reports, include reproduction steps, platform, and versions. Remove invitations and personal configuration first.
-
-[Usage](docs/usage.en.md) · [Troubleshooting](docs/troubleshooting.en.md) · [Changelog](CHANGELOG.md) · [Issues](https://github.com/mekoand/sub2sub/issues)
+Check [troubleshooting](docs/troubleshooting.en.md), or open an [issue](https://github.com/mekoand/sub2sub/issues) with your system, version, and reproduction steps.
 
 [MIT](LICENSE) © 2026 mekoand

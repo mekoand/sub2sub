@@ -10,7 +10,7 @@
 
 ## Local checks
 
-The runtime has no third-party npm dependencies. Use Node.js22+.
+Use Node.js 22+ and run `npm ci` before testing. The runtime includes `selfsigned` for certificate generation.
 
 ```sh
 # macOS / Linux

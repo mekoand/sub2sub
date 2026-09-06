@@ -8,11 +8,20 @@
 
 | 环境 | 已验证 | 尚不能承诺 |
 | --- | --- | --- |
-| macOS | 源码回归、原生插件运行、Mac到Mac的LAN配对/执行/回传/续做/清理 | 所有Codex版本与所有网络拓扑 |
-| Windows | Node24原生平台回归，OpenSSL身份生成与复用，Windows提供方及Mac到Windows生命周期 | 完整自动套件在Windows全部通过、SSH系统会话与浏览器能力一致 |
+| macOS | 源码回归、原生插件安装、Codex CLI 实际任务、Mac到Mac的LAN配对/执行/回传/续做/清理 | Intel Mac 实机安装、所有Codex版本与所有网络拓扑 |
+| Windows | Node24原生平台回归、0.5 原生安装与重复安装、此前Windows提供方及Mac到Windows生命周期 | 完整自动套件在Windows全部通过、Windows CLI 作为发起端的端到端任务 |
 | Linux | 使用Node/POSIX路径的实现 | Linux双机及桌面插件端到端验收尚未完成 |
 
 项目声明Node22+。实机Codex版本主要为0.152.x，使用实验性权限接口；不支持接口时会明确失败。模型以账号实际可用范围为准。
+
+## 0.5.0 安装与 CLI
+
+- macOS 完整源码回归 73 项通过，语法检查通过。Windows CI 单独运行 6 项平台测试；其他 CI 结果以仓库 Actions 记录为准。
+- macOS Apple Silicon 和 Windows x64 使用发行包内的 Node 24.20.0 完成原生插件安装，确认 `sub2sub@sub2sub` 已安装并启用。Windows 已验证同版本重复安装。测试使用独立程序目录和 Codex 配置目录。
+- macOS Codex CLI 使用实际安装的插件，向独立提供方进程派发文件处理任务，再从另一次 CLI 调用继续同一任务。回传文件内容核对通过，最终删除了测试的远端工作文件、记录和原生会话。本次使用本机 TLS 连接；此前双机验证记录见下文。
+- 真实任务中运行随包 Node，完成读取输入、生成 JSON 和回传，核对运行时为 `v24.20.0`。任务只额外获得该 Node 可执行文件的读取权限。
+- 新增测试覆盖安装、重复安装、启动路径刷新、旧来源迁移、安装失败后重试，以及不依赖 PATH 中 OpenSSL 的证书生成和身份复用。Tailscale 地址测试覆盖 `100.64.0.0/10` 及相邻无效范围。
+- Tailscale 实际跨网络配对、任务执行与回传留到后续版本验证。Claude、WorkBuddy 等其他 harness 尚未实测。
 
 ## 0.4.2 Windows修复
 

@@ -5,12 +5,12 @@ description: Share Codex with another device, connect with an invitation, delega
 
 # sub2sub
 
-Keep the user in the current Codex conversation. A paired provider executes using its own Codex subscription. Both Macs use the same LAN and compatible plugin versions.
+Keep the user in the current Codex conversation. A paired provider executes using its own Codex subscription. Both devices use compatible plugin versions and reachable LAN or Tailscale IPv4 addresses. Codex Desktop and Codex CLI use the same plugin tools.
 
 ## Start with intent
 
-- **Getting started:** explain three steps without tools: the provider says “生成邀请码”; the caller pastes it and agrees to the task-file scope; then says “把这个任务交给〈节点名称〉”. The sharing Codex task stays open. New caller defaults are GPT-5.6 Luna / max; a new provider offers all currently available models.
-- **Share / invite:** call `create_pairing` directly. It starts or reuses this machine's sharing process. Return the private, single-use invitation and its ten-minute lifetime. Use `setup_status` only when address selection fails. Pairing does not select a task model.
+- **Getting started:** explain three steps without tools: the provider says “生成邀请码”; the caller pastes it and agrees to the task-file scope; then says “把这个任务交给〈节点名称〉”. The sharing Codex conversation or interactive CLI session stays open. A one-shot `codex exec` exits after its response, so it cannot keep a provider listener alive for later requests. New caller defaults are GPT-5.6 Luna / max; a new provider offers all currently available models.
+- **Share / invite:** call `create_pairing` directly. If the user requests Tailscale, pass the provider's actual Tailscale IPv4 address; use `setup_status` to find it when unknown. It starts or reuses this machine's sharing process. Return the private, single-use invitation and its ten-minute lifetime. Use `setup_status` only when address selection fails. Pairing does not select a task model.
 - **Connect:** explain the consent below, then call `pair_peer` with a memorable name and the user's `allowTaskFiles` decision. Success confirms connectivity; report the peer without another routine check.
 - **View saved results:** call `list_tasks`, identify the task by peer and times, then read/open its local `workCopyDirectory`, `responseFile` and `resultDirectory/changes.json`. Present local file links and the saved text answer together; disclose failed/interrupted execution and any skipped necessary outputs from the saved manifest. This works after remote cleanup or disconnection. Viewing does not call `collect_result`, `task_status`, SSH or another remote access tool. If `deliveryPending=true`, explain that the listed files are the previous save; absent freshness information in older records is unknown.
 - **Settings or status:** read [settings and management](references/settings.md). Keep 使用方 and 提供方 separate; show ordinary settings first and advanced settings only when requested or needed to resolve a concrete limit.

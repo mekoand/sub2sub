@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 import { X509Certificate } from 'node:crypto';
 import https from 'node:https';
+import selfsigned from 'selfsigned';
 import { openMcp } from './helpers/mcp.mjs';
 import { Client, connect } from '../lib/client.mjs';
 import { Config } from '../lib/config.mjs';
@@ -53,7 +54,7 @@ async function interceptPeer(t, root, intercept) {
 test('pairing generates and reuses its identity when the system OpenSSL configuration is missing', async t => {
   const { root, owner, caller, processes } = await setup(t);
   await owner.close();
-  const options = { env: { OPENSSL_CONF: path.join(root, '不存在的 OpenSSL 配置.cnf') } };
+  const options = { env: { PATH: path.dirname(process.execPath), OPENSSL_CONF: path.join(root, '不存在的 OpenSSL 配置.cnf') } };
   const restarted = await openMcp(path.join(root, 'owner.json'), options); processes.push(restarted);
   const invite = await restarted.tool('create_pairing', { address: '127.0.0.1', port: 0 });
   assert.ok(invite.invitation.startsWith('sub2sub:'));
@@ -69,25 +70,17 @@ test('pairing generates and reuses its identity when the system OpenSSL configur
   assert.deepEqual((await fs.readdir(path.join(root, 'owner/sharing'))).filter(n => n.startsWith('identity-')), []);
 });
 
-test('certificate failure reports the selected executable and config and removes temporary state', async t => {
+test('certificate generation failure releases the listener and can be retried', async t => {
   const { root, owner, processes } = await setup(t);
   await owner.close();
-  const bin = path.join(root, '工具 bin'); await fs.mkdir(bin);
-  const executable = path.join(bin, process.platform === 'win32' ? 'openssl.exe' : 'openssl');
-  await fs.writeFile(executable, 'sub2sub-invalid-executable\n', { mode: 0o700 });
-  const failed = await openMcp(path.join(root, 'owner.json'), { env: { PATH: bin } }); processes.push(failed);
-  await assert.rejects(failed.tool('create_pairing', { address: '127.0.0.1', port: 0 }), error => {
-    assert.match(error.message, /Could not create the sharing certificate/);
-    assert.ok(error.message.includes(executable));
-    assert.match(error.message, /Configuration: .*openssl\.cnf.*plugin-managed/);
-    assert.match(error.message, /Command failed|spawn|EINVAL|ENOEXEC/);
-    return true;
-  });
-  assert.equal((await failed.tool('sharing_status')).status, 'stopped');
+  const sharing = new Sharing(new Config(path.join(root, 'owner.json')), path.join(root, 'owner'));
+  processes.push(sharing);
+  const generate = t.mock.method(selfsigned, 'generate', async () => { throw new Error('certificate test failure'); });
+  await assert.rejects(sharing.manage('pair', { address: '127.0.0.1', port: 0 }), /bundled generator: certificate test failure/);
+  assert.equal(sharing.status().status, 'stopped');
   assert.deepEqual(await fs.readdir(path.join(root, 'owner/sharing')), []);
-  await failed.close();
-  const retry = await openMcp(path.join(root, 'owner.json')); processes.push(retry);
-  assert.ok((await retry.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation.startsWith('sub2sub:'));
+  generate.mock.restore();
+  assert.ok((await sharing.manage('pair', { address: '127.0.0.1', port: 0 })).invitation.startsWith('sub2sub:'));
 });
 
 test('caller and provider ordinary settings are separate and persist across plugin processes', async t => {

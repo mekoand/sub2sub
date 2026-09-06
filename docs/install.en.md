@@ -1,157 +1,86 @@
-# Install, update, and uninstall
+# Install, update, and remove
 
-[README](../README.en.md) · [简体中文](install.md) · [Troubleshooting](troubleshooting.en.md)
+[简体中文](install.md) · [Back to README](../README.en.md)
 
-This guide prepares a package from source and installs it through a dedicated local marketplace. Install on both devices. Run the provider from its desktop login session; routine use then happens in Codex conversations.
+Install sub2sub on both computers. The work node signs in with its own Codex account and stays online while working.
 
-## Requirements
+## One-command installation
 
-- Node.js 22+, Git, and Codex supporting native plugins and the required App Server permission APIs.
-- A provider signed into Codex with its own ChatGPT account. OpenSSL must be on PATH for the first sharing identity.
-- Matching sub2sub versions on both devices and direct private IPv4 connectivity.
-- Inbound access to the chosen provider port,47631 by default. Select an appropriate local-network scope when the OS asks.
+Install and sign in to a plugin-capable Codex version first. Packages support Apple Silicon / Intel Macs and Windows x64, and include Node and certificate-generation dependencies.
 
-```sh
-node --version
-codex --version
-openssl version
-```
-
-OpenSSL is needed to create the provider identity; existing identities are reused. Version 0.4.2 supplies its own temporary minimal configuration and does not require `OPENSSL_CONF`. There are no npm dependencies to install.
-
-The normal Codex installation commands persist marketplace and enablement settings. You run these commands in your terminal; do not edit global Codex configuration or approval rules manually. Command syntax follows the [official plugin guide](https://developers.openai.com/plugins/build/plugins) and Codex 0.152.x CLI help.
-
-## 1. Get the source
+macOS, in Terminal:
 
 ```sh
-git clone https://github.com/mekoand/sub2sub.git
-cd sub2sub
+/bin/bash -o pipefail -c 'curl -fsSL https://github.com/mekoand/sub2sub/releases/latest/download/install.sh | /bin/bash'
 ```
 
-Use a **new dedicated directory** for the following steps. If it already exists, choose another name rather than overwriting an existing marketplace or old package.
-
-## 2A. Prepare on macOS
-
-Run from the repository root:
-
-```sh
-sub2sub_market="$HOME/sub2sub-marketplace"
-mkdir "$sub2sub_market"
-mkdir -p "$sub2sub_market/plugins" "$sub2sub_market/.agents/plugins"
-node scripts/package.mjs "$sub2sub_market/plugins/sub2sub"
-cp examples/marketplace.json "$sub2sub_market/.agents/plugins/marketplace.json"
-/bin/sh "$sub2sub_market/plugins/sub2sub/bin/launch.sh" --check
-```
-
-The final package directory must be named `sub2sub`, its parent must exist, and the target itself must not exist. The launcher checks `SUB2SUB_NODE`, bundled application runtimes, Homebrew, and PATH for a working Node 22+ executable.
-
-The check reports actual Node/Codex paths and state information. It does not create an invitation or start sharing. If `codex` is not on PATH, use the application's actual executable path in subsequent commands.
-
-## 2B. Prepare on Windows
-
-Run PowerShell **on the target Windows device**, from the repository root:
+Windows, in the desktop user's PowerShell session:
 
 ```powershell
-$sub2subMarket = Join-Path $HOME 'sub2sub-marketplace'
-New-Item -ItemType Directory -Path $sub2subMarket -ErrorAction Stop
-New-Item -ItemType Directory -Path "$sub2subMarket\plugins", "$sub2subMarket\.agents\plugins" -Force
-node .\scripts\package.mjs "$sub2subMarket\plugins\sub2sub"
-Copy-Item .\examples\marketplace.json "$sub2subMarket\.agents\plugins\marketplace.json"
-node "$sub2subMarket\plugins\sub2sub\scripts\setup-check.mjs"
+irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | iex
 ```
 
-Packaging on Windows writes the **current Node.exe absolute path** to the generated `.mcp.json` and launches `bin/mcp.mjs` directly. It does not require `/bin/sh`. Rebuild and reinstall if Node moves. Do not install the source root's macOS launcher configuration directly, or copy POSIX `npm start` / `npm run check` commands into PowerShell.
+After `Installed sub2sub` appears, open a new Codex conversation. CLI users should restart `codex`. Ask to generate a sub2sub invitation or paste an invitation from the other computer.
 
-The provider needs native `codex.exe`. An npm `.cmd` / `.bat` shim is not a valid direct provider executable. If discovery fails, set the actual native path in sub2sub's own `provider.codexPath` configuration. Paths are device-specific.
+The installer downloads and checks the release, locates Codex, and installs through its native plugin commands. No manual directories, JSON editing, or npm commands are needed. Git is only needed for selecting a whole Git repository; explicitly selecting files or directories works without it.
 
-<details>
-<summary>Native codex.exe not found after an npm install</summary>
+Default program locations:
 
-From the source repository root, run this PowerShell snippet. It searches only npm’s `@openai` directory and, with one candidate, updates sub2sub’s own `provider.codexPath` while preserving other settings. If there are no or multiple candidates, identify the correct binary for this installation first. Stop sharing before this change and restart the plugin afterwards.
+- macOS: `~/.local/share/sub2sub`
+- Windows: `%LOCALAPPDATA%\sub2sub`
 
-```powershell
-$sub2subNpmRoot = (npm.cmd root -g).Trim()
-if ($LASTEXITCODE -ne 0) { throw 'Cannot locate global npm packages.' }
-$sub2subNative = @(Get-ChildItem -LiteralPath (Join-Path $sub2subNpmRoot '@openai') -Recurse -File -Filter codex.exe -ErrorAction Stop)
-$sub2subNative.FullName
-if ($sub2subNative.Count -ne 1) { throw 'Select the native codex.exe for this device; no configuration was changed.' }
-@'
-import os from 'node:os';
-import path from 'node:path';
-import { Config } from './lib/config.mjs';
-const file = process.env.SUB2SUB_CONFIG || path.join(os.homedir(), '.config/sub2sub/config.json');
-await new Config(file).update(config => {
-  config.provider = { ...config.provider, codexPath: process.argv[2] };
-});
-'@ | node --input-type=module - "$($sub2subNative[0].FullName)"
-if ($LASTEXITCODE -ne 0) { throw 'Configuration update failed.' }
-node "$sub2subMarket\plugins\sub2sub\scripts\setup-check.mjs"
-```
+Download archives from [Releases](https://github.com/mekoand/sub2sub/releases). See [development](development.md) for source installation and packaging.
 
-</details>
+## First connection
 
-Cross-platform packaging is available when the target path is known:
+1. Ask the work node to generate a sub2sub invitation. If several network addresses appear, choose one the other device can reach.
+2. Paste the invitation on the calling computer, name the connection, and confirm the file-transfer scope.
+3. Delegate a task using that name. Open the local deliverables, request changes, or finish the task.
+
+Invitations are single-use and expire after 10 minutes. Paired connections can be reused. If the operating system asks for network access, allow the work node to accept connections on the private network you use. The default port is `47631`.
+
+## Using the CLI
+
+Run `codex` after installation and use the same invitation, delegation, and follow-up prompts in the interactive session. Keep the work node's CLI session open: exiting closes the sharing process it hosts. `codex exec` can send tasks, but should not host a work node that needs to stay online.
+
+## Connecting over Tailscale
+
+For computers on different networks, [Tailscale](https://tailscale.com/download) can provide connectivity:
+
+1. Install Tailscale on both devices and join a network where they can reach each other. Teams can invite members or share individual devices.
+2. Find the work node's IPv4 address in Tailscale.
+3. Ask it to generate a sub2sub invitation using that address, for example `100.x.x.x` with the actual address substituted.
+4. Paste the invitation as usual. Keep Tailscale connected and allow the caller to reach the work node's sharing port.
+
+Router port forwarding and Tailscale Funnel are not needed. sub2sub uses the Tailscale IPv4 address; MagicDNS names and IPv6 are not currently accepted. Existing pairings remember their network address. When switching from LAN to Tailscale, save results and close the session hosting the work node. Start sharing in a new session using its Tailscale address, then ask the caller's assistant to update the connection address.
+
+Version 0.5 accepts the usual Tailscale `100.64.0.0/10` range, with automated address-handling tests. Real cross-network pairing and result delivery will be tested in a later release. [Tailscale address documentation](https://tailscale.com/docs/concepts/tailscale-ip-addresses)
+
+## Update
+
+Finish or cancel active work and save its results, then run the installation command again. The installer refreshes cached plugin files and startup paths while keeping pairings, certificates, and task data. Older program versions remain available; existing sessions are not forcibly terminated. Start new conversations on both devices after updating.
+
+The installer uses the plugin ID `sub2sub@sub2sub`. After confirming the new installation is enabled, it removes older sub2sub installations from other sources to prevent duplicate loading. Other plugins and old marketplace catalogs remain unchanged.
+
+Set `SUB2SUB_VERSION` before running the same command to select a published version that includes installer assets. Check release notes before downgrading across major versions so older code does not operate on incompatible task data.
+
+## Installation problems
+
+- **Download failed:** check access to GitHub Releases, then run the command again.
+- **Codex not found:** open and sign in to Codex first. For custom locations, set `SUB2SUB_CODEX` to the native executable's absolute path. Windows requires `codex.exe`, not a `.cmd` or `.bat` launcher.
+- **Installed but no tools:** start a new conversation or restart the CLI. `codex plugin list` should show `sub2sub@sub2sub` installed and enabled.
+- **Windows SSH cannot access the desktop package:** install and run from the desktop user's PowerShell. SSH system sessions can have different app access and sandbox behavior.
+
+Use `SUB2SUB_INSTALL_DIR` for a custom program directory and keep using it for updates. See [troubleshooting](troubleshooting.en.md) for other errors.
+
+## Stop or remove
+
+Ask to stop sub2sub sharing to stop accepting new tasks while allowing existing work to finish and be collected. Closing the provider process interrupts execution.
+
+Save the results you need, then uninstall in the plugin directory or run:
 
 ```sh
-node scripts/package.mjs /absolute/new/location/sub2sub --windows-node 'C:\Program Files\nodejs\node.exe'
+codex plugin remove sub2sub@sub2sub
 ```
 
-That path must match the target computer; it is an example, not a universal installation location.
-
-## 3. Register and install
-
-macOS:
-
-```sh
-codex plugin marketplace add "$sub2sub_market"
-codex plugin add sub2sub@sub2sub-local
-```
-
-Windows PowerShell:
-
-```powershell
-codex plugin marketplace add "$sub2subMarket"
-codex plugin add sub2sub@sub2sub-local
-```
-
-Alternatively, register the marketplace, restart the desktop app, select **sub2sub Local** in the plugin directory, and install. Update Codex first if these commands or required permission APIs are unavailable.
-
-The example's `./plugins/sub2sub` path is relative to the marketplace root, not `.agents/plugins/`. It registers a dedicated catalog without replacing your existing personal plugin list.
-
-```sh
-codex plugin list
-```
-
-Confirm installation and enablement, then start a **new Codex conversation**. Editing source files or a package does not update an already-running plugin process.
-
-## 4. Pair and try a task
-
-1. Ask the provider to generate a sub2sub invitation. Select a reachable LAN address if multiple interfaces exist.
-2. Share it privately; the caller pastes it and names the connection. Invitations expire after 10 minutes and work once.
-3. Confirm the task-file scope, delegate a small task, and verify a successful local save.
-4. Continue the same delegated task for follow-ups; pairing is not repeated each turn.
-
-Start a Windows provider from the desktop login session. In the tested environment, the SSH system session could not initialize the native sandbox while the same program worked in the desktop session. This observation is not a claim about every Windows setup.
-
-## Update and roll back
-
-1. Finish or cancel active work, collect necessary results, and complete pending save confirmations.
-2. Stop accepting new tasks; keep the old package and local results.
-3. Prepare the target version in a new directory, check it, and update through Codex's plugin installation flow on both devices.
-4. Start new conversations, verify the loaded version and tools, then resume sharing.
-
-Versions 0.4.x use complete local copies and incremental synchronization. Old tasks do not retroactively receive the seven-day retention policy. When rolling back to 0.3, use a separate sub2sub state directory rather than having old code interpret new synchronization records.
-
-Pairing, certificates, and task state live in sub2sub's own directories, not the package. Do not remove them as an update step. Adjust changed marketplace paths through Codex marketplace management instead of replacing global configuration files.
-
-## Stop and uninstall
-
-Stopping sharing rejects new work while allowing the current task to finish and results to be collected. Exiting the hosting process interrupts execution. Restart sharing to reuse existing pairings.
-
-After execution stops and necessary results are saved, uninstall through the plugin directory or:
-
-```sh
-codex plugin remove sub2sub@sub2sub-local
-```
-
-Uninstalling code does not delete task data, native history, or local results. Apply the intended [cleanup choice](usage.en.md#task-lifecycle) before uninstalling.
+Uninstalling the plugin does not delete saved results. Use the [cleanup options](usage.en.md#task-lifecycle) for tasks and native history. To reclaim old program storage, close sessions using those versions and remove their subdirectories under `versions`, keeping the currently installed version.

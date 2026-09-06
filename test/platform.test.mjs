@@ -78,3 +78,36 @@ test('process locks recover an exited owner and remain exclusive', async t => {
   finally { await release(); }
   assert.deepEqual(await fs.readdir(root), []);
 });
+
+test('sharing accepts the Tailscale IPv4 range and rejects adjacent public addresses', async t => {
+  const https = (await import('node:https')).default;
+  const { lanRequest } = await import('../lib/lan.mjs');
+  t.mock.method(https, 'request', options => { throw new Error(`network boundary: ${options.hostname}`); });
+  const peer = { port: 47631, fingerprint: 'A'.repeat(64) };
+  for (const host of ['100.64.0.1', '100.127.255.254', '192.168.1.1']) {
+    await assert.rejects(async () => lanRequest({ ...peer, host }, '/pair', {}), new RegExp(`network boundary: ${host.replaceAll('.', '\\.')}`));
+  }
+  for (const host of ['100.63.255.255', '100.128.0.1', '8.8.8.8', 'example.com']) {
+    await assert.rejects(async () => lanRequest({ ...peer, host }, '/pair', {}), /LAN or Tailscale/);
+  }
+});
+
+test('bundled certificate generation and identity reuse need no external executable', async t => {
+  const { Config } = await import('../lib/config.mjs');
+  const { Sharing } = await import('../lib/lan.mjs');
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'sub2sub certificate-'));
+  const config = new Config(path.join(root, 'config.json'));
+  await config.update(value => { value.provider = { codexPath: process.execPath }; });
+  const sharing = new Sharing(config, root);
+  const previousPath = process.env.PATH;
+  let restored;
+  t.after(async () => { process.env.PATH = previousPath; if (restored) await restored.close(); await sharing.close(); await fs.rm(root, { recursive: true, force: true }); });
+  process.env.PATH = root;
+  const first = await sharing.manage('pair', { address: '127.0.0.1', port: 0 });
+  assert.ok(first.invitation.startsWith('sub2sub:'));
+  const identity = await fs.readFile(path.join(root, 'sharing/identity.json'), 'utf8');
+  await sharing.close();
+  restored = new Sharing(config, root);
+  await restored.manage('pair');
+  assert.equal(await fs.readFile(path.join(root, 'sharing/identity.json'), 'utf8'), identity);
+});
