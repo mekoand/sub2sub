@@ -1,0 +1,23 @@
+{
+  "name": "sub2sub",
+  "version": "0.4.3",
+  "description": "Delegate Codex tasks across devices, manage caller/provider settings, synchronize results, and clean or restore work copies.",
+  "author": {
+    "name": "mekoand"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "sub2sub",
+    "shortDescription": "用另一台电脑的 Codex 完成任务",
+    "longDescription": "双方安装并通过局域网邀请配对，即可在 Codex 对话中委托、追问和取回成果。使用方设置默认模型与思考强度，提供方选择开放模型。阶段成果增量回传，本地保留完整任务副本；明确结束或闲置到期且成果已保存后清理远端工作文件，之后可恢复续作。支持节点查询、连接管理和单任务清理。",
+    "developerName": "mekoand",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": [
+      "生成邀请码，让另一台电脑使用我的 Codex。",
+      "我收到了邀请码，帮我连接并开始使用。",
+      "用 sub2sub 把这个任务交给已连接的电脑。"
+    ]
+  },
+  "mcpServers": "./.mcp.json"
+}

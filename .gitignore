@@ -1,0 +1,8 @@
+.sub2sub/
+.scratch/
+node_modules/
+coverage/
+.DS_Store
+.env
+.env.*
+!.env.example

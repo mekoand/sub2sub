@@ -1,0 +1,21 @@
+{
+  "name": "sub2sub",
+  "version": "0.4.3",
+  "private": true,
+  "description": "Delegate Codex work across LAN devices, continue the same task, and save complete results locally.",
+  "license": "MIT",
+  "author": "mekoand",
+  "repository": { "type": "git", "url": "https://github.com/mekoand/sub2sub.git" },
+  "bugs": { "url": "https://github.com/mekoand/sub2sub/issues" },
+  "homepage": "https://github.com/mekoand/sub2sub#readme",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "package": "node scripts/package.mjs",
+    "test": "node --test test/*.test.mjs",
+    "start": "/bin/sh bin/launch.sh",
+    "check": "node --check bin/mcp.mjs && node --check lib/client.mjs && node --check lib/provider.mjs && node --check lib/codex.mjs && node --check lib/codex-history.mjs && node --check lib/files.mjs && node --check lib/config.mjs && node --check lib/models.mjs && node --check lib/limits.mjs && node --check lib/sync.mjs && node --check lib/lan.mjs && node --check lib/lock.mjs && node --check scripts/package.mjs && node --check scripts/setup-check.mjs && node --check scripts/cleanup-smoke.mjs && node --check scripts/lifecycle-smoke.mjs && /bin/sh -n bin/launch.sh"
+  }
+}

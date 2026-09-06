@@ -1,0 +1,12 @@
+{
+  "name": "sub2sub-local",
+  "interface": { "displayName": "sub2sub Local" },
+  "plugins": [
+    {
+      "name": "sub2sub",
+      "source": { "source": "local", "path": "./plugins/sub2sub" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Productivity"
+    }
+  ]
+}
