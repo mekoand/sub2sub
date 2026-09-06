@@ -4,6 +4,7 @@
 
 ## Before changing code
 
+- Track new requirements and work in [GitHub Issues](https://github.com/mekoand/sub2sub/issues), following the [issue workflow](https://github.com/mekoand/sub2sub/blob/main/docs/agents/issue-tracker.md). Keep small changes in one issue and link implementation PRs to it.
 - Describe the concrete problem and expected behavior. Discuss changes to pairing, permissions, cleanup, or persisted data before a broad implementation.
 - Read [the architecture](docs/architecture.md) and [usage and execution limits](docs/usage.en.md#delegate-and-follow-up).
 - Never include invitations, credentials, real task state, personal paths, or private project content in a contribution. Use synthetic fixtures.
