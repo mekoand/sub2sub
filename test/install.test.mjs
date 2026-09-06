@@ -126,6 +126,9 @@ fs.writeFileSync(file, JSON.stringify(data)); console.log(JSON.stringify(args[1]
   assert.equal(mcp.mcpServers.sub2sub.env, undefined);
   await fs.access(path.join(adapter, 'skills/sub2sub/references/work-copy.md'));
   await fs.access(path.join(adapter, 'docs/install.md'));
+  await fs.access(path.join(adapter, 'README.md'));
+  await fs.access(path.join(adapter, 'README.zh-CN.md'));
+  await fs.access(path.join(adapter, 'CONTRIBUTING.md'));
   assert.equal(await fs.readFile(path.join(root, 'versions/0.5.3/plugins/sub2sub/.mcp.json'), 'utf8'), coreMcp);
   assert.equal(await fs.readFile(path.join(root, '.agents/plugins/marketplace.json'), 'utf8'), codexMarketplace);
   await promisify(execFile)(process.execPath, [fileURLToPath(new URL('../scripts/install.mjs', import.meta.url)), payload, root, 'claude']);

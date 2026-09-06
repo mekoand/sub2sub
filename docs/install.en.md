@@ -91,7 +91,7 @@ Set `SUB2SUB_VERSION` before running the same command to select a published vers
 - **Download failed:** check access to GitHub Releases, then run the command again.
 - **Codex not found:** open and sign in to Codex first. For custom locations, set `SUB2SUB_CODEX` to the native executable's absolute path. Windows requires `codex.exe`, not a `.cmd` or `.bat` launcher.
 - **Claude not found:** restart your terminal after installing the native Claude Code CLI. For a custom location, set `SUB2SUB_CLAUDE` to the executable's absolute path; Windows requires `claude.exe`.
-- **Installed but no tools:** start a new conversation or restart the CLI. `codex plugin list` should show `sub2sub@sub2sub` installed and enabled.
+- **Installed but no tools:** start a new conversation or restart the CLI. Run `codex plugin list` or `claude plugin list` for the host you use; it should show `sub2sub@sub2sub` installed and enabled.
 - **Windows SSH cannot access the desktop package:** install and run from the desktop user's PowerShell. SSH system sessions can have different app access and sandbox behavior.
 
 Use `SUB2SUB_INSTALL_DIR` for a custom program directory and keep using it for updates. See [troubleshooting](troubleshooting.en.md) for other errors.

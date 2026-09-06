@@ -31,3 +31,10 @@ jobs:
           node-version: 24
       - run: npm ci --ignore-scripts
       - run: node --test test/platform.test.mjs
+      - name: Parse PowerShell installer
+        shell: pwsh
+        run: |
+          $parseErrors = $null
+          $tokens = $null
+          [System.Management.Automation.Language.Parser]::ParseFile("$PWD/install.ps1", [ref]$tokens, [ref]$parseErrors) | Out-Null
+          if ($parseErrors.Count) { throw ($parseErrors | Out-String) }

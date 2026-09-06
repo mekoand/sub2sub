@@ -81,7 +81,7 @@ async function installClaude(payload, root, release, run, log) {
     const { destination, node, plugin } = await prepareRelease(payload, root, release);
     const adapter = path.join(destination, 'claude/sub2sub');
     await fs.mkdir(path.join(adapter, '.claude-plugin'), { recursive: true });
-    for (const name of ['skills', 'docs', 'LICENSE']) await fs.cp(path.join(plugin, name), path.join(adapter, name), { recursive: true });
+    for (const name of ['skills', 'docs', 'README.md', 'README.zh-CN.md', 'README.en.md', 'CHANGELOG.md', 'CONTRIBUTING.md', 'LICENSE']) await fs.cp(path.join(plugin, name), path.join(adapter, name), { recursive: true });
     const version = `${release.version}+claude.${Date.now()}`;
     await fs.writeFile(path.join(adapter, '.claude-plugin/plugin.json'), JSON.stringify({ name: 'sub2sub', version, description: 'Delegate tasks to Codex nodes and receive complete results locally.', license: 'MIT' }, null, 2) + '\n');
     await fs.writeFile(path.join(adapter, '.mcp.json'), JSON.stringify({ mcpServers: { sub2sub: { command: node, args: [path.join(plugin, 'bin/mcp.mjs')], timeout: 1900000 } } }, null, 2) + '\n');

@@ -91,7 +91,7 @@ Windows PowerShell：
 - **下载失败：**确认当前网络可访问 GitHub Releases，再次运行安装命令。
 - **找不到 Codex：**先打开并登录 Codex。特殊安装位置可设置 `SUB2SUB_CODEX` 为原生可执行文件的绝对路径，再重试；Windows 需要 `codex.exe`，不能填写 `.cmd` / `.bat`。
 - **找不到 Claude：**安装原生 Claude Code CLI 后重新打开终端。特殊位置可用 `SUB2SUB_CLAUDE` 指定可执行文件的绝对路径；Windows 需要 `claude.exe`。
-- **安装成功但没有工具：**开启新对话或重启 CLI，通过 `codex plugin list` 检查 `sub2sub@sub2sub` 是否安装并启用。
+- **安装成功但没有工具：**开启新对话或重启 CLI。在当前使用的工具中运行 `codex plugin list` 或 `claude plugin list`，检查 `sub2sub@sub2sub` 是否安装并启用。
 - **Windows SSH 环境拒绝访问桌面包：**在桌面用户的 PowerShell 中安装与运行。SSH 系统会话与桌面会话的应用权限、沙箱行为可能不同。
 
 可用 `SUB2SUB_INSTALL_DIR` 指定程序目录；更新时沿用同一目录。更多诊断见[故障排查](troubleshooting.md)。
