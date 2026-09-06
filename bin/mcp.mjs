@@ -69,7 +69,7 @@ lines.on('line', async line => {
     if (message.id === undefined) return;
     if (message.method === 'initialize') {
       initialized = true;
-      send({ id: message.id, result: { protocolVersion: '2024-11-05', capabilities: { tools: {} }, serverInfo: { name: 'sub2sub', version: '0.5.0' } } });
+      send({ id: message.id, result: { protocolVersion: '2024-11-05', capabilities: { tools: {} }, serverInfo: { name: 'sub2sub', version: '0.5.1' } } });
       return;
     }
     if (!initialized) throw new Error('Initialize the MCP connection first.');

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1 — 2026-09-06
+
+- Fix the installer entry point when macOS launches it through a temporary-directory alias.
+- Wait for the actual MCP response in the first-use test before closing its client.
 
 ## 0.5.0 — 2026-09-06
 

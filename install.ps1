@@ -4,7 +4,7 @@
     $ProgressPreference = 'SilentlyContinue'
     $architecture = if ($env:PROCESSOR_ARCHITEW6432) { $env:PROCESSOR_ARCHITEW6432 } else { $env:PROCESSOR_ARCHITECTURE }
     if ($architecture -ne 'AMD64') { throw 'This release supports Windows x64.' }
-    $version = if ($env:SUB2SUB_VERSION) { $env:SUB2SUB_VERSION } else { '0.5.0' }
+    $version = if ($env:SUB2SUB_VERSION) { $env:SUB2SUB_VERSION } else { '0.5.1' }
     if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'Invalid SUB2SUB_VERSION.' }
     $base = "https://github.com/mekoand/sub2sub/releases/download/v$version"
     $asset = 'sub2sub-win32-x64.zip'

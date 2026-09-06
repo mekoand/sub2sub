@@ -125,7 +125,7 @@ export async function install(payload, root, log = console.log) {
   } finally { await unlock(); }
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (process.argv[1] && await fs.realpath(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     if (process.argv.length !== 4) throw new Error('Usage: node install.mjs <extracted-release> <installation-directory>');
     await install(process.argv[2], process.argv[3]);

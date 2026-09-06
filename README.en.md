@@ -12,7 +12,7 @@
 Task delegation for teams and people who work across computers.
 
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.5.0-6366f1)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.5.1-6366f1)](CHANGELOG.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 [简体中文](README.md) · **English** · [Install](docs/install.en.md)
