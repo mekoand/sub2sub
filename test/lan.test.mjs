@@ -10,6 +10,7 @@ import https from 'node:https';
 import { openMcp } from './helpers/mcp.mjs';
 import { Client, connect } from '../lib/client.mjs';
 import { Config } from '../lib/config.mjs';
+import { Sharing } from '../lib/lan.mjs';
 
 async function setup(t, { clock = false } = {}) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'sub2sub-lan-test-'));
@@ -757,13 +758,54 @@ test('malformed configuration reports its error and becomes usable after repair'
   assert.deepEqual((await client.tool('list_peers')).peers, []);
 });
 
+test('later sharing controls win while an earlier request discovers the listener', async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'sub2sub-start-order-'));
+  const store = new Config(path.join(root, 'config.json'));
+  await store.update(config => { config.provider = { codexPath: fileURLToPath(new URL('./fixtures/fake-codex.mjs', import.meta.url)) }; });
+  const sharing = new Sharing(store, root);
+  t.after(async () => { await sharing.close(); await fs.rm(root, { recursive: true, force: true }); });
+  for (const [first, last] of [['start', 'stop'], ['pair', 'stop'], ['stop', 'start']]) {
+    let releaseLookup;
+    const lookup = new Promise(resolve => { releaseLookup = resolve; });
+    let calls = 0;
+    const mock = t.mock.method(sharing, 'runtime', () => ++calls === 1 ? lookup : Promise.resolve(null));
+    const earlier = sharing.manage(first, { address: '127.0.0.1', port: 0 });
+    try { await sharing.manage(last, { address: '127.0.0.1', port: 0 }); }
+    finally { releaseLookup(null); }
+    if (first === 'pair') await assert.rejects(earlier, /superseded/);
+    else await earlier;
+    assert.equal(sharing.status().status, last === 'start' ? 'sharing' : 'stopped');
+    mock.mock.restore();
+  }
+  assert.ok((await sharing.manage('pair')).invitation.startsWith('sub2sub:'));
+});
+
+test('a second plugin does not forward sharing controls superseded during discovery', async t => {
+  const { root, owner } = await setup(t);
+  await owner.tool('start_sharing', { address: '127.0.0.1', port: 0 });
+  const observer = new Sharing(new Config(path.join(root, 'owner.json')), path.join(root, 'owner'));
+  const runtime = await observer.runtime();
+  for (const [first, last] of [['start', 'stop'], ['stop', 'start']]) {
+    let releaseLookup;
+    const lookup = new Promise(resolve => { releaseLookup = resolve; });
+    let calls = 0;
+    const mock = t.mock.method(observer, 'runtime', () => ++calls === 1 ? lookup : Promise.resolve(runtime));
+    const earlier = observer.manage(first);
+    try { await observer.manage(last); }
+    finally { releaseLookup(runtime); }
+    await earlier;
+    assert.equal((await owner.tool('sharing_status')).status, last === 'start' ? 'sharing' : 'stopped');
+    mock.mock.restore();
+  }
+});
+
 test('stopping sharing during startup remains stopped when initialization completes', async t => {
   const { owner } = await setup(t);
   const starting = owner.tool('start_sharing', { address: '127.0.0.1', port: 0 });
   assert.equal((await owner.tool('stop_sharing')).status, 'stopped');
   await starting;
   assert.equal((await owner.tool('sharing_status')).status, 'stopped');
-  const invitation = await owner.tool('create_pairing');
+  const invitation = await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 });
   assert.ok(invitation.invitation.startsWith('sub2sub:'), 'An explicit new invitation request enables sharing again.');
 });
 

@@ -11,6 +11,7 @@
 
 Pair devices over your local network. Continue the same task. Bring complete results home.
 
+[![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-0.4.3-6366f1)](CHANGELOG.md)
 [![Node.js](https://img.shields.io/badge/Node.js-22%2B-43853d)](https://nodejs.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)

@@ -2,6 +2,7 @@
 
 ## 0.4.3 — 2026-09-06
 
+- Preserve the order of sharing controls while discovering an existing listener; a delayed start cannot override a later stop.
 - Prevent task-record and full cleanup from deleting changes made after the last confirmed local save.
 - Separate Codex progress messages from the final delivered answer, preserving models with unspecified message phases.
 - Add Chinese and English documentation, a text wordmark, MIT licensing, and source installation examples.

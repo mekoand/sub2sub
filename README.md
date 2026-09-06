@@ -7,10 +7,12 @@
   </picture>
 </h1>
 
-**在当前对话中，让另一台电脑的 Codex 完成工作。**
+**让另一台电脑的 Codex 为你工作。**
 
-通过局域网邀请连接设备，委托任务、延续上下文，并把完整成果带回本地。
+连接设备，委托任务，持续追加修改。<br>
+完整成果保存回本地。
 
+[![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-0.4.3-6366f1)](CHANGELOG.md)
 [![Node.js](https://img.shields.io/badge/Node.js-22%2B-43853d)](https://nodejs.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
