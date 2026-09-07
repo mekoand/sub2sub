@@ -18,7 +18,7 @@ async function readOptional(file) {
 }
 
 async function findCodex(config) {
-  try { return await codexExecutable(config); }
+  try { return await codexExecutable(process.env.SUB2SUB_CODEX ? {} : config); }
   catch (error) {
     if (process.platform !== 'win32' || config.provider?.codexPath || process.env.SUB2SUB_CODEX) throw error;
   }
@@ -67,7 +67,7 @@ async function prepareRelease(payload, root, release) {
   return { destination, node: path.join(destination, 'runtime', process.platform === 'win32' ? 'node.exe' : 'bin/node'), plugin: path.join(destination, 'plugins/sub2sub') };
 }
 
-async function installClaude(payload, root, release, run, log) {
+async function installClaude(payload, root, release, run, log, executable) {
   await run(['plugin', 'install', '--help']);
   await fs.mkdir(root, { recursive: true });
   const unlock = await processLock(path.join(root, 'install'));
@@ -85,7 +85,7 @@ async function installClaude(payload, root, release, run, log) {
     for (const name of ['skills', 'docs', 'README.md', 'README.zh-CN.md', 'README.en.md', 'CHANGELOG.md', 'CONTRIBUTING.md', 'LICENSE']) await fs.cp(path.join(plugin, name), path.join(adapter, name), { recursive: true });
     const version = `${release.version}+claude.${Date.now()}`;
     await fs.writeFile(path.join(adapter, '.claude-plugin/plugin.json'), JSON.stringify({ name: 'sub2sub', version, description: 'Delegate tasks to shared nodes and receive complete results locally.', license: 'MIT' }, null, 2) + '\n');
-    await fs.writeFile(path.join(adapter, '.mcp.json'), JSON.stringify({ mcpServers: { sub2sub: { command: node, args: [path.join(plugin, 'bin/mcp.mjs')], timeout: 1900000 } } }, null, 2) + '\n');
+    await fs.writeFile(path.join(adapter, '.mcp.json'), JSON.stringify({ mcpServers: { sub2sub: { command: node, args: [path.join(plugin, 'bin/mcp.mjs')], env: { SUB2SUB_INSTALL_HOST: 'claude', SUB2SUB_INSTALL_DIR: root, SUB2SUB_CLAUDE: executable }, timeout: 1900000 } } }, null, 2) + '\n');
     await fs.mkdir(path.dirname(marketplaceFile), { recursive: true });
     await fs.writeFile(marketplaceFile, JSON.stringify({ name: marketplaceName, owner: { name: 'mekoand' }, plugins: [{ name: 'sub2sub', source: `./versions/${release.version}/claude/sub2sub` }] }, null, 2) + '\n');
     try {
@@ -124,7 +124,7 @@ export async function install(payload, root, log = console.log, target = 'codex'
     try { return (await exec(executable, args, { windowsHide: true, timeout: 120000, maxBuffer: 8 * 1024 * 1024 })).stdout; }
     catch (error) { throw new Error(`${target} ${args.join(' ')} failed: ${error.stderr || error.message}`, { cause: error }); }
   };
-  if (target === 'claude') return installClaude(payload, root, release, run, log);
+  if (target === 'claude') return installClaude(payload, root, release, run, log, executable);
   await run(['plugin', 'add', '--help']);
   await fs.mkdir(root, { recursive: true });
   const unlock = await processLock(path.join(root, 'install'));
@@ -140,7 +140,7 @@ export async function install(payload, root, log = console.log, target = 'codex'
     const { destination, node, plugin } = await prepareRelease(payload, root, release);
     const manifestFile = path.join(plugin, '.mcp.json');
     const manifest = await json(manifestFile);
-    Object.assign(manifest.mcpServers.sub2sub, { command: node, args: ['./bin/mcp.mjs'], env: { SUB2SUB_CODEX: executable } });
+    Object.assign(manifest.mcpServers.sub2sub, { command: node, args: ['./bin/mcp.mjs'], env: { SUB2SUB_CODEX: executable, SUB2SUB_INSTALL_HOST: 'codex', SUB2SUB_INSTALL_DIR: root } });
     manifest.mcpServers.sub2sub.env_vars = [...new Set([...manifest.mcpServers.sub2sub.env_vars, 'USERPROFILE', 'SystemRoot', 'LOCALAPPDATA', 'APPDATA', 'TEMP', 'TMP'])];
     await fs.writeFile(manifestFile, JSON.stringify(manifest, null, 2) + '\n');
     // Refresh Codex's cached startup paths even when reinstalling the same release.

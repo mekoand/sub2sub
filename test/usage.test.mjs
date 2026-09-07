@@ -21,6 +21,7 @@ test('quota uses the execution node account, reads fresh windows, and never star
   const owner = await openMcp(config, { env: { SUB2SUB_TEST_QUOTA: quotaFile, SUB2SUB_TEST_READ_CALLS: callsFile } });
   const observer = await openMcp(config, { env: { SUB2SUB_TEST_QUOTA: path.join(root, 'wrong-account') } });
   const caller = await openMcp(callerConfig);
+  await caller.tool('onboarding', { action: 'confirm' });
   t.after(async () => {
     await Promise.all([owner.close(), observer.close(), caller.close()]);
     await stopTestSharing(path.join(root, 'owner'));

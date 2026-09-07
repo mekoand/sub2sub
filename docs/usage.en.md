@@ -10,6 +10,14 @@ Pair with the provider's invitation and give the connection a name. Confirm task
 
 Keep invitations private. Do not publish them in issues, documentation, or screenshots.
 
+## First use
+
+On a new device, the assistant first explains and shows all current settings, including when you have already given it a task. The summary covers caller defaults for Codex and Claude, the provider's execution tool and model restrictions, input/result limits for both roles, retention and cleanup conditions, device name and advanced paths, existing connections and transfer consent, authorized callers, and current sharing state. Review it and confirm before connecting, sharing or delegating; the assistant then continues your original request.
+
+Ask to change any setting before confirming. Unset Claude choices stay unset, and default models are not claimed to be available until the connected node's live catalog is checked. Reviewing the guide works without a local execution tool and does not start sharing or run a model. Approving settings does not authorize sending task files.
+
+Confirmation and explicit skipping are remembered. An interrupted guide resumes with your saved settings; ask to reopen first-use settings whenever needed. Existing configurations, connections or task/sharing records are recognized on upgrade, preserving settings without forcing another introduction. Later ordinary settings queries remain concise; ask for advanced settings when needed.
+
 ## Delegate and follow up
 
 Each turn can run for up to 30 minutes; longer work can continue in phases. Tasks run in a separate work copy with task network access, MCP, app, and browser integrations disabled. Prepare the required inputs and local tools before delegating.

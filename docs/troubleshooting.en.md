@@ -23,7 +23,7 @@ Check both peers' plugin, Node, and selected execution tool versions and actual 
 | Cannot switch execution tool | Finish or cancel the active turn first. Retained tasks need their original tool selected before continuation |
 | Claude quota shows unsupported | Claude quota is not available in this version; no Codex balance is substituted |
 | Browser not found | Inspect standard installation locations as well as PATH; installed does not mean callable in the sandbox |
-| New version not loaded | Compare running and installed versions in sharing status. When idle, exit the node and start sharing from the updated plugin; a new conversation alone does not replace the node |
+| New version not loaded | Check sub2sub updates to distinguish session, actual host installation and node versions. Open a new session, then exit/start an independent node when idle. For 0.5.3, save work and end the old provider conversation first; see the installation guide |
 
 ## Execution failure versus delivery failure
 

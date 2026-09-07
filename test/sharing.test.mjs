@@ -98,9 +98,10 @@ test('new management reports the existing node version and only loads new code a
   const started = await before.tool('start_sharing', { address: '127.0.0.1', port: 0 });
   await before.close();
   const observed = await current.tool('sharing_status');
-  assert.equal(observed.version, '0.0.0-previous'); assert.notEqual(observed.installedVersion, observed.version);
+  assert.equal(observed.version, '0.0.0-previous'); assert.notEqual(observed.sessionVersion, observed.version);
+  assert.equal(observed.installedVersion, undefined, 'a management session does not establish the installed host version');
   assert.equal((await current.tool('start_sharing')).ownerPid, started.ownerPid);
   await current.tool('exit_sharing');
   const restarted = await current.tool('start_sharing');
-  assert.equal(restarted.version, observed.installedVersion); assert.equal(restarted.fingerprint, started.fingerprint);
+  assert.equal(restarted.version, observed.sessionVersion); assert.equal(restarted.fingerprint, started.fingerprint);
 });

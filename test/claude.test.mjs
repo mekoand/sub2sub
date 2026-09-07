@@ -38,6 +38,7 @@ test('provider switches tools independently, offers per-tool defaults, and refus
   const callerFile = path.join(root, 'caller.json');
   await fs.writeFile(callerFile, JSON.stringify({ stateRoot: path.join(root, 'caller') }));
   const caller = await openMcp(callerFile); t.after(() => caller.close());
+  await caller.tool('onboarding', { action: 'confirm' });
   const paired = await caller.tool('pair_peer', { invitation: (await manager.tool('create_pairing')).invitation, peer: 'worker', allowTaskFiles: true });
   assert.equal(paired.harness, 'claude'); assert.equal(paired.model, null);
   await fs.writeFile(path.join(root, 'input.txt'), 'fixture input');
@@ -98,6 +99,7 @@ for (const stopping of ['cancel', 'deadline', 'background-deadline']) test(`Clau
   const caller = await openMcp(callerFile);
   await caller.tool('caller_settings', { harness: 'claude', model: 'sonnet', reasoningEffort: 'low' });
   t.after(async () => { await owner.close(); await caller.close(); await stopTestSharing(path.join(root, 'owner')); await fs.rm(root, { recursive: true, force: true }); });
+  await caller.tool('onboarding', { action: 'confirm' });
   const paired = await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'worker', allowTaskFiles: true });
   await fs.writeFile(path.join(root, 'input.txt'), 'stage fixture');
   const copy = await caller.tool('prepare_work_copy', { workspace: root, paths: ['input.txt'] });
