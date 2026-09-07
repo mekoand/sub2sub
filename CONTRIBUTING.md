@@ -11,7 +11,7 @@
 
 ## Local checks
 
-Use Node.js 22+ and run `npm ci` before testing. The runtime includes `selfsigned` for certificate generation.
+Use Node.js 22+ and run `npm ci --omit=optional --ignore-scripts` before testing. The runtime includes certificate generation and the Claude Agent SDK; the provider uses its installed native Claude CLI, so SDK-bundled native binaries are not needed.
 
 ```sh
 # macOS / Linux

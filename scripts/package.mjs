@@ -9,7 +9,9 @@ if (!target || !path.isAbsolute(target) || path.basename(target) !== 'sub2sub' |
 if (windowsNode && (!path.win32.isAbsolute(windowsNode) || !/\.exe$/i.test(windowsNode))) throw new Error('--windows-node must be the absolute Windows Node.js executable path.');
 await fs.mkdir(target, { recursive: false, mode: 0o700 });
 for (const name of ['.codex-plugin', '.mcp.json', 'package.json', 'package-lock.json', 'node_modules', 'README.md', 'README.zh-CN.md', 'README.en.md', 'LICENSE', 'CHANGELOG.md', 'CONTRIBUTING.md', 'config.example.json', 'bin', 'lib', 'skills']) {
-  await fs.cp(path.join(root, name), path.join(target, name), { recursive: true, errorOnExist: true, force: false });
+  await fs.cp(path.join(root, name), path.join(target, name), { recursive: true, errorOnExist: true, force: false,
+    filter: source => !(path.dirname(source) === path.join(root, 'node_modules', '@anthropic-ai') && path.basename(source).startsWith('claude-agent-sdk-'))
+  });
 }
 if (windowsNode) {
   const manifest = JSON.parse(await fs.readFile(path.join(target, '.mcp.json'), 'utf8'));

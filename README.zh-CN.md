@@ -23,13 +23,13 @@
 
 [sub2api](https://github.com/Wei-Shaw/sub2api) 通过 API 网关分配订阅资源，sub2sub 将相近的思路用在完整任务上。工作在选定设备自己的 AI 环境中执行，使用该节点已登录的账号与可用模型。
 
-一台电脑可以连接多个工作节点，每台电脑也可以按需发起或接收任务。节点拥有者决定何时开放、提供哪些模型；使用者决定每项任务交给谁。每个节点同时执行一个任务。
+一台电脑可以连接多个工作节点，每台电脑也可以按需发起或接收任务。节点拥有者决定何时开放、用哪个工具执行、提供哪些模型；可以先查看 Codex 节点的剩余额度，再分配工作。使用者决定每项任务交给谁。每个节点同时执行一个任务。
 
 ## 安装
 
 在需要发起或接收任务的电脑上安装 sub2sub。按需安装，可以随时加入更多设备。
 
-使用 Codex 时，先安装并登录 Codex，再运行对应命令。安装包自带 Node 和证书生成能力。Claude Code 使用者可以选择 [Claude 安装命令](docs/install.md#claude-code)，发起端无需安装 Codex；接收任务的工作节点仍使用 Codex。
+使用 Codex 时，先安装并登录 Codex，再运行对应命令。安装包自带 Node 和证书生成能力。Claude Code 使用者可以选择 [Claude 安装命令](docs/install.md#claude-code)，发起端无需安装 Codex。macOS 工作节点可选择使用 Codex 或 Claude Code。
 
 **macOS · Terminal**
 
@@ -55,7 +55,7 @@ irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | ie
 
 > 连接这个 sub2sub 邀请码，把它叫作「办公室 Mac」。
 
-按提示确认文件传输范围。需要使用其他节点时，分别配对并取一个容易识别的名字。执行任务期间，接收方保持共享会话打开。
+按提示确认文件传输范围。需要使用其他节点时，分别配对并取一个容易识别的名字。开启共享后，节点独立运行，可以关闭管理对话；执行期间保持接收方电脑唤醒并联网。
 
 ## 使用案例：团队文档整理
 
@@ -79,7 +79,7 @@ irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | ie
 
 ## 兼容性
 
-提供 macOS 和 Windows x64 安装包，可选择安装到 Codex 或 Claude Code。任务委托已在 Codex 桌面端及 macOS 的 Codex CLI、Claude Code 中验证。WorkBuddy 尚未实测。[验证详情](docs/validation.md)
+提供 macOS 和 Windows x64 安装包，可选择安装到 Codex 或 Claude Code。Codex 可在两种平台执行任务，Claude 执行目前支持 macOS。任务委托已在 Codex 桌面端及 macOS 的 Codex CLI、Claude Code 中验证。WorkBuddy 尚未实测。[验证详情](docs/validation.md)
 
 ## 开发
 

@@ -19,7 +19,7 @@ npm ci
 node --test test/platform.test.mjs
 ```
 
-The runtime uses Node built-ins plus `selfsigned` for certificate generation. Dependencies are included in release packages, together with their license files. Existing sharing identities are reused.
+The runtime uses Node built-ins, `selfsigned` for certificates, and the official Claude Agent SDK for Claude execution. The SDK uses the provider's native Claude CLI; platform-specific optional CLI binaries are excluded from packages. Dependencies are included in release packages, together with their license files. Existing sharing identities are reused.
 
 ## Plugin folder
 
@@ -27,7 +27,7 @@ The runtime uses Node built-ins plus `selfsigned` for certificate generation. De
 npm run package -- /absolute/new/location/sub2sub
 ```
 
-The parent must exist and the target must be new. This copies production dependencies, skills, manifests, and user documentation. Run `npm ci --omit=dev --ignore-scripts` before preparing a distribution. A source package uses your existing Node runtime.
+The parent must exist and the target must be new. This copies production dependencies, skills, manifests, and user documentation. Run `npm ci --omit=dev --omit=optional --ignore-scripts` before preparing a distribution. A source package uses your existing Node runtime.
 
 For real task tests, use the standalone Node included in a release package. Some system builds, such as Homebrew Node, depend on external dynamic libraries that a delegated task cannot read, even when the plugin itself starts successfully.
 
@@ -44,7 +44,7 @@ Register source packages through a local Codex marketplace using [OpenAI's plugi
 Build on macOS or Linux with `tar`, `zip`, and `unzip` installed:
 
 ```sh
-npm ci --omit=dev --ignore-scripts
+npm ci --omit=dev --omit=optional --ignore-scripts
 npm run release -- /absolute/output/directory
 ```
 
@@ -57,6 +57,6 @@ The builder downloads Node from nodejs.org, checks its published checksum, and c
 
 Each archive contains the plugin, its dependencies, and a private Node runtime with the Node license. It contains no credentials, pairings, task history, or user files. Installation generates machine-specific startup paths.
 
-The installer accepts an optional `codex` or `claude` target. Both use the same release directory and runtime. Claude receives a small plugin directory containing the shared Skill, documentation and an MCP entry pointing to that runtime and task service. Its local marketplace is separate from Codex's; updates register only the selected host. No separate task executor is involved.
+The installer accepts an optional `codex` or `claude` target. Both use the same release directory and runtime. Claude receives a small plugin directory containing the shared Skill, documentation and an MCP entry pointing to that runtime and task service. Its local marketplace is separate from Codex's; updates register only the selected host. Installation selects the management host only. The node independently selects Codex App Server or Claude Agent SDK for execution; both use the same provider lifecycle and delivery code.
 
 Keep the version in `package.json`, `.codex-plugin/plugin.json`, and both bootstrap scripts aligned. The release workflow builds assets as a draft release. Publish that draft after reviewing CI and installer smoke tests so the README's `latest/download` links remain usable.

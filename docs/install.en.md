@@ -2,7 +2,7 @@
 
 [简体中文](install.md) · [Back to README](../README.md)
 
-Install sub2sub on each computer that will send or receive tasks. Add as many devices as you need: one computer can connect to several work nodes and can act as both caller and provider. Each work node signs in with its own Codex account and stays online while working.
+Install sub2sub on each computer that will send or receive tasks. Add as many devices as you need: one computer can connect to several work nodes and can act as both caller and provider. Each work node signs in with its own execution-tool account and stays online while working.
 
 ## Codex
 
@@ -33,7 +33,7 @@ Download archives from [Releases](https://github.com/mekoand/sub2sub/releases). 
 
 ## Claude Code
 
-Install the native Claude Code CLI and sign in, then run the command for your system. A computer that only sends tasks from Claude Code does not need Codex installed. The receiving work node still executes through its own Codex account.
+Install the native Claude Code CLI and sign in, then run the command for your system. A computer that only sends tasks from Claude Code does not need Codex installed. A macOS work node can also execute through its Claude subscription: install Claude Code 2.1.263 or later, sign in, then ask sub2sub to select Claude as the provider tool. This selection is independent of the app used to manage sub2sub. Claude execution on Windows is not supported yet.
 
 macOS:
 
@@ -63,7 +63,7 @@ Repeat pairing to add other nodes, give each a name, then choose a node for each
 
 ## Using the CLI
 
-Run `codex` after installation and use the same invitation, delegation, and follow-up prompts in the interactive session. Keep the work node's CLI session open: exiting closes the sharing process it hosts. `codex exec` can send tasks, but should not host a work node that needs to stay online.
+Run `codex` after installation and use the same invitation, delegation, and follow-up prompts in the interactive session. Starting sharing creates an independent node. Closing the CLI session leaves it available; a later session reconnects to the same node. One-shot CLI calls can start sharing too. The computer must remain awake and connected; start sharing manually after a reboot.
 
 ## Connecting over Tailscale
 
@@ -74,17 +74,17 @@ For computers on different networks, [Tailscale](https://tailscale.com/download)
 3. Ask it to generate a sub2sub invitation using that address, for example `100.x.x.x` with the actual address substituted.
 4. Paste the invitation as usual. Keep Tailscale connected and allow the caller to reach the work node's sharing port.
 
-Router port forwarding and Tailscale Funnel are not needed. sub2sub uses the Tailscale IPv4 address; MagicDNS names and IPv6 are not currently accepted. Existing pairings remember their network address. When switching from LAN to Tailscale, save results and close the session hosting the work node. Start sharing in a new session using its Tailscale address, then ask the caller's assistant to update the connection address.
+Router port forwarding and Tailscale Funnel are not needed. sub2sub uses the Tailscale IPv4 address; MagicDNS names and IPv6 are not currently accepted. Existing pairings remember their network address. When switching from LAN to Tailscale, save results and explicitly exit the sub2sub node. Start sharing again using its Tailscale address, then ask the caller's assistant to update the connection address.
 
 Version 0.5 accepts the usual Tailscale `100.64.0.0/10` range, with automated address-handling tests. Real cross-network pairing and result delivery will be tested in a later release. [Tailscale address documentation](https://tailscale.com/docs/concepts/tailscale-ip-addresses)
 
 ## Update
 
-Finish or cancel active work and save its results, then run the installation command again. The installer refreshes cached plugin files and startup paths while keeping pairings, certificates, and task data. Older program versions remain available; existing sessions are not forcibly terminated. Start a new conversation on each updated device.
+Finish or cancel active work and save its results, then run the installation command again. The installer refreshes cached plugin files and startup paths while keeping pairings, certificates, and task data. Older program versions remain available; existing sessions are not forcibly terminated. Start a new conversation on each updated device. The running node continues on its previous version. Once idle, ask to exit the sub2sub node and start sharing again to load the installed version. Sharing status shows both the running and installed versions; pair again only if the identity changed.
 
 Both hosts use the plugin ID `sub2sub@sub2sub`. The Codex installer also migrates older sub2sub installations from other sources after confirming the replacement is enabled. The Claude installer manages its user-scope installation only. Other plugins remain unchanged.
 
-Set `SUB2SUB_VERSION` before running the same command to select a published version that includes installer assets. Check release notes before downgrading across major versions so older code does not operate on incompatible task data.
+Set `SUB2SUB_VERSION` before running the same command to select a published version that includes installer assets. Exit the node and check release notes before downgrading. Older releases do not support Claude tasks or per-tool settings: save and finish Claude work, clean up its history if desired, and switch back to Codex first. Do not use an older release to continue or clean up retained Claude tasks.
 
 ## Installation problems
 
@@ -98,9 +98,9 @@ Use `SUB2SUB_INSTALL_DIR` for a custom program directory and keep using it for u
 
 ## Stop or remove
 
-Ask to stop sub2sub sharing to stop accepting new tasks while allowing existing work to finish and be collected. Closing the provider process interrupts execution.
+Ask to stop sub2sub sharing to stop accepting new tasks while allowing existing work to finish and be collected. To stop the background process too, ask to exit the sub2sub node. An active task must finish or be cancelled first. Closing the management app alone leaves the node running.
 
-Save the results you need, then uninstall in the plugin directory or run:
+Save the results you need and exit the node, then uninstall in the plugin directory or run:
 
 ```sh
 codex plugin remove sub2sub@sub2sub

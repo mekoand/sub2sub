@@ -11,7 +11,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - run: npm ci --omit=dev --ignore-scripts
+      - run: npm ci --omit=dev --omit=optional --ignore-scripts
       - run: npm run check
       - run: npm test
       - run: npm run release -- dist
