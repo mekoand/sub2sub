@@ -171,7 +171,7 @@ export async function install(payload, root, log = console.log, target = 'codex'
     }
     // Finish migration only after the replacement is confirmed usable.
     for (const old of duplicates) { log(`Replacing ${old.pluginId}...`); await run(['plugin', 'remove', old.pluginId]); }
-    log(`Installed sub2sub ${release.version}. Open a NEW Codex conversation or restart the CLI session.\nProgram files: ${destination}\nPairings and saved results stay in their existing locations.`);
+    log(`Installed sub2sub ${release.version}. Fully quit and reopen Codex Desktop to load the updated plugin; closing a window or starting a new conversation is not sufficient. For Codex CLI, exit and restart the CLI session.\nProgram files: ${destination}\nPairings and saved results stay in their existing locations.`);
     return { version: release.version, root, node, codex: executable, pluginId };
   } finally { await unlock(); }
 }

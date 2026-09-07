@@ -43,7 +43,7 @@ For Codex, install it and sign in first, then run the command for your system. P
 irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | iex
 ```
 
-Open a new Codex conversation or start `codex` in your terminal. On a new device, sub2sub shows all current settings and waits for your confirmation before proceeding. Later, say “Check sub2sub updates” or “Upgrade sub2sub” in that host. Installation preserves pairings and saved results; a new session loads the updated code, and running nodes are not automatically restarted. [Installation guide](docs/install.en.md)
+Fully quit and reopen the Codex desktop app, or exit and restart `codex` in your terminal. On a new device, sub2sub shows all current settings and waits for your confirmation before proceeding. Later, say “Check sub2sub updates” or “Upgrade sub2sub” in that host. Installation preserves pairings and saved results; restarting the host loads the updated code, and running nodes are not automatically restarted. [Installation guide](docs/install.en.md)
 
 ## Connect your work nodes
 
