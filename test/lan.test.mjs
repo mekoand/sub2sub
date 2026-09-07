@@ -999,3 +999,22 @@ test('expiry leaves an active turn intact and cancellation starts a fresh retent
   } finally { await owner.tool('cancel_shared_task', { pairId: pair.pairId, taskId: task.taskId }); await running; }
   assert.equal(Date.parse((await caller.tool('task_status', { taskId: task.taskId })).expiresAt), initialTime + 15 * 86400000);
 });
+
+test('task listing reports a missing record without hiding malformed records', async t => {
+  const { root, owner, caller } = await setup(t);
+  const paired = await caller.tool('pair_peer', { peer: 'owner', invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation });
+  const id = '00000000-0000-4000-8000-000000000001';
+  const directory = path.join(root, 'owner/sharing/tasks', paired.pairId, id);
+  // Materialization exposes its directory before the first state write.
+  await fs.mkdir(directory, { recursive: true });
+  const pending = (await owner.tool('list_shared_tasks')).tasks[0];
+  assert.equal(pending.taskId, id); assert.equal(pending.status, 'unknown');
+  assert.equal(pending.harness, undefined); assert.match(pending.error, /not available|initializ/i);
+  await fs.writeFile(path.join(directory, 'state.json'), '{broken');
+  await assert.rejects(owner.tool('list_shared_tasks'), /JSON|property|position/i);
+  await fs.writeFile(path.join(directory, 'state.json'), 'null');
+  await assert.rejects(owner.tool('list_shared_tasks'), /null/i);
+  await fs.writeFile(path.join(directory, 'state.json'), JSON.stringify({ taskId: id, status: 'ready' }));
+  const ready = (await owner.tool('list_shared_tasks')).tasks[0];
+  assert.equal(ready.status, 'ready'); assert.equal(ready.harness, 'codex');
+});
