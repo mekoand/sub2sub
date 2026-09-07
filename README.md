@@ -12,7 +12,7 @@
 Task delegation across your devices and team.
 
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.6.0-6366f1)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.7.0-6366f1)](CHANGELOG.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 **English** · [简体中文](README.zh-CN.md) · [Install](docs/install.en.md)

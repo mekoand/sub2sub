@@ -22,7 +22,7 @@ if (process.argv.includes('--version')) { console.log('fixture'); process.exit(0
 if (!process.argv.includes('list')) throw Error('Check must not mutate host registration');
 console.log(fs.readFileSync(process.env.SUB2SUB_TEST_CATALOG, 'utf8'));
 `, { mode: 0o755 });
-  globalThis.fetch = async url => { assert.equal(url, 'https://api.github.com/repos/mekoand/sub2sub/releases/latest'); return new Response(JSON.stringify({ tag_name: 'v0.6.0', draft: false, prerelease: false, html_url: 'https://github.com/mekoand/sub2sub/releases/tag/v0.6.0' })); };
+  globalThis.fetch = async url => { assert.equal(url, 'https://api.github.com/repos/mekoand/sub2sub/releases/latest'); return new Response(JSON.stringify({ tag_name: 'v0.7.0', draft: false, prerelease: false, html_url: 'https://github.com/mekoand/sub2sub/releases/tag/v0.7.0' })); };
   const client = await Client.load(); await client.initialize(); t.after(() => client.close());
   return { work, client };
 }
@@ -39,7 +39,7 @@ test('check reports session, registered installation, node and stable release wi
   assert.equal(result.installed.root, path.join(work, 'program'));
   assert.equal(result.node.status, 'stopped');
   assert.equal(result.node.version, null);
-  assert.equal(result.latest.version, '0.6.0');
+  assert.equal(result.latest.version, '0.7.0');
   assert.equal(await fs.readFile(process.env.SUB2SUB_CONFIG, 'utf8'), config);
   assert.equal(await fs.readFile(process.env.SUB2SUB_TEST_CATALOG, 'utf8'), catalog);
   assert.deepEqual(await fs.readdir(process.env.SUB2SUB_INSTALL_DIR).catch(e => e.code), 'ENOENT');
@@ -64,7 +64,7 @@ test('explicit upgrade uses bundled release installer for the registered host/ro
   await fs.writeFile(path.join(bin, 'curl'), `#!/usr/bin/env node
 const fs = require('node:fs'), crypto = require('node:crypto'), path = require('node:path');
 const args = process.argv.slice(2), target = args[args.indexOf('-o') + 1];
-if (!args.some(a => a.includes('/download/v0.6.0/'))) throw Error('Unexpected release');
+if (!args.some(a => a.includes('/download/v0.7.0/'))) throw Error('Unexpected release');
 fs.writeFileSync(target, target.endsWith('SHA256SUMS') ? crypto.createHash('sha256').update('fixture').digest('hex') + '  sub2sub-darwin-${process.arch}.tar.gz\\n' : 'fixture');
 `, { mode: 0o755 });
   await fs.writeFile(path.join(bin, 'tar'), `#!/usr/bin/env node
@@ -76,7 +76,7 @@ fs.symlinkSync(process.execPath, path.join(root, 'runtime/bin/node'));
 fs.writeFileSync(path.join(root, 'plugins/sub2sub/scripts/install.mjs'), \`import fs from 'node:fs';
 if (process.argv[3] !== process.env.SUB2SUB_INSTALL_DIR || process.argv[4] !== 'codex') throw Error('Wrong installation');
 const data = JSON.parse(fs.readFileSync(process.env.SUB2SUB_TEST_CATALOG));
-data.installed[0].version = '0.6.0+codex.456';
+data.installed[0].version = '0.7.0+codex.456';
 fs.writeFileSync(process.env.SUB2SUB_TEST_CATALOG, JSON.stringify(data));
 \`);
 `, { mode: 0o755 });
@@ -85,7 +85,7 @@ fs.writeFileSync(process.env.SUB2SUB_TEST_CATALOG, JSON.stringify(data));
   await fs.writeFile(path.join(client.stateRoot, 'results/keep.txt'), 'saved result');
   const result = await client.call('update_plugin', { action: 'install' });
   assert.equal(result.status, 'installed');
-  assert.equal(result.installed.version, '0.6.0+codex.456');
+  assert.equal(result.installed.version, '0.7.0+codex.456');
   assert.equal(result.sessionVersion, JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url))).version);
   assert.match(result.nextStep, /fully quit.*reopen.*Codex desktop/i);
   assert.match(result.nextStep, /window.*conversation.*not sufficient/i);
@@ -107,7 +107,7 @@ test('uncertain sharing, unknown host/root and source/newer versions never insta
   process.env.SUB2SUB_INSTALL_HOST = 'codex';
   await assert.rejects(client.call('update_plugin', { action: 'install', host: 'claude' }), /differs from the current session host/);
   const catalog = JSON.parse(await fs.readFile(process.env.SUB2SUB_TEST_CATALOG));
-  for (const [version, expected] of [['0.6.0+codex.999', 'current'], ['0.7.0+codex.999', 'newer_installed'], ['0.7.0-rc.1', 'deferred']]) {
+  for (const [version, expected] of [['0.7.0+codex.999', 'current'], ['0.8.0+codex.999', 'newer_installed'], ['0.8.0-rc.1', 'deferred']]) {
     catalog.installed[0].version = version;
     await fs.writeFile(process.env.SUB2SUB_TEST_CATALOG, JSON.stringify(catalog));
     assert.equal((await client.call('update_plugin', { action: 'install' })).status, expected);
@@ -122,10 +122,10 @@ test('release/network failures never become a successful check or installation',
   const { client, work } = await fixture(t);
   globalThis.fetch = async () => new Response('rate limited', { status: 403 });
   await assert.rejects(client.call('update_plugin', { action: 'install' }), /Update check failed: GitHub HTTP 403/);
-  globalThis.fetch = async () => new Response(JSON.stringify({ tag_name: 'v0.6.0', draft: false, prerelease: true }));
+  globalThis.fetch = async () => new Response(JSON.stringify({ tag_name: 'v0.7.0', draft: false, prerelease: true }));
   await assert.rejects(client.call('update_plugin', { action: 'install' }), /published stable release/);
   if (process.platform !== 'darwin') return;
-  globalThis.fetch = async () => new Response(JSON.stringify({ tag_name: 'v0.6.0', draft: false, prerelease: false }));
+  globalThis.fetch = async () => new Response(JSON.stringify({ tag_name: 'v0.7.0', draft: false, prerelease: false }));
   const bin = path.join(work, 'bin'); await fs.mkdir(bin);
   await fs.writeFile(path.join(bin, 'curl'), '#!/bin/sh\necho "download fixture failed" >&2\nexit 22\n', { mode: 0o755 });
   process.env.PATH = `${bin}${path.delimiter}${process.env.PATH}`;
