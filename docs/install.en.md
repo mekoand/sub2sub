@@ -2,7 +2,9 @@
 
 [简体中文](install.md) · [Back to README](../README.md)
 
-Install sub2sub on each computer that will send or receive tasks. Add as many devices as you need: one computer can connect to several work nodes and can act as both caller and provider. Each work node signs in with its own execution-tool account and stays online while working.
+Start with two computers: one sends a task, the other gets to work. Install sub2sub on both and add more devices when you need them. Any computer can send and receive tasks. The computer doing the work signs in with its own execution-tool account and stays online while working.
+
+Follow the installation and host restart steps below, then generate or connect an invitation in your conversation to start [your first delegation](usage.en.md#delegate-and-follow-up). To look around first, say “Open sub2sub management”. It's enabled by default, can be turned off at any time, and won't open a browser automatically. [Management guide](usage.en.md#local-management-and-statistics)
 
 ## Codex
 

@@ -2,6 +2,10 @@
 
 [README](../README.md) · [简体中文](usage.md) · [Install](install.en.md)
 
+Everyday use is a simple round trip: hand off a task, bring back the results, and ask for a revision. Stay in your current conversation while another computer does the work; its model choice, files, and follow-ups stay with the task.
+
+For your first task, start with settings and pairing below. Once connected, jump to [delegating and following up](#delegate-and-follow-up), or open [local management](#local-management-and-statistics) to see your tasks and saved results.
+
 ## Roles and consent
 
 The **caller** delegates work and receives results. The **provider** authorizes its selected Codex or Claude environment to execute the task. Both run the same plugin and can use either role as appropriate.
@@ -70,7 +74,7 @@ Provider retention supports 1–365 days, default 7. Accepted tasks retain their
 
 Example requests: “Open sub2sub management”, “Show statistics for resources I used over the last 7 days”, “Help diagnose the office node's connection failure”, and “Submit this issue to GitHub”. The last request authorizes submission; a diagnosis request alone does not.
 
-Ask to open sub2sub management in your conversation. The private local link offers node and task lists, model and quota queries, saved results, pairing and settings. Continue task instructions and follow-ups in the original conversation. Saved answers and files can be previewed or downloaded when the provider is offline; artifact HTML and scripts are never executed by the page.
+To see which node is busy or whether your results are saved, ask to open sub2sub management in your conversation. The private local link brings together nodes, tasks, and saved results, with pairing, settings, and on-demand model and quota queries. Continue task instructions and follow-ups in the original conversation. Saved answers and files can be previewed or downloaded when the provider is offline; artifact HTML and scripts are never executed by the page.
 
 Management is enabled by default on a random `127.0.0.1` port, without opening a browser. Disable it in Settings or from the conversation; the preference is saved in sub2sub's own configuration. Ask to enable management again to reopen it. Each MCP process owns its temporary link, which expires when that host process exits. Other process links stop serving data on their next request after disabling. Independent sharing is unaffected; the page adds no background process.
 

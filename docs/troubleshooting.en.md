@@ -2,10 +2,16 @@
 
 [README](../README.md) · [简体中文](troubleshooting.md) · [Install](install.en.md)
 
-Check both peers' plugin, Node, and selected execution tool versions and actual executable paths. Remove invitations, tokens, personal paths, and project content before sharing diagnostics.
+Start with the step that got stuck. Describe what happened in the original conversation, for example:
+
+> Help diagnose sub2sub: office-mac connected yesterday, but today it reports a connection failure.
+
+The assistant uses existing queries to check versions, sharing, and task state, then explains what it can confirm and what to try next. Diagnosis does not run a new task or submit an issue automatically. You can also use the table below; remove invitations, private management links, tokens, personal paths, and project content before sharing diagnostics.
 
 | Symptom | Next step |
 | --- | --- |
+| An old management link no longer opens | Ask to open sub2sub management again in the original conversation; links change with the plugin process. If you disabled it, ask to enable it again first |
+| Statistics look incomplete or duration is unknown | Statistics use recorded turns and measured time in retained records. Older work is not backfilled, and callers do not include execution records they have not received |
 | `ECONNREFUSED` after pairing | Check that the device is awake and connected, then start sharing again. Reuse the existing pairing |
 | Connection timeout | Check the selected IPv4 address, reachability, sleep state, and inbound port permission |
 | Invalid or expired invitation | Request a new invitation; it lasts 10 minutes, is single-use, and replaces the previous one |
@@ -39,6 +45,8 @@ New tasks provide an internal `.sub2sub` directory for disposable caches and tem
 
 ## Report an issue
 
+Say “Submit this issue to GitHub” in the original conversation. The assistant prepares a public-safe draft, checks for duplicates, and uses the host's existing GitHub tools to submit it, returning the actual issue link. If submission tools are unavailable, it gives you a draft to post manually.
+
 Include platform and versions, the failing phase, minimal reproduction, expected/actual behavior, and sanitized error/status output. State whether execution is still active and whether the latest necessary results were saved.
 
-Use [GitHub Issues](https://github.com/mekoand/sub2sub/issues). Never post invitations, pairing tokens, login material, or complete configuration/state directories.
+You can also post directly to [GitHub Issues](https://github.com/mekoand/sub2sub/issues). Never post invitations, private management links, pairing tokens, login material, private task content, or complete configuration/state directories.
