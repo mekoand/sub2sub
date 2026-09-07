@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title id="title">sub2sub — connected work nodes</title>
+  <rect width="128" height="128" rx="28" fill="#a5b4fc"/>
+  <g fill="none" stroke="#172033" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="21" y="25" width="34" height="34" rx="9"/>
+    <rect x="73" y="69" width="34" height="34" rx="9"/>
+    <path d="M72 36h10a12 12 0 0 1 12 12v7m-8-8 8 8 8-8M56 92H46a12 12 0 0 1-12-12v-7m8 8-8-8-8 8"/>
+  </g>
+</svg>

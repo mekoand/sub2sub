@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.6.0 — 2026-09-07
+
+- Show all current settings on a new device and wait for confirmation before first pairing, sharing or delegation. Resume, explicitly skip or reopen the introduction without resetting settings; existing users keep their configuration.
+- Check and install published updates in conversation using the existing release installer. Distinguish session, installed host and node versions; defer active/uncertain work and leave running nodes unchanged.
+- Include dedicated light/dark plugin icons in the distribution. Codex manifest and native installation validation are separate from host UI verification.
 
 - Run sharing in an independent node, with separate stop-accepting and exit controls and visible running/installed versions.
 - Select Codex or Claude Code on macOS, with per-tool defaults and model restrictions. Preserve each task’s tool and original session through follow-ups, stage delivery and restoration.

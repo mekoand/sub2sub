@@ -54,6 +54,13 @@ test('Windows package launches Node directly without requiring a Unix shell', as
   assert.equal(mcpServers.sub2sub.command, node);
   assert.deepEqual(mcpServers.sub2sub.args, ['./bin/mcp.mjs']);
   assert.ok(mcpServers.sub2sub.env_vars.includes('USERPROFILE'));
+  const { interface: display } = JSON.parse(await fs.readFile(path.join(target, '.codex-plugin/plugin.json'), 'utf8'));
+  for (const key of ['composerIcon', 'logo', 'logoDark']) {
+    assert.equal(typeof display[key], 'string', `${key} is declared in the installed package`);
+    const asset = await fs.readFile(path.join(target, display[key]), 'utf8');
+    assert.match(asset, /<svg/);
+    assert.match(asset, /viewBox="0 0 128 128"/);
+  }
 });
 
 test('process locks recover an exited owner and remain exclusive', async t => {

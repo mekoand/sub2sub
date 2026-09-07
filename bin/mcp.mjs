@@ -3,6 +3,7 @@ import { createInterface } from 'node:readline';
 import { Client } from '../lib/client.mjs';
 import { REASONING_EFFORTS } from '../lib/config.mjs';
 import { SUPPORT_BYTES, SUPPORT_FILES } from '../lib/limits.mjs';
+import packageInfo from '../package.json' with { type: 'json' };
 
 const string = description => ({ type: 'string', minLength: 1, description });
 const task = string('Task ID returned by sub2sub.');
@@ -11,13 +12,15 @@ const execution = { model: string('Explicit model choice for this task.'), reaso
 const harness = { type: 'string', enum: ['codex', 'claude'], description: 'Execution tool; independent of the app managing sub2sub.' };
 const advancedLimits = Object.fromEntries(['inputBytes', 'inputFiles', 'resultBytes', 'resultFiles'].map(key => [key, { type: 'integer', minimum: 1, maximum: key.endsWith('Bytes') ? SUPPORT_BYTES : SUPPORT_FILES, description: '高级设置：' + key + '，按原始字节或文件数计。输入按完整副本，返回按本次变更。' }]));
 const definitions = [
+  ['update_plugin', 'Check the latest stable sub2sub release and distinguish current session, registered host installation and running node versions. action=check is read-only. action=install requires an explicit user upgrade request; defers for active or uncertain work, preserves data and never restarts nodes. Only updates the managing host.', { action: { type: 'string', enum: ['check', 'install'] }, host: { type: 'string', enum: ['codex', 'claude'], description: 'Specify only when installation metadata cannot identify the managing host.' } }, ['action']],
+  ['onboarding', 'First use: show ALL current caller/provider settings, advanced limits, retention and safe connection/sharing state before proceeding, even for an explicit task. No model query, sharing or pairing. status resumes an interrupted guide; confirm only after the user approves the displayed settings; skip only when explicitly requested; reopen preserves settings. Approval does not grant task-file consent. After confirmation, retry the original request.', { action: { type: 'string', enum: ['status', 'confirm', 'skip', 'reopen'], description: 'Omit or status to view; record confirm/skip only after the corresponding user decision.' } }, []],
   ['resource_usage', 'Read current account-wide quota for the local execution node or a paired peer. Shows separate windows, remaining percent, reset timestamps and collection time. Each query refreshes; unavailable or unsupported is not zero or unlimited. Does not execute a task or change the account. Quota is separate from node availability.', { peer: string('Optional paired provider name; omit for the local execution resource.') }, []],
   ['caller_settings', '使用方普通设置：查询或修改每种执行工具跨节点共用的默认模型和思考强度。只影响新任务，单次任务可覆盖。', { harness, model: string('Default model for this execution tool.'), reasoningEffort: { ...string('Default reasoning effort.'), enum: REASONING_EFFORTS }, ...advancedLimits }, []],
   ['provider_settings', '提供方普通设置：查询或修改当前执行工具及开放模型，默认全部并包含新增模型。工具仅在空闲时切换，失败保留原选择。高级设置包括传输限制和任务保留天数；默认闲置 7 天，旧任务保留原期限。', { harness, allModels: { type: 'boolean', description: 'True to provide all currently available models.' }, allowedModels: { type: 'array', minItems: 1, maxItems: 2000, items: string('Allowed model ID.') }, ...advancedLimits, retentionDays: { type: 'integer', minimum: 1, maximum: 365, description: '高级设置：从最后一轮结束起保留的天数，默认 7 天。只有已确认保存且无执行中的任务才自动清理。' } }, []],
   ['list_models', '查询提供方当前实际可用且允许的模型和思考强度。指定 peer 查询远端；省略时查询本机提供方。不执行任务。', { peer: string('Optional paired provider.') }, []],
   ['setup_status', 'Show sub2sub setup paths, local IPv4 addresses and sharing state without starting execution.', {}, []],
   ['start_sharing', 'Enable this device to execute authorized LAN or Tailscale peer tasks using its selected execution tool and subscription. Starts or reconnects to an independent node; closing this management process leaves it running. No login startup item is installed. Select a LAN or Tailscale IPv4 address from setup_status if needed.', { address: string('Local LAN or Tailscale IPv4 address to listen on.'), port: { type: 'integer', minimum: 0, maximum: 65535, description: 'Listening port. Default 47631; zero chooses an available port.' } }, []],
-  ['sharing_status', '提供方：查询本机实际共享进程及活动任务，包含检查时间；不同管理对话看到同一共享状态，分别显示运行版本和安装版本。', {}, []],
+  ['sharing_status', '提供方：查询本机实际共享进程及活动任务，包含检查时间、节点运行版本和当前对话版本；update_plugin 的 check 可查询宿主实际安装版本。', {}, []],
   ['configure_model', 'Legacy provider model setting: restricts sharing to one model, without overriding caller task choices. Prefer separate caller_settings and provider_settings. Omit arguments to query legacy values.', { model: string('Codex model ID, for example gpt-5.6-luna or gpt-5.6-sol.'), reasoningEffort: { ...string('Legacy reasoning preference; caller explicitly chooses task effort.'), enum: REASONING_EFFORTS } }, []],
   ['stop_sharing', 'Stop new turns and pairing. Active tasks may finish; existing callers can query, cancel and collect. Use cancel_shared_task to interrupt execution.', {}, []],
   ['exit_sharing', 'Exit the independent sharing node. An active turn must first finish or be explicitly cancelled. Pairings, retained work and saved results are preserved. Start sharing manually when needed again.', {}, []],
@@ -72,7 +75,7 @@ lines.on('line', async line => {
     if (message.id === undefined) return;
     if (message.method === 'initialize') {
       initialized = true;
-      send({ id: message.id, result: { protocolVersion: '2024-11-05', capabilities: { tools: {} }, serverInfo: { name: 'sub2sub', version: '0.5.3' } } });
+      send({ id: message.id, result: { protocolVersion: '2024-11-05', capabilities: { tools: {} }, serverInfo: { name: 'sub2sub', version: packageInfo.version } } });
       return;
     }
     if (!initialized) throw new Error('Initialize the MCP connection first.');

@@ -12,7 +12,7 @@
 Task delegation across your devices and team.
 
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.5.3-6366f1)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.6.0-6366f1)](CHANGELOG.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 **English** · [简体中文](README.zh-CN.md) · [Install](docs/install.en.md)
@@ -43,7 +43,7 @@ For Codex, install it and sign in first, then run the command for your system. P
 irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | iex
 ```
 
-Open a new Codex conversation or start `codex` in your terminal. Run the same command again to update while keeping pairings and saved results. [Installation guide](docs/install.en.md)
+Open a new Codex conversation or start `codex` in your terminal. On a new device, sub2sub shows all current settings and waits for your confirmation before proceeding. Later, say “Check sub2sub updates” or “Upgrade sub2sub” in that host. Installation preserves pairings and saved results; a new session loads the updated code, and running nodes are not automatically restarted. [Installation guide](docs/install.en.md)
 
 ## Connect your work nodes
 

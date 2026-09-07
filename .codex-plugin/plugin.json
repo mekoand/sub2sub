@@ -1,6 +1,6 @@
 {
   "name": "sub2sub",
-  "version": "0.5.3",
+  "version": "0.6.0",
   "description": "Delegate tasks across devices with Codex or Claude, query quota, and receive complete results locally.",
   "author": {
     "name": "mekoand"
@@ -12,6 +12,10 @@
     "longDescription": "按需连接多台工作节点，委托任务、追加修改并取回完整成果。提供方独立运行，空闲时可切换 Codex 或 Claude；使用方按工具设置默认模型和思考强度。支持 Codex 额度查询、节点管理和任务恢复清理。",
     "developerName": "mekoand",
     "category": "Productivity",
+    "composerIcon": "./docs/assets/icon.svg",
+    "logo": "./docs/assets/icon.svg",
+    "logoDark": "./docs/assets/icon-dark.svg",
+    "brandColor": "#6366F1",
     "capabilities": [],
     "defaultPrompt": [
       "生成邀请码，让另一台电脑使用我的 Codex。",
