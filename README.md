@@ -7,23 +7,30 @@
   </picture>
 </h1>
 
-**Make better use of your AI subscriptions.**
+**Give your AI a teammate.**
 
-Task delegation across your devices and team.
+Delegate to Codex or Claude on another computer. Bring the results back to this conversation.
 
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-0.7.0-6366f1)](CHANGELOG.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**English** · [简体中文](README.zh-CN.md) · [Install](docs/install.en.md)
+**English** · [简体中文](README.zh-CN.md) · [Install](docs/install.en.md) · [Usage](docs/usage.en.md)
 
 </div>
 
-AI subscriptions, model access, and working environments are often spread across a team's accounts and computers. sub2sub lets you put those resources to work: connect your devices, choose a node for each task, and bring the complete results back to your current workspace.
+You're working on your laptop while the office computer is idle. Or you're in Codex and want a hand from Claude on another Mac.
 
-Projects such as [sub2api](https://github.com/Wei-Shaw/sub2api) distribute subscription resources through an API gateway. sub2sub applies a related idea to complete tasks. Work runs in the selected device's own AI environment, using its signed-in account and available models.
+With sub2sub, delegate a self-contained task from your current Codex or Claude Code conversation to a computer shared by you or a teammate. Work and checks run in that computer's AI environment, and the results are saved locally for you. For revisions, just keep talking.
 
-One computer can connect to several work nodes, and any device can send or receive tasks. Each owner chooses when to share, which execution tool to use, and which models to offer. Check a Codex node's remaining quota before assigning work. You decide where each task runs; each node handles one task at a time.
+## What you can do
+
+- **Put existing subscriptions and devices to work.** Connect several work nodes and choose the tool and model for each task. Each execution account stays on its own device.
+- **Skip the context recap.** “Improve the mobile layout too” continues the same task, with its working files and conversation intact.
+- **Spend less time moving files around.** Returned changes become a complete local copy. Decide when to apply them to your source project, and open saved results even when the node is offline.
+- **Keep sharing on your terms.** Owners choose when to share, which tool to run, and which models to offer. You choose where each task goes; each node runs one task at a time.
+
+Good fits include organizing documents, building offline pages, and making code changes with clear inputs and outputs. Tasks run in separate work copies with task network access, MCP, app, and browser integrations disabled. Prepare the needed materials and local tools before delegating. [Execution scope and limits](docs/usage.en.md#delegate-and-follow-up)
 
 ## Install
 
@@ -57,21 +64,31 @@ On a device that will send work, paste the invitation:
 
 Confirm the file-transfer scope when prompted. Repeat for other nodes you want to use, giving each a recognizable name. Sharing runs independently after startup. Keep the receiving computer awake and connected; its management conversation can close.
 
-## Example: a team's documentation task
+## Try a round trip with your docs
 
 Your laptop is connected to `office-mac` and `windows-pc`. The Windows node is busy with another task; the Mac is available and offers the model you need. Send the documentation work to the Mac:
 
 > Use sub2sub to send the docs directory to office-mac. Build an offline help site with search, check the links, and return the complete files.
 
-The result is saved locally. Open it, review the pages, then continue the same task:
+The result is saved locally. Take a look, spot a mobile layout that could use some work, and continue:
 
 > Continue that task. Group the pages by topic and improve the mobile layout.
 
-The node reuses its working files and conversation. Only changed files are transferred back, and you receive a complete local copy. Once the result is ready:
+No need to explain everything again: the node reuses its working files and conversation. Only changed files are transferred back, and you receive a complete local copy. Once the result is ready:
 
 > Save the latest results, finish the task, and clean up its remote work copy.
 
 Your source project stays unchanged until you choose to apply the result. Saved files remain available when the node goes offline. [Usage, settings, and cleanup](docs/usage.en.md)
+
+## A compact view of tasks and results
+
+Say this in your conversation:
+
+> Open sub2sub management.
+
+Version 0.7.0 adds a compact local page for nodes, tasks, and saved results, with pairing, settings, and on-demand Codex quota queries. Resource statistics over 7 or 30 days show where your tasks went, how many turns ran, and their measured execution time.
+
+Management is enabled by default and can be turned off at any time. It shares the plugin process, adds no background service, and does not open a browser automatically. Task instructions and follow-ups stay in your conversation. [Management and statistics](docs/usage.en.md#local-management-and-statistics)
 
 ## Across networks
 
@@ -91,6 +108,6 @@ npm test
 
 [Development and packaging](docs/development.md) · [Architecture](docs/architecture.md) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
-For problems, see [troubleshooting](docs/troubleshooting.en.md) or open an [issue](https://github.com/mekoand/sub2sub/issues).
+If something gets stuck, ask “Help diagnose this sub2sub problem” in the original conversation. When you want to report it, say “Submit this issue to GitHub”. The assistant prepares a public-safe draft, checks for duplicates, and uses the host's existing submission tools. If those are unavailable, it gives you the draft. [Troubleshooting](docs/troubleshooting.en.md) · [Issues](https://github.com/mekoand/sub2sub/issues)
 
 [MIT](LICENSE) © 2026 mekoand
