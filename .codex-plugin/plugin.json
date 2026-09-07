@@ -1,6 +1,6 @@
 {
   "name": "sub2sub",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Delegate tasks across devices with Codex or Claude, query quota, and receive complete results locally.",
   "author": {
     "name": "mekoand"

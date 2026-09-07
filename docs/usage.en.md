@@ -66,6 +66,20 @@ Input and result defaults are 20 MiB and 2,000 files each. Raw file bytes count,
 
 Provider retention supports 1–365 days, default 7. Accepted tasks retain their original setting. Status queries, downloads, and `keep` do not extend the deadline; completing another turn resets it.
 
+## Local management and statistics
+
+Example requests: “Open sub2sub management”, “Show statistics for resources I used over the last 7 days”, “Help diagnose the office node's connection failure”, and “Submit this issue to GitHub”. The last request authorizes submission; a diagnosis request alone does not.
+
+Ask to open sub2sub management in your conversation. The private local link offers node and task lists, model and quota queries, saved results, pairing and settings. Continue task instructions and follow-ups in the original conversation. Saved answers and files can be previewed or downloaded when the provider is offline; artifact HTML and scripts are never executed by the page.
+
+Management is enabled by default on a random `127.0.0.1` port, without opening a browser. Disable it in Settings or from the conversation; the preference is saved in sub2sub's own configuration. Ask to enable management again to reopen it. Each MCP process owns its temporary link, which expires when that host process exits. Other process links stop serving data on their next request after disabling. Independent sharing is unaffected; the page adds no background process.
+
+With no page open there is no polling. A visible overview reads local records every 30 seconds and pauses when hidden. Refresh status explicitly checks peers; models and quota are queried only on demand, with their observation time. Failed queries and expired quota windows are not shown as current availability.
+
+I use / I provide summarize retained tasks by resource and execution tool over 7 or 30 days: tasks, turns, outcomes and measured execution time. Windows use turn start time. Measurement begins with turns run in this version; older turns and unknown timing are not inferred. Caller totals cover received execution/result records, not all provider history. Refreshing or downloading again does not add turns. Work-copy cleanup preserves statistics; explicit task-record deletion removes the corresponding statistics on that side. Saved local results remain. These figures are not account quota, cost or quality scores.
+
+Use Troubleshooting to return to the conversation and reuse existing status queries. After an explicit request to submit to GitHub, the assistant prepares public-safe content, searches duplicates and uses the host's existing GitHub capability; otherwise it provides a draft. Never publish invitations, private management links, credentials, personal paths or private task content.
+
 ## Task lifecycle
 
 1. Select and upload the first work copy; create a native conversation.

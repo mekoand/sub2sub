@@ -1,55 +1,13 @@
 #!/usr/bin/env node
 import { createInterface } from 'node:readline';
 import { Client } from '../lib/client.mjs';
-import { REASONING_EFFORTS } from '../lib/config.mjs';
-import { SUPPORT_BYTES, SUPPORT_FILES } from '../lib/limits.mjs';
+import { tools, validateToolInput } from '../lib/tools.mjs';
 import packageInfo from '../package.json' with { type: 'json' };
 
-const string = description => ({ type: 'string', minLength: 1, description });
-const task = string('Task ID returned by sub2sub.');
-const prompt = { ...string('Instructions for the remote task session.'), maxLength: 100000 };
-const execution = { model: string('Explicit model choice for this task.'), reasoningEffort: { ...string('Explicit reasoning effort for this task.'), enum: REASONING_EFFORTS } };
-const harness = { type: 'string', enum: ['codex', 'claude'], description: 'Execution tool; independent of the app managing sub2sub.' };
-const advancedLimits = Object.fromEntries(['inputBytes', 'inputFiles', 'resultBytes', 'resultFiles'].map(key => [key, { type: 'integer', minimum: 1, maximum: key.endsWith('Bytes') ? SUPPORT_BYTES : SUPPORT_FILES, description: '高级设置：' + key + '，按原始字节或文件数计。输入按完整副本，返回按本次变更。' }]));
-const definitions = [
-  ['update_plugin', 'Check the latest stable sub2sub release and distinguish current session, registered host installation and running node versions. action=check is read-only. action=install requires an explicit user upgrade request; defers for active or uncertain work, preserves data and never restarts nodes. Only updates the managing host.', { action: { type: 'string', enum: ['check', 'install'] }, host: { type: 'string', enum: ['codex', 'claude'], description: 'Specify only when installation metadata cannot identify the managing host.' } }, ['action']],
-  ['onboarding', 'First use: show ALL current caller/provider settings, advanced limits, retention and safe connection/sharing state before proceeding, even for an explicit task. No model query, sharing or pairing. status resumes an interrupted guide; confirm only after the user approves the displayed settings; skip only when explicitly requested; reopen preserves settings. Approval does not grant task-file consent. After confirmation, retry the original request.', { action: { type: 'string', enum: ['status', 'confirm', 'skip', 'reopen'], description: 'Omit or status to view; record confirm/skip only after the corresponding user decision.' } }, []],
-  ['resource_usage', 'Read current account-wide quota for the local execution node or a paired peer. Shows separate windows, remaining percent, reset timestamps and collection time. Each query refreshes; unavailable or unsupported is not zero or unlimited. Does not execute a task or change the account. Quota is separate from node availability.', { peer: string('Optional paired provider name; omit for the local execution resource.') }, []],
-  ['caller_settings', '使用方普通设置：查询或修改每种执行工具跨节点共用的默认模型和思考强度。只影响新任务，单次任务可覆盖。', { harness, model: string('Default model for this execution tool.'), reasoningEffort: { ...string('Default reasoning effort.'), enum: REASONING_EFFORTS }, ...advancedLimits }, []],
-  ['provider_settings', '提供方普通设置：查询或修改当前执行工具及开放模型，默认全部并包含新增模型。工具仅在空闲时切换，失败保留原选择。高级设置包括传输限制和任务保留天数；默认闲置 7 天，旧任务保留原期限。', { harness, allModels: { type: 'boolean', description: 'True to provide all currently available models.' }, allowedModels: { type: 'array', minItems: 1, maxItems: 2000, items: string('Allowed model ID.') }, ...advancedLimits, retentionDays: { type: 'integer', minimum: 1, maximum: 365, description: '高级设置：从最后一轮结束起保留的天数，默认 7 天。只有已确认保存且无执行中的任务才自动清理。' } }, []],
-  ['list_models', '查询提供方当前实际可用且允许的模型和思考强度。指定 peer 查询远端；省略时查询本机提供方。不执行任务。', { peer: string('Optional paired provider.') }, []],
-  ['setup_status', 'Show sub2sub setup paths, local IPv4 addresses and sharing state without starting execution.', {}, []],
-  ['start_sharing', 'Enable this device to execute authorized LAN or Tailscale peer tasks using its selected execution tool and subscription. Starts or reconnects to an independent node; closing this management process leaves it running. No login startup item is installed. Select a LAN or Tailscale IPv4 address from setup_status if needed.', { address: string('Local LAN or Tailscale IPv4 address to listen on.'), port: { type: 'integer', minimum: 0, maximum: 65535, description: 'Listening port. Default 47631; zero chooses an available port.' } }, []],
-  ['sharing_status', '提供方：查询本机实际共享进程及活动任务，包含检查时间、节点运行版本和当前对话版本；update_plugin 的 check 可查询宿主实际安装版本。', {}, []],
-  ['configure_model', 'Legacy provider model setting: restricts sharing to one model, without overriding caller task choices. Prefer separate caller_settings and provider_settings. Omit arguments to query legacy values.', { model: string('Codex model ID, for example gpt-5.6-luna or gpt-5.6-sol.'), reasoningEffort: { ...string('Legacy reasoning preference; caller explicitly chooses task effort.'), enum: REASONING_EFFORTS } }, []],
-  ['stop_sharing', 'Stop new turns and pairing. Active tasks may finish; existing callers can query, cancel and collect. Use cancel_shared_task to interrupt execution.', {}, []],
-  ['exit_sharing', 'Exit the independent sharing node. An active turn must first finish or be explicitly cancelled. Pairings, retained work and saved results are preserved. Start sharing manually when needed again.', {}, []],
-  ['create_pairing', 'Generate an invitation to share this device’s selected execution tool. Starts sharing if needed; call directly without setup/status checks. One use, valid for 10 minutes. The node stays running after this management task closes. Send the invitation privately.', { address: string('Optional LAN or Tailscale IPv4 address. Auto-selected when only one suitable interface exists.'), port: { type: 'integer', minimum: 0, maximum: 65535, description: 'Optional port; defaults to 47631. Zero chooses an available port.' } }, []],
-  ['pair_peer', 'Connect using an invitation. After explaining the task-file transfer scope and obtaining the user’s one-time consent, set allowTaskFiles=true. Otherwise connect without transfer consent. Success confirms connectivity; no follow-up check is needed.', { invitation: string('Private invitation created by the provider.'), peer: string('Local name for this provider.'), allowTaskFiles: { type: 'boolean', description: 'True only after user consent to send necessary task files/instructions, including non-public project material, to this device. Excludes credentials, unrelated files and separately sensitive material.' } }, ['invitation', 'peer']],
-  ['authorize_peer', 'Record or withdraw the user’s one-time permission to send necessary task files/instructions to this paired device. Includes non-public project source/docs/config, excludes credentials, unrelated files and separately sensitive material. Does not override host approval. Use only after the user explicitly agrees or withdraws consent.', { peer: string('Configured peer name.'), allowTaskFiles: { type: 'boolean', description: 'The user’s consent decision. False stops future uploads and follow-up instructions; existing results remain accessible.' } }, ['peer', 'allowTaskFiles']],
-  ['list_pairings', 'List callers authorized by this device. Does not return credentials.', {}, []],
-  ['revoke_pairing', 'Provider: disconnect this caller and stop its active task. Default retains data. Only if the provider explicitly chooses deletion, set cleanup=records or all; this affects this connection only and may discard results the caller has not downloaded. Future access requires a new pairing.', { pairId: string('Pairing ID from list_pairings.'), cleanup: { ...string('Explicit provider choice: keep, records or all.'), enum: ['keep', 'records', 'all'] } }, ['pairId']],
-  ['cleanup_shared_tasks', 'Provider: after disconnecting a caller, apply the provider’s explicit cleanup choice to that connection’s tasks. records removes remote work files and task records; all also deletes associated native histories, even after records were previously removed. Results may not have been downloaded. Never use caller-supplied paths or native thread IDs.', { pairId: string('Disconnected pairing ID from revoke_pairing or shared task context.'), cleanup: { ...string('Explicit provider choice: keep, records or all.'), enum: ['keep', 'records', 'all'] } }, ['pairId', 'cleanup']],
-  ['cleanup_shared_task', '提供方：清理指定已停止任务，保留连接和其他任务。workcopy 保留恢复信息，records 删除任务记录，all 另删原生历史。尚未取回的成果必须先明确告知，只有提供方明确丢弃后才传 discardUncollected=true。', { pairId: string('Caller pairing ID.'), taskId: task, cleanup: { type: 'string', enum: ['workcopy', 'records', 'all'] }, discardUncollected: { type: 'boolean', description: 'True only after explicitly choosing to discard uncollected results of this task.' } }, ['pairId', 'taskId', 'cleanup']],
-  ['list_shared_tasks', '提供方：查询委托任务记录、成果保存与清理情况，并检查工作目录是否存在。details=true 时统计实际文件数与占用。', { details: { type: 'boolean' } }, []],
-  ['cancel_shared_task', 'Request cancellation on the provider. Read list_shared_tasks to verify it stopped.', { pairId: string('Caller pairing ID.'), taskId: task }, ['pairId', 'taskId']],
-  ['list_tasks', '查看本地委托任务，含创建/结束时间、保存时间、完整文件目录和文字答复 responseFile。按时间排列；deliveryPending 表示本轮尚未保存。查看成果时直接读取所需成果文件、responseFile 和 changes.json，在最终答复提供成果与答复的完整绝对本地路径 Markdown 链接；无需连接远端或 collect_result；远端状态另用 task_status。', {}, []],
-  ['list_peers', '使用方：查询节点的可用、忙碌、停止共享或无法连接状态及检查时间。check=false 时只看本地记录。', { check: { type: 'boolean', description: 'Defaults to true; false skips live connection checks.' } }, []],
-  ['edit_peer', '使用方：重命名连接或更新同一设备的 LAN / Tailscale 地址，保留任务关联和传输授权。地址更新先验证原配对身份；更换设备身份需重新配对。', { peer: string('Existing connection name.'), name: string('Optional new connection name.'), host: string('Optional new private IPv4 address for the same device.'), port: { type: 'integer', minimum: 1, maximum: 65535 } }, ['peer']],
-  ['delete_peer', '使用方：删除前说明旧任务将失去续作关联，同一台设备重新配对也不恢复。先处理活动任务和未取回成果，再删除本地连接。远端配对与文件、本地成果保留。abandonTasks 仅用于用户已明确放弃的指定任务；仍在运行的任务必须先停止。', { peer: string('Connection to delete.'), abandonTasks: { type: 'array', minItems: 1, maxItems: 2000, items: task, description: 'Specific task IDs explicitly abandoned after disclosing uncollected or unknown remote results.' } }, ['peer']],
-  ['check_peer', 'Check a configured provider connection without starting an execution task.', { peer: string('Configured provider name.') }, ['peer']],
-  ['prepare_work_copy', 'Prepare task files locally and show the file list, size, destination and saved transfer consent. Pass the known peer to include consent context for the host’s review. Nothing is sent. Default: current Git-tracked contents with exclusions.', { workspace: string('Absolute source workspace path.'), peer: string('Known destination peer, to show its identity and saved consent with this preview.'), paths: { type: 'array', minItems: 1, maxItems: SUPPORT_FILES, items: string('Relative file or directory. No symlinks.') } }, ['workspace']],
-  ['start_task', 'Send a prepared copy to an authorized peer and run a task with its selected tool. Checks model and effort before uploading; mismatches list choices and wait for the user. Waits for this turn. At its time limit, stops and saves available stage results, then waits for the user to choose continuation. Keep the task ID if the connection fails.', { peer: string('Authorized configured provider.'), snapshotId: string('Prepared snapshot ID.'), prompt, ...execution }, ['peer', 'snapshotId', 'prompt']],
-  ['continue_task', 'Continue the same task using its saved model and effort; change only if the user explicitly chooses another combination. Checks current provider capabilities before execution. At the time limit, saves available stage results and waits; never automatically repeat a turn.', { taskId: task, prompt, ...execution }, ['taskId', 'prompt']],
-  ['task_status', '查询远端任务记录与实际工作副本情况。details=true 时统计文件数与占用，并对已清理任务进行实时核查；普通查询已清理任务时仅报告本地记录。', { taskId: task, details: { type: 'boolean' } }, ['taskId']],
-  ['cancel_task', 'Request interruption of an active remote task. Read status afterwards to confirm it stopped.', { taskId: task }, ['taskId']],
-  ['collect_result', '委托或续作形成阶段成果后，在交付前同步到本地，返回完整文件目录 workCopyDirectory 和文字答复 responseFile，及删除、跳过文件与本轮错误。无文件变化时复用完整副本，答复仍更新。查看已保存成果用 list_tasks，不重新下载。读取所需成果和答复后，在最终答复提供两者的完整绝对本地路径 Markdown 链接。只检查交付完整性；质量验证交给提供方。', { taskId: task }, ['taskId']],
-  ['finish_task', 'Use only after the user explicitly chooses a cleanup level: keep leaves the existing retention policy and deadline unchanged, workcopy clears remote work files while preserving recovery information, records deletes remote work files and sub2sub task records, all also deletes the task’s native execution history and descendants. For keep, show the task-specific retentionDays and last known expiresAt plus cleanup conditions; it never restores cleaned files. Download needed results and resolve skipped outputs before deletion. Local source and saved results remain.', { taskId: task, cleanup: { ...string('The user’s explicit choice: keep, workcopy, records or all. Task completion and transfer consent are not cleanup consent.'), enum: ['keep', 'workcopy', 'records', 'all'] }, discardPaths: { type: 'array', minItems: 1, maxItems: 2000, items: string('Skipped path explicitly determined to contain no needed output.') } }, ['taskId', 'cleanup']],
-];
-const tools = definitions.map(([name, description, properties, required]) => ({ name, description, inputSchema: { type: 'object', properties, required, additionalProperties: false } }));
 const active = new Map();
 const send = value => process.stdout.write(`${JSON.stringify({ jsonrpc: '2.0', ...value })}\n`);
 let clientPromise;
+let startup;
 let initialized = false;
 let shuttingDown = false;
 const lines = createInterface({ input: process.stdin });
@@ -59,7 +17,7 @@ const shutdown = async () => {
   for (const controller of active.values()) controller.abort();
   lines.close();
   process.stdin.destroy();
-  try { await (await clientPromise)?.close(); }
+  try { await startup; await (await clientPromise)?.close(); }
   catch (error) { process.stderr.write(`sub2sub shutdown failed: ${error.message}\n`); process.exitCode = 1; }
 };
 process.once('SIGTERM', shutdown);
@@ -74,28 +32,28 @@ lines.on('line', async line => {
     if (message.method === 'notifications/cancelled') { active.get(message.params?.requestId)?.abort(); return; }
     if (message.id === undefined) return;
     if (message.method === 'initialize') {
+      startup ||= (async () => {
+        const loading = clientPromise ||= Client.load();
+        let client;
+        try { client = await loading; }
+        catch (error) { if (clientPromise === loading) clientPromise = undefined; throw error; }
+        if (shuttingDown) return;
+        try { await client.web.start(); }
+        catch (error) { client.web.error = error.message; throw error; }
+      })().catch(error => { process.stderr.write(`sub2sub management unavailable: ${error.message}\n`); });
+      await startup;
+      if (shuttingDown) return;
       initialized = true;
       send({ id: message.id, result: { protocolVersion: '2024-11-05', capabilities: { tools: {} }, serverInfo: { name: 'sub2sub', version: packageInfo.version } } });
       return;
     }
+    if (startup && !initialized) await startup;
+    if (shuttingDown) return;
     if (!initialized) throw new Error('Initialize the MCP connection first.');
     if (message.method === 'ping') { send({ id: message.id, result: {} }); return; }
     if (message.method === 'tools/list') { send({ id: message.id, result: { tools } }); return; }
     if (message.method !== 'tools/call') { send({ id: message.id, error: { code: -32601, message: 'Method not found' } }); return; }
-    const tool = tools.find(t => t.name === message.params?.name);
-    if (!tool) throw new Error('Unknown tool.');
-    const input = message.params.arguments || {};
-    if (typeof input !== 'object' || input === null || Array.isArray(input)) throw new Error('Tool arguments must be an object.');
-    for (const key of tool.inputSchema.required) if (!(key in input)) throw new Error(`Missing argument: ${key}`);
-    for (const [key, value] of Object.entries(input)) {
-      const schema = tool.inputSchema.properties[key];
-      if (!schema) throw new Error(`Unknown argument: ${key}`);
-      if (schema.type === 'string' && (typeof value !== 'string' || !value.trim() || value.length > (schema.maxLength || 4096))) throw new Error(`Invalid string argument: ${key}`);
-      if (schema.type === 'array' && (!Array.isArray(value) || !value.length || value.length > (schema.maxItems || 2000) || value.some(v => typeof v !== 'string'))) throw new Error(`Invalid paths argument.`);
-      if (schema.type === 'integer' && (!Number.isInteger(value) || value < schema.minimum || value > schema.maximum)) throw new Error(`Invalid integer argument: ${key}`);
-      if (schema.type === 'boolean' && typeof value !== 'boolean') throw new Error(`Invalid boolean argument: ${key}`);
-      if (schema.enum && !schema.enum.includes(value)) throw new Error(`Invalid ${key}: choose ${schema.enum.join(', ')}.`);
-    }
+    const input = validateToolInput(message.params?.name, message.params.arguments);
     const controller = new AbortController();
     active.set(message.id, controller);
     const loading = clientPromise ||= Client.load();
@@ -105,7 +63,7 @@ lines.on('line', async line => {
     if (shuttingDown) throw new Error('Plugin is shutting down; task was not started.');
     let progress = 0;
     const token = message.params._meta?.progressToken;
-    const result = await client.call(tool.name, input, text => {
+    const result = await client.call(message.params.name, input, text => {
       if (token !== undefined) send({ method: 'notifications/progress', params: { progressToken: token, progress: ++progress, message: text } });
     }, controller.signal);
     send({ id: message.id, result: { content: [{ type: 'text', text: JSON.stringify(result) }] } });

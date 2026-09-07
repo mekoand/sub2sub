@@ -12,7 +12,7 @@
 面向团队和多设备用户的任务委托工具。
 
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.6.0-6366f1)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.7.0-6366f1)](CHANGELOG.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 [English](README.md) · **简体中文** · [安装](docs/install.md)
@@ -43,7 +43,7 @@
 irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | iex
 ```
 
-安装完成后，开启新的 Codex 对话，或在终端启动 `codex`。新设备首次使用时会展示全部当前设置，确认后再继续。以后可在该宿主对话中说“检查 sub2sub 更新”或“升级 sub2sub”。安装保留配对和成果，新会话加载新版，运行中的节点不会自动重启。[安装指南](docs/install.md)
+安装完成后，完整退出并重新打开 Codex 桌面应用，或退出并重启终端中的 `codex`。新设备首次使用时会展示全部当前设置，确认后再继续。以后可在该宿主对话中说“检查 sub2sub 更新”或“升级 sub2sub”。安装保留配对和成果，重启宿主后加载新版，运行中的节点不会自动重启。[安装指南](docs/install.md)
 
 ## 连接工作节点
 

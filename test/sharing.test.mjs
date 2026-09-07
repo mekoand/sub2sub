@@ -25,6 +25,8 @@ test('sharing accepts and delivers work after its management process exits', { t
   const caller = await openMcp(path.join(root, 'caller.json')); processes.push(caller);
   const invite = await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 });
   await caller.tool('pair_peer', { invitation: invite.invitation, peer: 'owner', allowTaskFiles: true });
+  await owner.tool('web_management', { enabled: false });
+  assert.equal((await caller.tool('check_peer', { peer: 'owner' })).status, 'available');
   await owner.close();
   assert.equal((await caller.tool('check_peer', { peer: 'owner' })).status, 'available');
   const source = path.join(root, 'source'); await fs.mkdir(source);

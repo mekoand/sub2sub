@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.0 — 2026-09-08
+
+- Add lightweight local management using plain HTML/CSS/JavaScript in the MCP process. Enabled by default with a persistent off switch; manage existing nodes, tasks, settings and saved results through a private loopback link.
+- Measure task counts, turns, outcomes and execution time from retained task records over 7 or 30 days. No new database, quota polling, token accounting or cost estimates.
+- Reuse existing checks and host GitHub capabilities for diagnosis and sanitized issue feedback.
+- Correct Codex desktop installation/update instructions to fully quit and reopen the application. Preserve independent nodes and saved data.
+
 ## 0.6.0 — 2026-09-07
 
 - Show all current settings on a new device and wait for confirmation before first pairing, sharing or delegation. Resume, explicitly skip or reopen the introduction without resetting settings; existing users keep their configuration.

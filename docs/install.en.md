@@ -20,7 +20,7 @@ Windows, in the desktop user's PowerShell session:
 irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | iex
 ```
 
-After `Installed sub2sub` appears, open a new Codex conversation. CLI users should restart `codex`. Ask to generate a sub2sub invitation or paste an invitation from the other computer.
+After `Installed sub2sub` appears, **fully quit and reopen the Codex desktop app**. Closing a window or starting a new conversation may retain the old plugin process. CLI users should exit and restart `codex`. Ask to generate a sub2sub invitation or paste an invitation from the other computer.
 
 The installer downloads and checks the release, locates Codex, and installs through its native plugin commands. No manual directories, JSON editing, or npm commands are needed. Git is only needed for selecting a whole Git repository; explicitly selecting files or directories works without it.
 
@@ -86,7 +86,7 @@ An explicit “upgrade sub2sub” request permits `action=install`. This reuses 
 
 Active tasks, unsaved caller work or uncertain local state defer installation. Wait for work to end, check task status and save results, then retry. Upgrading does not cancel tasks, clean data or restart nodes. Pairings, certificates, configuration, task data, saved results and previous program versions are retained. Errors identify the check or download/installation stage. After an interrupted attempt, inspect the host plugin list before retrying; an installation attempt is not confirmed success.
 
-After installation is verified in host registration, open a new conversation to load the new code. Independent nodes keep running the old version; when idle, use the existing exit-node and start-sharing operations from the new session. **For 0.5.3, sharing belongs to the old provider conversation and has no independent-node exit command: finish work and save results, end that old provider conversation, then start sharing in the new one.** Version 0.5.3 has no conversation update tool, so its first upgrade still uses the installation command above. Pair again only if identity changed. Peers use existing capability checks; arbitrary old/new combinations are not guaranteed compatible.
+After installation is verified in host registration, fully quit and reopen the Codex desktop app. A new conversation or closing its window does not ensure the new code is loaded. CLI users should exit and restart `codex` or `claude`. Independent nodes keep running the old version; when idle, use the existing exit-node and start-sharing operations from the new session. **For 0.5.3, sharing belongs to the old provider conversation and has no independent-node exit command: finish work and save results, end that old provider conversation, then start sharing in the new one.** Version 0.5.3 has no conversation update tool, so its first upgrade still uses the installation command above. Pair again only if identity changed. Peers use existing capability checks; arbitrary old/new combinations are not guaranteed compatible.
 
 Both hosts use the plugin ID `sub2sub@sub2sub`. The Codex installer also migrates older sub2sub installations from other sources after confirming the replacement is enabled. The Claude installer manages its user-scope installation only. Other plugins remain unchanged.
 
@@ -97,7 +97,7 @@ Set `SUB2SUB_VERSION` before running the same command to select a published vers
 - **Download failed:** check access to GitHub Releases, then run the command again.
 - **Codex not found:** open and sign in to Codex first. For custom locations, set `SUB2SUB_CODEX` to the native executable's absolute path. Windows requires `codex.exe`, not a `.cmd` or `.bat` launcher.
 - **Claude not found:** restart your terminal after installing the native Claude Code CLI. For a custom location, set `SUB2SUB_CLAUDE` to the executable's absolute path; Windows requires `claude.exe`.
-- **Installed but no tools:** start a new conversation or restart the CLI. Run `codex plugin list` or `claude plugin list` for the host you use; it should show `sub2sub@sub2sub` installed and enabled.
+- **Installed but no tools:** fully quit and reopen the Codex desktop app, or exit and restart the CLI. Run `codex plugin list` or `claude plugin list` for the host you use; it should show `sub2sub@sub2sub` installed and enabled.
 - **Windows SSH cannot access the desktop package:** install and run from the desktop user's PowerShell. SSH system sessions can have different app access and sandbox behavior.
 
 Use `SUB2SUB_INSTALL_DIR` for a custom program directory and keep using it for updates. See [troubleshooting](troubleshooting.en.md) for other errors.
