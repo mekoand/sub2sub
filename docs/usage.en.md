@@ -4,7 +4,7 @@
 
 ## Roles and consent
 
-The **caller** delegates work and receives results. The **provider** authorizes its Codex environment to execute the task. Both run the same plugin and can use either role as appropriate.
+The **caller** delegates work and receives results. The **provider** authorizes its selected Codex or Claude environment to execute the task. Both run the same plugin and can use either role as appropriate.
 
 Pair with the provider's invitation and give the connection a name. Confirm task-file transfer during pairing or afterwards. Ordinary consent covers material needed for the user's delegated project; it does not include credentials, unrelated files, or separately sensitive material. Plugin consent does not override host approvals.
 
@@ -38,7 +38,7 @@ A turn is ready for delivery after execution ends and its results are saved. Fai
 | `responseFile` | Text response saved for this synchronization |
 | `resultDirectory` | Changed files, `changes.json`, and historical response |
 
-Ask Codex to link the verified local files. Later result viewing uses the saved version without contacting the provider. During an unsaved follow-up, existing paths still describe the previous save.
+Ask your assistant to link the verified local files. Later result viewing uses the saved version without contacting the provider. During an unsaved follow-up, existing paths still describe the previous save.
 
 Source files are not overwritten automatically. Compare or merge the returned work yourself. File changes produce an independent complete copy; a valid no-change synchronization reuses the existing copy while updating text and save records.
 
@@ -46,7 +46,13 @@ Retry `collect_result` on the same task after a download or confirmation failure
 
 ## Settings and status
 
-Ask to show caller settings, change the default model/effort, select provider models, show advanced settings, list available nodes, inspect local sharing, or show delegated tasks.
+Caller settings keep one default model and effort for each execution tool, shared across nodes. Codex defaults to GPT-5.6 Luna / max. For the first Claude task, choose a model and effort from the node’s actual options; save them as defaults if desired. Single-task choices override these defaults.
+
+Provider settings select one execution tool and its offered models, defaulting to all available models including future additions. Switch tools while the node is idle. A failed switch keeps the previous selection; existing tasks keep their original tool and session. Switch back before continuing them.
+
+Query a local or paired node's **usage** to read current Codex account-wide allowance windows, remaining percentages and reset times. Each query refreshes from that node's execution account; sharing does not need to be started for a local query. Missing data stays unknown, past reset times are marked stale, and failures never reuse old numbers. Claude and older peers report unsupported queries. Quota is separate from availability: it does not select nodes or block tasks automatically. Paired callers can see this basic quota by default, without account emails or detailed usage history.
+
+Advanced settings hold transfer limits and retention. Lists show each node's offered tool and each task's original tool alongside its times and saved results.
 
 Input and result defaults are 20 MiB and 2,000 files each. Raw file bytes count, not compressed or base64 sizes. Supported limits are 1–67,108,864 bytes and 1–10,000 files. Both peers' limits apply, taking the smaller value. Restoring a cleaned task checks the complete upload size again.
 
@@ -69,7 +75,7 @@ Provider retention supports 1–365 days, default 7. Accepted tasks retain their
 
 Automatic expiry only cleans the remote work copy. Necessary outputs must have been confirmed saved, with no active or unknown execution. Checks run while sharing is active, so offline devices do not promise exact deletion times.
 
-Local source, complete copies, historical downloads, and indexes are outside remote cleanup. System backups and service-side retention are also outside the plugin's deletion scope.
+Local source, complete copies, historical downloads, and indexes are outside remote cleanup. Shared native logs, system backups and service-side retention are also outside the plugin's deletion scope.
 
 ## Connection management
 

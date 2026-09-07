@@ -4,7 +4,7 @@ Use ordinary settings first. Keep the user's two roles in separate answers.
 
 ## 使用方
 
-- `caller_settings`: query or change one default model/effort across all nodes. Changes affect new tasks. Use `start_task` / `continue_task` arguments only for an explicit task-specific choice.
+- `caller_settings`: pass `harness=codex|claude` to query or change that tool's default model/effort across all nodes. Changes affect new tasks. Use `start_task` / `continue_task` arguments only for an explicit task-specific choice.
 - `list_models` with `peer`: read that provider's actual available and allowed model/effort combinations. On mismatch, present choices and wait for selection.
 - `list_peers`: live availability, busy, stopped or unreachable state with check times. `check=false` is local records only.
 - `list_tasks`: local tasks, ordered by latest known execution end (creation time before any end). Show peer, creation/end times in the user's local time, and saved results together. Do not add task titles or summaries. Older records without times remain undated. Read `responseFile` for the text answer, `resultDirectory/changes.json` for skipped-output and execution-error warnings, and open files under `workCopyDirectory`; `savedAt`/`savedRevision` identify the local save. `deliveryPending=true` marks an execution whose results have not yet been saved; missing freshness information means unknown. Viewing saved results uses only these local paths.
@@ -14,11 +14,15 @@ Use ordinary settings first. Keep the user's two roles in separate answers.
 
 ## 提供方
 
-- `provider_settings`: select all currently available models (including future additions) or an explicit list. Upgrading an old explicit model setting preserves that restriction. `configure_model` remains a legacy single-model restriction; use the separate role settings in normal conversation.
-- `sharing_status`: this machine's actual sharing process and active task. It works from another Codex conversation. `stop_sharing` pauses new execution; existing tasks may finish and results remain accessible. Closing a status-only conversation leaves the owner process running.
+- `provider_settings`: select `harness=codex|claude` while idle and select all currently available models (including future additions) or an explicit list. Upgrading an old explicit model setting preserves that restriction. `configure_model` remains a legacy single-model restriction; use the separate role settings in normal conversation.
+- `sharing_status`: this machine's actual sharing process and active task. It works from any management conversation and reports running versus installed versions. `stop_sharing` pauses new execution; existing tasks may finish and results remain accessible. Closing any management conversation leaves the node running. `exit_sharing` fully stops an idle node; finish or explicitly cancel active work first. After an update, exit when idle and start sharing again; do not remove a program version still used by the node.
 - `list_pairings`, `list_shared_tasks`, `cancel_shared_task`: authorized callers and owned tasks; verify interruption before cleanup.
 - `cleanup_shared_task`: clean one stopped task, preserving its connection and other tasks. Select `workcopy`, `records` or `all`. For uncollected outputs, show the affected task and obtain the provider's explicit discard choice before passing `discardUncollected=true`. The caller's approval is not required for the provider's own deletion decision.
 - `revoke_pairing`: disconnect one caller and interrupt its active task; default retains data. Explicit `records`/`all` may also discard that connection's uncollected outputs. `cleanup_shared_tasks` applies an explicit cleanup choice after disconnection. Keep those operations distinct from local connection deletion and single-task cleanup.
+
+## 额度
+
+`resource_usage` queries the local selected execution resource; pass `peer` for a paired node. Show its harness, each account-wide allowance window, remaining percentage, reset time and checkedAt. Convert Unix reset seconds to the user's local time. Explain unavailable, stale, exhausted, failed and unsupported results as returned; never infer unlimited quota or sum windows/devices. Each call refreshes from the executing node's account and does not run a task. Paired callers see basic quota by default. Claude quota remains unsupported. Keep quota separate from node availability and manual selection.
 
 ## 高级设置
 

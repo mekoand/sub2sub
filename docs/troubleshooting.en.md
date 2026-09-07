@@ -2,11 +2,11 @@
 
 [README](../README.md) · [简体中文](troubleshooting.md) · [Install](install.en.md)
 
-Check both peers' plugin, Node, and Codex versions and actual executable paths. Remove invitations, tokens, personal paths, and project content before sharing diagnostics.
+Check both peers' plugin, Node, and selected execution tool versions and actual executable paths. Remove invitations, tokens, personal paths, and project content before sharing diagnostics.
 
 | Symptom | Next step |
 | --- | --- |
-| `ECONNREFUSED` after pairing | Restart provider sharing; the hosting process may have exited. Reuse the pairing first |
+| `ECONNREFUSED` after pairing | Check that the device is awake and connected, then start sharing again. Reuse the existing pairing |
 | Connection timeout | Check the selected IPv4 address, reachability, sleep state, and inbound port permission |
 | Invalid or expired invitation | Request a new invitation; it lasts 10 minutes, is single-use, and replaces the previous one |
 | Provider busy | Inspect the existing task; one provider executes one active task |
@@ -17,9 +17,13 @@ Check both peers' plugin, Node, and Codex versions and actual executable paths. 
 | Cleanup refused | Check unsaved outputs, running state, filesystem permissions, and host approval feedback |
 | Native Codex not found on Windows | Use actual `codex.exe`, not an npm `.cmd` or `.bat` shim |
 | Windows certificate generation fails | Update to 0.5, which includes certificate generation and no longer needs external OpenSSL; include the underlying error if it persists |
-| Windows sandbox initialization fails | Use the desktop login session; SSH system sessions are an observed limitation |
+| Windows Codex initialization fails or times out | Start sharing from the logged-in user's desktop session. An SSH session can read quota but may fail to start native Codex work |
+| Node is reachable locally but LAN TLS times out after install/update | Check Windows Firewall permission for the actual Node path shown in sharing status. A different program/version path may have a separate rule; allow it only on the intended private network |
+| Claude cannot be selected | On macOS, install Claude Code 2.1.263+ and sign in with its subscription. A failed switch keeps the previous tool selected |
+| Cannot switch execution tool | Finish or cancel the active turn first. Retained tasks need their original tool selected before continuation |
+| Claude quota shows unsupported | Claude quota is not available in this version; no Codex balance is substituted |
 | Browser not found | Inspect standard installation locations as well as PATH; installed does not mean callable in the sandbox |
-| New version not loaded | Update the installed cache and start a new conversation; source edits do not update running processes |
+| New version not loaded | Compare running and installed versions in sharing status. When idle, exit the node and start sharing from the updated plugin; a new conversation alone does not replace the node |
 
 ## Execution failure versus delivery failure
 

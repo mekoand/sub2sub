@@ -9,6 +9,7 @@ import { X509Certificate } from 'node:crypto';
 import https from 'node:https';
 import selfsigned from 'selfsigned';
 import { openMcp } from './helpers/mcp.mjs';
+import { stopTestSharing } from './helpers/sharing.mjs';
 import { Client, connect } from '../lib/client.mjs';
 import { Config } from '../lib/config.mjs';
 import { Sharing } from '../lib/lan.mjs';
@@ -20,8 +21,14 @@ async function setup(t, { clock = false, deadline = false } = {}) {
   const ownerOptions = clock ? { args: ['--import', fileURLToPath(new URL('./fixtures/clock.mjs', import.meta.url)), fileURLToPath(new URL('../bin/mcp.mjs', import.meta.url))], env: { SUB2SUB_TEST_CLOCK: clockFile } } : {};
   if (deadline) Object.assign(ownerOptions, { args: ['--import', fileURLToPath(new URL('./fixtures/deadline.mjs', import.meta.url)), fileURLToPath(new URL('../bin/mcp.mjs', import.meta.url))], env: { SUB2SUB_TEST_DEADLINE: path.join(root, 'deadline') } });
   const processes = [];
-  t.after(async () => { await Promise.all(processes.map(p => p.close())); await fs.rm(root, { recursive: true, force: true }); });
+  const states = [];
+  t.after(async () => {
+    await Promise.all(processes.map(p => p.close()));
+    for (const state of states) await stopTestSharing(state);
+    await fs.rm(root, { recursive: true, force: true });
+  });
   const device = async name => {
+    states.push(path.join(root, name));
     const file = path.join(root, `${name}.json`);
     await fs.writeFile(file, JSON.stringify({ stateRoot: path.join(root, name), deviceName: name, peers: {}, provider: { codexPath: fileURLToPath(new URL('./fixtures/fake-codex.mjs', import.meta.url)) } }));
     const mcp = await openMcp(file, name === 'owner' ? ownerOptions : {}); processes.push(mcp); return mcp;
@@ -304,14 +311,14 @@ test('another local plugin reads actual sharing state and closing that reader pr
   processes.push(observer);
   const status = await observer.tool('sharing_status');
   assert.equal(status.status, 'sharing');
-  assert.equal(status.ownerPid, owner.child.pid);
+  assert.notEqual(status.ownerPid, owner.child.pid);
   await observer.close();
   assert.equal((await owner.tool('sharing_status')).status, 'sharing');
   const second = await openMcp(path.join(root, 'owner.json')); processes.push(second);
   await second.tool('stop_sharing');
   assert.equal((await owner.tool('sharing_status')).status, 'stopped');
   const invitation = await second.tool('create_pairing');
-  assert.equal((await owner.tool('sharing_status')).ownerPid, owner.child.pid);
+  assert.equal((await owner.tool('sharing_status')).ownerPid, status.ownerPid);
   await caller.tool('pair_peer', { invitation: invitation.invitation, peer: 'owner', allowTaskFiles: true });
   assert.equal((await caller.tool('list_peers')).peers[0].status, 'available');
 });
@@ -743,6 +750,7 @@ test('pairing survives provider restart and stopping sharing preserves result de
   await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing')).invitation, peer: 'owner', allowTaskFiles: true });
   const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
   const first = await caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'before restart' });
+  await owner.tool('exit_sharing');
   await owner.close();
   await assert.rejects(caller.tool('check_peer', { peer: 'owner' }), /connection failed/);
   assert.match((await caller.tool('list_peers')).nextStep, /check the network/i);

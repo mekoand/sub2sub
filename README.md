@@ -23,13 +23,13 @@ AI subscriptions, model access, and working environments are often spread across
 
 Projects such as [sub2api](https://github.com/Wei-Shaw/sub2api) distribute subscription resources through an API gateway. sub2sub applies a related idea to complete tasks. Work runs in the selected device's own AI environment, using its signed-in account and available models.
 
-One computer can connect to several work nodes, and any device can send or receive tasks. Each owner chooses when to share and which models to offer. You decide where each task runs; each node handles one task at a time.
+One computer can connect to several work nodes, and any device can send or receive tasks. Each owner chooses when to share, which execution tool to use, and which models to offer. Check a Codex node's remaining quota before assigning work. You decide where each task runs; each node handles one task at a time.
 
 ## Install
 
 Install sub2sub on each computer where you want to send or receive tasks. Start with the devices you need and add more whenever you want.
 
-For Codex, install it and sign in first, then run the command for your system. Packages include Node and certificate generation. Claude Code callers can use the [Claude installation commands](docs/install.en.md#claude-code) without installing Codex locally; receiving work nodes still use Codex.
+For Codex, install it and sign in first, then run the command for your system. Packages include Node and certificate generation. Claude Code callers can use the [Claude installation commands](docs/install.en.md#claude-code) without installing Codex locally. On macOS, work nodes can offer Codex or Claude Code.
 
 **macOS · Terminal**
 
@@ -55,7 +55,7 @@ On a device that will send work, paste the invitation:
 
 > Connect this sub2sub invitation and name it office-mac.
 
-Confirm the file-transfer scope when prompted. Repeat for other nodes you want to use, giving each a recognizable name. Keep the receiving node's sharing session open while it is working.
+Confirm the file-transfer scope when prompted. Repeat for other nodes you want to use, giving each a recognizable name. Sharing runs independently after startup. Keep the receiving computer awake and connected; its management conversation can close.
 
 ## Example: a team's documentation task
 
@@ -79,7 +79,7 @@ Use [Tailscale](https://tailscale.com/) to connect participating devices across 
 
 ## Compatibility
 
-Packages are available for macOS and Windows x64, with installation targets for Codex and Claude Code. Task delegation is validated with Codex Desktop and with Codex CLI and Claude Code on macOS. WorkBuddy remains untested. [Validation details](docs/validation.md)
+Packages are available for macOS and Windows x64, with installation targets for Codex and Claude Code. Codex can execute on both platforms; Claude execution currently supports macOS. Task delegation is validated with Codex Desktop and with Codex CLI and Claude Code on macOS. WorkBuddy remains untested. [Validation details](docs/validation.md)
 
 ## Development
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Run sharing in an independent node, with separate stop-accepting and exit controls and visible running/installed versions.
+- Select Codex or Claude Code on macOS, with per-tool defaults and model restrictions. Preserve each task’s tool and original session through follow-ups, stage delivery and restoration.
+- Read account-wide Codex quota locally or from a paired node without executing a task. Claude quota remains unsupported.
+- Use the official Claude Agent SDK and Bash sandbox, reusing the existing task lifecycle and local delivery.
+
 ## 0.5.3 — 2026-09-07
 
 - Add a Claude Code installation target using the existing bundled runtime, task service and Skill. Caller-only installation does not require local Codex, and both hosts can coexist.

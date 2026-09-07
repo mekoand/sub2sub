@@ -6,6 +6,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { Config, codexExecutable, executableOnPath } from '../lib/config.mjs';
 import { processLock } from '../lib/lock.mjs';
+import { Sharing } from '../lib/lan.mjs';
 
 const exec = promisify(execFile);
 const marketplaceName = 'sub2sub';
@@ -83,7 +84,7 @@ async function installClaude(payload, root, release, run, log) {
     await fs.mkdir(path.join(adapter, '.claude-plugin'), { recursive: true });
     for (const name of ['skills', 'docs', 'README.md', 'README.zh-CN.md', 'README.en.md', 'CHANGELOG.md', 'CONTRIBUTING.md', 'LICENSE']) await fs.cp(path.join(plugin, name), path.join(adapter, name), { recursive: true });
     const version = `${release.version}+claude.${Date.now()}`;
-    await fs.writeFile(path.join(adapter, '.claude-plugin/plugin.json'), JSON.stringify({ name: 'sub2sub', version, description: 'Delegate tasks to Codex nodes and receive complete results locally.', license: 'MIT' }, null, 2) + '\n');
+    await fs.writeFile(path.join(adapter, '.claude-plugin/plugin.json'), JSON.stringify({ name: 'sub2sub', version, description: 'Delegate tasks to shared nodes and receive complete results locally.', license: 'MIT' }, null, 2) + '\n');
     await fs.writeFile(path.join(adapter, '.mcp.json'), JSON.stringify({ mcpServers: { sub2sub: { command: node, args: [path.join(plugin, 'bin/mcp.mjs')], timeout: 1900000 } } }, null, 2) + '\n');
     await fs.mkdir(path.dirname(marketplaceFile), { recursive: true });
     await fs.writeFile(marketplaceFile, JSON.stringify({ name: marketplaceName, owner: { name: 'mekoand' }, plugins: [{ name: 'sub2sub', source: `./versions/${release.version}/claude/sub2sub` }] }, null, 2) + '\n');
@@ -113,7 +114,10 @@ export async function install(payload, root, log = console.log, target = 'codex'
   const release = await json(path.join(payload, 'release.json'));
   if (!/^\d+\.\d+\.\d+$/.test(release.version) || release.platform !== process.platform || release.arch !== process.arch) throw new Error('This release does not match this operating system and architecture.');
   const configFile = process.env.SUB2SUB_CONFIG || path.join(os.homedir(), '.config/sub2sub/config.json');
-  const config = await new Config(configFile).read();
+  const store = new Config(configFile), config = await store.read();
+  const sharing = await new Sharing(store, config.stateRoot || path.join(os.homedir(), '.local/state/sub2sub')).machineStatus();
+  if (sharing.ownerPid) log(`Existing sub2sub node: ${sharing.version || 'unknown version'}, PID ${sharing.ownerPid}, ${sharing.status}. It keeps running during installation. When idle, use exit_sharing then start_sharing from a NEW session to load the update.`);
+  else if (sharing.status !== 'stopped') log(`Existing node state: ${sharing.status}. ${sharing.reason || ''} Check sharing_status before starting it again.`);
   const executable = target === 'claude' ? process.env.SUB2SUB_CLAUDE || await executableOnPath('claude') : await findCodex(config);
   if (target === 'claude' && process.platform === 'win32' && /\.(cmd|bat)$/i.test(executable)) throw new Error('SUB2SUB_CLAUDE must point to native claude.exe, not a .cmd or .bat launcher.');
   const run = async args => {

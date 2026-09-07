@@ -18,7 +18,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-      - run: npm ci --ignore-scripts
+      - run: npm ci --omit=optional --ignore-scripts
       - run: npm run check
       - run: npm test
   windows:
@@ -29,7 +29,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - run: npm ci --ignore-scripts
+      - run: npm ci --omit=optional --ignore-scripts
       - run: node --test test/platform.test.mjs
       - name: Parse PowerShell installer
         shell: pwsh

@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { codexExecutable } from '../lib/config.mjs';
 import { buildWorkCopy } from '../lib/sync.mjs';
 import { processLock } from '../lib/lock.mjs';
+import { openMcp } from './helpers/mcp.mjs';
 
 test('Windows Codex discovery selects the native exe from a path containing spaces', async t => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'sub2sub Windows 工具-'));
@@ -110,4 +111,28 @@ test('bundled certificate generation and identity reuse need no external executa
   restored = new Sharing(config, root);
   await restored.manage('pair');
   assert.equal(await fs.readFile(path.join(root, 'sharing/identity.json'), 'utf8'), identity);
+});
+
+
+test('native Windows sharing survives its management process and can be exited by a fresh manager', { skip: process.platform !== 'win32' }, async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'sub2sub-node 空间-'));
+  const file = path.join(root, 'config.json');
+  // No model task is run: a real native executable suffices to start the listener.
+  await fs.writeFile(file, JSON.stringify({ stateRoot: root, provider: { codexPath: process.execPath } }));
+  const managers = [];
+  t.after(async () => {
+    const cleanup = await openMcp(file); managers.push(cleanup);
+    await cleanup.tool('exit_sharing');
+    await Promise.all(managers.map(manager => manager.close()));
+    await fs.rm(root, { recursive: true, force: true });
+  });
+  const first = await openMcp(file); managers.push(first);
+  const started = await first.tool('start_sharing', { address: '127.0.0.1', port: 0 });
+  await first.close();
+  const second = await openMcp(file); managers.push(second);
+  const current = await second.tool('sharing_status');
+  assert.equal(current.status, 'sharing'); assert.equal(current.ownerPid, started.ownerPid);
+  assert.equal((await second.tool('start_sharing')).ownerPid, started.ownerPid);
+  await second.tool('exit_sharing');
+  assert.equal((await second.tool('sharing_status')).status, 'stopped');
 });

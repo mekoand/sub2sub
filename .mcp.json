@@ -2,9 +2,21 @@
   "mcpServers": {
     "sub2sub": {
       "command": "/bin/sh",
-      "args": ["./bin/launch.sh"],
+      "args": [
+        "./bin/launch.sh"
+      ],
       "cwd": ".",
-      "env_vars": ["SUB2SUB_CONFIG", "SUB2SUB_NODE", "HOME", "PATH", "SSH_AUTH_SOCK"],
+      "env_vars": [
+        "SUB2SUB_CONFIG",
+        "SUB2SUB_NODE",
+        "HOME",
+        "PATH",
+        "SSH_AUTH_SOCK",
+        "SUB2SUB_CODEX",
+        "CODEX_HOME",
+        "SUB2SUB_CLAUDE",
+        "CLAUDE_CONFIG_DIR"
+      ],
       "tool_timeout_sec": 1900
     }
   }

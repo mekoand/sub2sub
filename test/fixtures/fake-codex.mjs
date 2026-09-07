@@ -15,12 +15,25 @@ let model;
 lines.on('line', async line => {
   const m = JSON.parse(line);
   if (!m.method) return;
+  if (process.env.SUB2SUB_TEST_READ_CALLS) await fs.appendFile(process.env.SUB2SUB_TEST_READ_CALLS, JSON.stringify(m.method) + '\n');
   if (executing) await fs.appendFile(path.join(directory, 'calls.jsonl'), line + '\n');
   const reply = result => send({ id: m.id, result });
   switch (m.method) {
     case 'initialize': reply({ userAgent: 'fake-codex' }); break;
-    case 'account/read': reply({ account: { type: 'chatgpt', planType: 'plus' } }); break;
+    case 'account/read': reply({ account: process.env.SUB2SUB_TEST_NO_LOGIN ? null : { type: 'chatgpt', planType: 'plus' } }); break;
+    case 'account/rateLimits/read': {
+      const quota = JSON.parse(await fs.readFile(process.env.SUB2SUB_TEST_QUOTA, 'utf8'));
+      if (quota.error) send({ id: m.id, error: quota.error }); else reply(quota);
+      break;
+    }
     case 'model/list': {
+      if (process.env.SUB2SUB_TEST_MODEL_GATE) {
+        const gate = process.env.SUB2SUB_TEST_MODEL_GATE;
+        for (let i = 0; i < 500 && await fs.stat(gate).catch(error => { if (error.code !== 'ENOENT') throw error; }); i++) {
+          await fs.writeFile(gate + '.started', '');
+          await new Promise(resolve => setTimeout(resolve, 10));
+        }
+      }
       let models;
       try { models = JSON.parse(await fs.readFile(path.join(process.cwd(), 'model-list.json'), 'utf8')); }
       catch (error) {
