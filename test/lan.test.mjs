@@ -49,7 +49,7 @@ async function interceptPeer(t, root, intercept) {
       let body = ''; for await (const chunk of req) body += chunk;
       const input = JSON.parse(body);
       const result = await connect(peer, input);
-      if (intercept(input, result) === 'disconnect') { res.destroy(); return; }
+      if (await intercept(input, result) === 'disconnect') { res.destroy(); return; }
       res.end(JSON.stringify({ result }) + '\n');
     } catch (error) { res.end(JSON.stringify({ error: error.message }) + '\n'); }
   });
@@ -58,6 +58,71 @@ async function interceptPeer(t, root, intercept) {
   config.peers.owner.port = server.address().port;
   await fs.writeFile(file, JSON.stringify(config));
 }
+
+test('failed collection recommends collecting the same task without extra requests or execution', async t => {
+  const { root, owner, caller, source } = await setup(t);
+  await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  const task = await caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'write result' });
+  const requests = [];
+  await interceptPeer(t, root, input => { requests.push(input.action); if (input.action === 'result') return 'disconnect'; });
+  await assert.rejects(caller.tool('collect_result', { taskId: task.taskId }), error => {
+    assert.match(error.message, /LAN connection failed/);
+    assert.ok(error.message.includes(task.taskId));
+    assert.match(error.message, /Retry collect_result.*do not rerun/i);
+    return true;
+  });
+  assert.deepEqual(requests, ['result']);
+});
+
+test('lost execution reply preserves its error and recommends status without automatic probes', async t => {
+  const { root, owner, caller, source } = await setup(t);
+  await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  const requests = [];
+  await interceptPeer(t, root, input => { requests.push(input.action); if (input.action === 'run') return 'disconnect'; });
+  await assert.rejects(caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'write result' }), /Task [\w-]+:.*LAN connection failed.*Query task_status.*before submitting/i);
+  assert.deepEqual(requests, ['models', 'run']);
+});
+
+test('failed capability discovery preserves an unknown error without guessing an upgrade is required', async t => {
+  const { root, owner, caller, source } = await setup(t);
+  await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  await fs.writeFile(path.join(root, 'owner/sharing/model-list.json'), '{broken-catalog');
+  await assert.rejects(caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'write result' }), error => {
+    assert.match(error.message, /Cannot confirm provider capabilities/);
+    assert.match(error.message, /cause is unconfirmed/i);
+    assert.doesNotMatch(error.message, /update both endpoints to sub2sub 0\.4/i);
+    return true;
+  });
+  assert.deepEqual((await owner.tool('list_shared_tasks')).tasks, []);
+});
+
+test('oversized input identifies the file and limit and suggests a smaller input', async t => {
+  const { caller, source } = await setup(t);
+  await caller.tool('caller_settings', { inputBytes: 2 });
+  await assert.rejects(caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] }), /File exceeds 2 bytes limit: input\.txt.*smaller/i);
+});
+
+test('saving a received execution response fails with a collection hint for both initial and follow-up turns', { skip: process.platform === 'win32' }, async t => {
+  const { root, owner, caller, source } = await setup(t);
+  await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  const directory = path.join(root, 'caller/tasks');
+  let taskId;
+  await interceptPeer(t, root, async input => {
+    if (input.action === 'run') { taskId = input.taskId; await fs.chmod(directory, 0o500); }
+  });
+  try {
+    await assert.rejects(caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'write result' }), /EACCES.*Retry collect_result.*do not rerun/is);
+  } finally { await fs.chmod(directory, 0o700); }
+  assert.equal((await caller.tool('collect_result', { taskId })).status, 'completed');
+  try {
+    await assert.rejects(caller.tool('continue_task', { taskId, prompt: 'write more' }), /EACCES.*Retry collect_result.*do not rerun/is);
+  } finally { await fs.chmod(directory, 0o700); }
+  assert.equal((await caller.tool('collect_result', { taskId })).status, 'completed');
+});
 
 test('pairing generates and reuses its identity when the system OpenSSL configuration is missing', async t => {
   const { root, owner, caller, processes } = await setup(t);
