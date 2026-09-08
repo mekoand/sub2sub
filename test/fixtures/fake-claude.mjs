@@ -27,6 +27,47 @@ lines.on('line', async line => {
     await fs.appendFile(path.join(project, session + '.jsonl'), JSON.stringify({ type: 'user', sessionId: session, cwd: process.cwd(), uuid: message.uuid, parentUuid: null, isSidechain: false, message: message.message, timestamp: new Date().toISOString() }) + '\n');
     send({ type: 'system', subtype: 'init', session_id: session, model: model === 'sonnet' ? 'claude-sonnet-5' : model, tools: ['Bash'], mcp_servers: [], plugins: [], skills: [], permissionMode: 'acceptEdits' });
     await fs.writeFile(path.join(process.cwd(), 'answer.txt'), message.message.content);
+    if (message.message.content.startsWith('claude-usage-')) {
+      const assistant = (id, input, read, write, parent = null, activeSession = session) => send({ type: 'assistant', session_id: activeSession, uuid: id + '-frame', parent_tool_use_id: parent,
+        message: { id, model: 'claude-sonnet-5', role: 'assistant', content: [{ type: 'text', text: 'Synthetic progress' }], stop_reason: null,
+          usage: { input_tokens: input, cache_read_input_tokens: read, cache_creation_input_tokens: write, output_tokens: 1 } } });
+      assistant('response-one', 10, 20, 30); assistant('response-one', 10, 20, 30);
+      assistant('response-one', 10, undefined, undefined);
+      assistant('response-two', 3, 4, 5);
+      assistant('child-response', 999, 999, 999, 'child-tool');
+      assistant('other-session-response', 999, 999, 999, null, 'other-session');
+      if (message.message.content === 'claude-usage-partial') return;
+      if (message.message.content === 'claude-usage-crash') {
+        send({ type: 'result', subtype: 'error_during_execution', is_error: true, errors: ['Synthetic crash with zeroed usage'], session_id: session, user_message_uuid: message.uuid,
+          modelUsage: { 'claude-sonnet-5': { inputTokens: 0, outputTokens: 0, cacheReadInputTokens: 0, cacheCreationInputTokens: 0 } } });
+        return;
+      }
+      if (message.message.content === 'claude-usage-failure') {
+        send({ type: 'result', subtype: 'error_max_turns', is_error: true, errors: ['Synthetic failed execution'], session_id: session,
+          modelUsage: { 'claude-sonnet-5': { inputTokens: 13, outputTokens: 50, cacheReadInputTokens: 24, cacheCreationInputTokens: 35 } } });
+        return;
+      }
+      if (message.message.content === 'claude-usage-small') {
+        send({ type: 'result', subtype: 'success', is_error: false, session_id: session, user_message_uuid: message.uuid, result: 'Created answer.txt',
+          modelUsage: { 'claude-sonnet-5': { inputTokens: 3, outputTokens: 7, cacheReadInputTokens: 0, cacheCreationInputTokens: 0 } } });
+        return;
+      }
+      if (message.message.content === 'claude-usage-missing-fields') {
+        send({ type: 'result', subtype: 'success', is_error: false, session_id: session, user_message_uuid: message.uuid, result: 'Created answer.txt',
+          modelUsage: { 'claude-sonnet-5': { outputTokens: 50 } } });
+        return;
+      }
+    }
+    if (message.message.content === 'claude-usage-complete') {
+      send({ type: 'result', subtype: 'success', is_error: false, session_id: session, user_message_uuid: 'another-user-turn', result: 'Ignored other turn', modelUsage: {
+        'other-model': { inputTokens: 999, outputTokens: 999, cacheReadInputTokens: 999, cacheCreationInputTokens: 999 }
+      } });
+      send({ type: 'result', subtype: 'success', is_error: false, session_id: session, user_message_uuid: message.uuid, result: 'Created answer.txt', modelUsage: {
+        'claude-sonnet-5': { inputTokens: 13, outputTokens: 50, cacheReadInputTokens: 24, cacheCreationInputTokens: 35, thinkingTokens: 10 },
+        'claude-haiku-4-5': { inputTokens: 2, outputTokens: 4, cacheReadInputTokens: 1, cacheCreationInputTokens: 0 }
+      } });
+      return;
+    }
     if (message.message.content === 'background-ignore-interrupt') {
       send({ type: 'system', subtype: 'task_started', session_id: session, task_id: 'background-fixture' });
       return;

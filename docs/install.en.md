@@ -61,7 +61,7 @@ Both installation targets can coexist in the same program directory and reuse pa
 
 Invitations are single-use and expire after 10 minutes. Paired connections can be reused. If the operating system asks for network access, allow the work node to accept connections on the private network you use. The default port is `47631`.
 
-Repeat pairing to add other nodes, give each a name, then choose a node for each task. Each node runs one task at a time.
+Repeat pairing to add other nodes, give each a name, then choose a node for each task. Each node runs up to four tasks concurrently by default. Providers can adjust the limit; full nodes reject new work without a queue.
 
 ## Using the CLI
 

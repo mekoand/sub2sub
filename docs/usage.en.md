@@ -82,6 +82,10 @@ With no page open there is no polling. A visible overview reads local records ev
 
 I use / I provide summarize retained tasks by resource and execution tool over 7 or 30 days: tasks, turns, outcomes and measured execution time. Windows use turn start time. Measurement begins with turns run in this version; older turns and unknown timing are not inferred. Caller totals cover received execution/result records, not all provider history. Refreshing or downloading again does not add turns. Work-copy cleanup preserves statistics; explicit task-record deletion removes the corresponding statistics on that side. Saved local results remain. These figures are not account quota, cost or quality scores.
 
+Model usage groups native observations by actual model and source, with per-turn details and JSON export. Requested and actual models remain separate. — means unknown; partial records, field coverage and pending tasks stay visible. Task details show all retained turns for that task, independent of the overview period. Codex cached input is included in input, and reasoning in output. Claude input, cache reads and cache writes retain their separate native meanings. Categories are not added again and missing totals are not inferred. Caller and provider views describe the same consumption and must not be added together.
+
+Provider settings include the node's concurrent task limit, default 4. One caller may use all slots, while one task can execute only one turn at a time. Lowering the limit lets existing tasks finish and applies to new work immediately, without a restart.
+
 Use Troubleshooting to return to the conversation and reuse existing status queries. After an explicit request to submit to GitHub, the assistant prepares public-safe content, searches duplicates and uses the host's existing GitHub capability; otherwise it provides a draft. Never publish invitations, private management links, credentials, personal paths or private task content.
 
 ## Task lifecycle
