@@ -78,6 +78,21 @@ lines.on('line', async line => {
         break;
       }
       reply({ turn: { id: 'turn-1', status: 'inProgress' } });
+      if (prompt.startsWith('usage-')) {
+        const usage = (total, ids = {}) => send({ method: 'thread/tokenUsage/updated', params: { threadId, turnId: 'turn-1', tokenUsage: { total, last: { totalTokens: 17, inputTokens: 12, outputTokens: 5 }, modelContextWindow: 10000 }, ...ids } });
+        usage({ totalTokens: 120, inputTokens: 100, cachedInputTokens: 20, cacheWriteInputTokens: 0, outputTokens: 20, reasoningOutputTokens: 5 });
+        usage({ totalTokens: 9999, inputTokens: 9990, outputTokens: 9 }, { threadId: 'another-thread' });
+        usage({ totalTokens: 9999, inputTokens: 9990, outputTokens: 9 }, { turnId: 'previous-turn' });
+        const total = { totalTokens: 180, inputTokens: 150, cachedInputTokens: 35, cacheWriteInputTokens: 0, outputTokens: 30, reasoningOutputTokens: 8 };
+        usage(total); usage(total);
+        if (prompt === 'usage-reroute') send({ method: 'model/rerouted', params: { threadId, turnId: 'turn-1', fromModel: model, toModel: 'gpt-5.6-sol', reason: 'highRisk' } });
+        if (prompt === 'usage-disconnect') { process.exit(1); }
+        if (prompt === 'usage-wait') break;
+        if (prompt === 'usage-missing') usage({ inputTokens: 150 });
+        if (prompt === 'usage-late') { send({ method: 'turn/completed', params: { threadId, turn: { id: 'turn-1', status: 'completed' } } }); usage(total); break; }
+        if (prompt === 'usage-decrease') usage({ totalTokens: 90, inputTokens: 80, outputTokens: 10 });
+        if (prompt === 'usage-failure') { send({ method: 'turn/completed', params: { threadId, turn: { id: 'turn-1', status: 'failed', error: { message: 'fixture usage failure' } } } }); break; }
+      }
       if (prompt === 'partial-wait') {
         await fs.writeFile('partial.txt', 'Stage one is on disk; further work remains.');
         break;
