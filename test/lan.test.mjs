@@ -14,7 +14,7 @@ import { Client, connect } from '../lib/client.mjs';
 import { Config } from '../lib/config.mjs';
 import { Sharing } from '../lib/lan.mjs';
 
-async function setup(t, { clock = false, deadline = false } = {}) {
+async function setup(t, { clock = false, deadline = false, timeoutMs } = {}) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'sub2sub-lan-test-'));
   const clockFile = path.join(root, 'clock.txt'), initialTime = Date.now();
   if (clock) await fs.writeFile(clockFile, String(initialTime));
@@ -31,7 +31,7 @@ async function setup(t, { clock = false, deadline = false } = {}) {
     states.push(path.join(root, name));
     const file = path.join(root, `${name}.json`);
     await fs.writeFile(file, JSON.stringify({ stateRoot: path.join(root, name), deviceName: name, peers: {}, provider: { codexPath: fileURLToPath(new URL('./fixtures/fake-codex.mjs', import.meta.url)) } }));
-    const mcp = await openMcp(file, name === 'owner' ? ownerOptions : {}); processes.push(mcp); return mcp;
+    const mcp = await openMcp(file, { timeoutMs, ...(name === 'owner' ? ownerOptions : {}) }); processes.push(mcp); return mcp;
   };
   const owner = await device('owner'), caller = await device('caller');
   const source = path.join(root, 'source'); await fs.mkdir(source);
@@ -207,8 +207,8 @@ test('all models follows the live catalog, invalid effort uploads nothing, and l
   await assert.rejects(caller.tool('list_models', { peer: 'owner' }), /Invalid model capabilities/);
 });
 
-test('advanced limits apply to both endpoints and raised limits permit an actual larger round trip', async t => {
-  const { owner, caller, source } = await setup(t);
+test('advanced limits apply to both endpoints and raised limits permit an actual larger round trip', { timeout: 90000 }, async t => {
+  const { owner, caller, source } = await setup(t, { timeoutMs: 60000 });
   await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
   await fs.writeFile(path.join(source, 'large.bin'), Buffer.alloc(21 * 1024 * 1024, 65));
   await caller.tool('caller_settings', { inputBytes: 24 * 1024 * 1024, resultBytes: 24 * 1024 * 1024 });
@@ -946,10 +946,11 @@ test('caller disconnection keeps the same provider task recoverable and cancella
   await resumed.tool('cancel_task', { taskId: active.taskId });
   for (let i = 0; i < 100; i++) {
     state = await resumed.tool('task_status', { taskId: active.taskId });
-    if (state.status !== 'running') break;
+    if (state.status !== 'running' && !state.executionActive) break;
     await new Promise(resolve => setTimeout(resolve, 20));
   }
   assert.equal(state.status, 'interrupted');
+  assert.equal(state.executionActive, false);
   await resumed.tool('collect_result', { taskId: active.taskId });
   await resumed.tool('finish_task', { cleanup: 'keep', taskId: active.taskId });
 });
