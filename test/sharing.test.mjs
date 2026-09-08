@@ -19,7 +19,7 @@ test('sharing accepts and delivers work after its management process exits', { t
   });
   for (const name of ['owner', 'caller']) await fs.writeFile(path.join(root, `${name}.json`), JSON.stringify({
     stateRoot: path.join(root, name), peers: {},
-    provider: { codexPath: fileURLToPath(new URL('./fixtures/fake-codex.mjs', import.meta.url)) }
+    provider: { maxConcurrent: 1, codexPath: fileURLToPath(new URL('./fixtures/fake-codex.mjs', import.meta.url)) }
   }));
   const owner = await openMcp(path.join(root, 'owner.json')); processes.push(owner);
   const caller = await openMcp(path.join(root, 'caller.json')); processes.push(caller);

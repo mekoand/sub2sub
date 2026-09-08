@@ -787,8 +787,94 @@ test('new pinned certificates tolerate small clock skew but not expiry or large 
   clock.mock.restore();
 });
 
+test('node admits four independent tasks and applies a lower live limit without cancelling work', { timeout: 30000 }, async t => {
+  const { owner, caller, source, root } = await setup(t);
+  assert.equal((await owner.tool('provider_settings')).maxConcurrent, 4);
+  await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  const failures = [];
+  const running = Array.from({ length: 4 }, () => caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'partial-wait' }).catch(error => { failures.push(error.message); return error; }));
+  let status;
+  for (let i = 0; i < 200; i++) {
+    status = await owner.tool('sharing_status');
+    if (status.activeTasks.length === 4) {
+      const ready = await Promise.all(status.activeTasks.map(task => fs.stat(path.join(root, 'owner/sharing/tasks', task.pairId, task.taskId, 'work/partial.txt')).then(() => true, error => { if (error.code === 'ENOENT') return false; throw error; })));
+      if (ready.every(Boolean)) break;
+    }
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
+  assert.equal(status.occupiedSlots, 4, failures.join("\n"));
+  for (const task of status.activeTasks) assert.equal(await fs.readFile(path.join(root, 'owner/sharing/tasks', task.pairId, task.taskId, 'work/partial.txt'), 'utf8'), 'Stage one is on disk; further work remains.');
+  assert.equal((await caller.tool('check_peer', { peer: 'owner' })).status, 'busy');
+  await assert.rejects(caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'overflow' }), /busy|capacity/i);
+  const peer = JSON.parse(await fs.readFile(path.join(root, 'caller.json'), 'utf8')).peers.owner;
+  await assert.rejects(connect(peer, { action: 'run', protocol: 2, taskId: status.activeTasks[0].taskId, model: 'gpt-5.6-luna', reasoningEffort: 'max', prompt: 'duplicate' }), /already.*running|active turn/i);
+  const pid = status.ownerPid;
+  await owner.tool('provider_settings', { maxConcurrent: 2 });
+  assert.equal((await owner.tool('sharing_status')).occupiedSlots, 4);
+  assert.equal((await owner.tool('sharing_status')).ownerPid, pid);
+  await assert.rejects(owner.tool('provider_settings', { harness: 'claude' }), /finish|cancel/i);
+  await assert.rejects(owner.tool('exit_sharing'), /active/i);
+  for (const task of status.activeTasks.slice(0, 2)) await owner.tool('cancel_shared_task', task);
+  for (let i = 0; i < 100 && (await owner.tool('sharing_status')).occupiedSlots !== 2; i++) await new Promise(resolve => setTimeout(resolve, 20));
+  assert.equal((await caller.tool('check_peer', { peer: 'owner' })).status, 'busy');
+  await owner.tool('cancel_shared_task', status.activeTasks[2]);
+  for (let i = 0; i < 100 && (await owner.tool('sharing_status')).occupiedSlots !== 1; i++) await new Promise(resolve => setTimeout(resolve, 20));
+  assert.equal((await caller.tool('check_peer', { peer: 'owner' })).status, 'available');
+  const extra = await caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'after capacity released' });
+  assert.equal(extra.status, 'completed');
+  await owner.tool('stop_sharing');
+  assert.equal((await owner.tool('sharing_status')).occupiedSlots, 1);
+  await owner.tool('cancel_shared_task', status.activeTasks[3]);
+  await Promise.all(running);
+  assert.equal((await owner.tool('sharing_status')).occupiedSlots, 0);
+  assert.equal((await caller.tool('collect_result', { taskId: status.activeTasks[3].taskId })).status, 'interrupted');
+});
+
+test('simultaneous provider settings preserve each explicit change', async t => {
+  const { owner } = await setup(t);
+  await Promise.all([owner.tool('provider_settings', { maxConcurrent: 2 }), owner.tool('provider_settings', { allModels: true })]);
+  const settings = await owner.tool('provider_settings');
+  assert.equal(settings.maxConcurrent, 2);
+  assert.equal(settings.allowedModels, 'all');
+});
+
+test('revoking a caller interrupts all its turns while another caller keeps executing', { timeout: 30000 }, async t => {
+  const { owner, caller, source, root, device } = await setup(t);
+  const other = await device('other');
+  const pair = await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  await other.tool('pair_peer', { invitation: (await owner.tool('create_pairing')).invitation, peer: 'owner', allowTaskFiles: true });
+  const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  const otherCopy = await other.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  const runs = [caller, caller, other].map((client, i) => client.tool('start_task', { peer: 'owner', snapshotId: i === 2 ? otherCopy.snapshotId : copy.snapshotId, prompt: 'partial-wait' }).catch(error => error));
+  let active;
+  for (let i = 0; i < 200; i++) {
+    active = (await owner.tool('sharing_status')).activeTasks;
+    if (active.length === 3) {
+      const files = await Promise.all(active.map(task => fs.stat(path.join(root, 'owner/sharing/tasks', task.pairId, task.taskId, 'work/partial.txt')).then(() => true, error => { if (error.code === 'ENOENT') return false; throw error; })));
+      if (files.every(Boolean)) break;
+    }
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
+  assert.equal(active.length, 3);
+  await owner.tool('revoke_pairing', { pairId: pair.pairId });
+  assert.ok(await runs[0] instanceof Error);
+  assert.ok(await runs[1] instanceof Error);
+  const remaining = (await owner.tool('sharing_status')).activeTasks;
+  assert.equal(remaining.length, 1);
+  assert.notEqual(remaining[0].pairId, pair.pairId);
+  assert.equal((await other.tool('task_status', { taskId: remaining[0].taskId })).executionActive, true);
+  await owner.tool('cancel_shared_task', remaining[0]);
+  await runs[2];
+  const saved = await other.tool('collect_result', { taskId: remaining[0].taskId });
+  assert.equal(await fs.readFile(path.join(saved.resultDirectory, 'files/partial.txt'), 'utf8'), 'Stage one is on disk; further work remains.');
+  for (const invalid of [0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1]) await assert.rejects(owner.tool('provider_settings', { maxConcurrent: invalid }), /integer|minimum|maximum/i);
+  assert.equal((await owner.tool('provider_settings')).maxConcurrent, 4);
+});
+
 test('provider busy state and revocation stop unauthorized ongoing use', { timeout: 30000 }, async t => {
   const { owner, caller, source } = await setup(t);
+  await owner.tool('provider_settings', { maxConcurrent: 1 });
   await owner.tool('start_sharing', { address: '127.0.0.1', port: 0 });
   const paired = await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing')).invitation, peer: 'owner', allowTaskFiles: true });
   const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
