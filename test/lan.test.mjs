@@ -954,6 +954,61 @@ test('caller disconnection keeps the same provider task recoverable and cancella
   await resumed.tool('finish_task', { cleanup: 'keep', taskId: active.taskId });
 });
 
+test('status keeps its running ownership snapshot when cancellation finishes during work-copy inspection', { timeout: 30000 }, async t => {
+  const { root, owner, caller, source, processes } = await setup(t);
+  await owner.close();
+  const sharing = new Sharing(new Config(path.join(root, 'owner.json')), path.join(root, 'owner'));
+  processes.push(sharing);
+  const paired = await caller.tool('pair_peer', { invitation: (await sharing.manage('pair', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  const outcome = caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'hang' }).then(value => ({ value }), error => ({ error }));
+  let state;
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const active = sharing.status().activeTask;
+    if (active) {
+      state = await caller.tool('task_status', { taskId: active.taskId });
+      if (state.progress?.includes('Waiting')) break;
+    }
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
+  assert.equal(state.status, 'running');
+  assert.match(state.progress, /Waiting/);
+  const work = await fs.realpath(path.join(root, 'owner/sharing/tasks', paired.pairId, state.taskId, 'work'));
+  const originalLstat = fs.lstat.bind(fs);
+  let entered, release, blocked = false;
+  const inspecting = new Promise(resolve => { entered = resolve; });
+  const gate = new Promise(resolve => { release = resolve; });
+  t.mock.method(fs, 'lstat', async (...args) => {
+    if (!blocked && args[0] === work) {
+      blocked = true;
+      entered();
+      await gate;
+    }
+    return originalLstat(...args);
+  });
+  const checking = caller.tool('task_status', { taskId: state.taskId });
+  let timer;
+  try {
+    await Promise.race([inspecting, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Status did not reach work-copy inspection.')), 5000); })]);
+    await caller.tool('cancel_task', { taskId: state.taskId });
+    assert.equal((await outcome).value.status, 'interrupted');
+  } finally { clearTimeout(timer); release(); }
+  const snapshot = await checking;
+  assert.equal(snapshot.status, 'running');
+  assert.equal(snapshot.executionActive, true);
+  const settled = await caller.tool('task_status', { taskId: state.taskId });
+  assert.equal(settled.status, 'interrupted');
+  assert.equal(settled.executionActive, false);
+  const recordPath = path.join(work, '..', 'state.json');
+  const record = await fs.readFile(recordPath, 'utf8');
+  await fs.writeFile(recordPath, JSON.stringify({ ...JSON.parse(record), status: 'running' }));
+  try {
+    const orphan = await caller.tool('task_status', { taskId: state.taskId });
+    assert.equal(orphan.status, 'unknown');
+    assert.equal(orphan.executionActive, false);
+  } finally { await fs.writeFile(recordPath, record); }
+});
+
 test('malformed configuration reports its error and becomes usable after repair', async t => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'sub2sub-setup-test-'));
   const file = path.join(root, 'config.json');
