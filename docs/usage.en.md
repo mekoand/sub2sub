@@ -2,13 +2,13 @@
 
 [README](../README.md) · [简体中文](usage.md) · [Install](install.en.md)
 
-Everyday use is a simple round trip: hand off a task, bring back the results, and ask for a revision. Stay in your current conversation while another computer does the work; its model choice, files, and follow-ups stay with the task.
+sub2sub shares access to authorized AI subscriptions through tasks. Delegate from your own conversation while the provider runs the work with Codex or Claude Code already signed in on their device. Save files and responses locally, then continue the same task for revisions. You do not need to sign in to the provider's account, and the same workflow works across your own devices.
 
 For your first task, start with settings and pairing below. Once connected, jump to [delegating and following up](#delegate-and-follow-up), or open [local management](#local-management-and-statistics) to see your tasks and saved results.
 
 ## Roles and consent
 
-The **caller** delegates work and receives results. The **provider** authorizes its selected Codex or Claude environment to execute the task. Both run the same plugin and can use either role as appropriate.
+The **caller** delegates work and receives results. The **provider** authorizes its selected Codex or Claude environment to execute the task and keeps that tool's subscription login on its own device. Both run the same plugin and can use either role as appropriate.
 
 Pair with the provider's invitation and give the connection a name. Confirm task-file transfer during pairing or afterwards. Ordinary consent covers material needed for the user's delegated project; it does not include credentials, unrelated files, or separately sensitive material. Plugin consent does not override host approvals.
 

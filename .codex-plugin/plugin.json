@@ -1,15 +1,15 @@
 {
   "name": "sub2sub",
   "version": "0.7.0",
-  "description": "Delegate tasks across devices with Codex or Claude, query quota, and receive complete results locally.",
+  "description": "Share AI subscriptions across your team, task by task, without signing in to anyone else's account.",
   "author": {
     "name": "mekoand"
   },
   "skills": "./skills/",
   "interface": {
     "displayName": "sub2sub",
-    "shortDescription": "用共享的 AI 工作节点完成任务",
-    "longDescription": "按需连接多台工作节点，委托任务、追加修改并取回完整成果。提供方独立运行，空闲时可切换 Codex 或 Claude；使用方按工具设置默认模型和思考强度。支持 Codex 额度查询、节点管理和任务恢复清理。",
+    "shortDescription": "按任务共享 AI 订阅，无需登录对方账号",
+    "longDescription": "无需登录对方账号，按任务粒度在团队中共享 AI 订阅。在当前 Codex 或 Claude Code 对话中，委托任务、取回文件与答复、继续修改。提供方保管自己的订阅登录并控制共享；同样适用于个人多设备。附带可关闭的本机管理页和简易资源统计。",
     "developerName": "mekoand",
     "category": "Productivity",
     "composerIcon": "./docs/assets/icon.svg",
@@ -18,7 +18,7 @@
     "brandColor": "#6366F1",
     "capabilities": [],
     "defaultPrompt": [
-      "生成邀请码，让另一台电脑使用我的 Codex。",
+      "生成 sub2sub 邀请码，授权另一台电脑向我委托任务。",
       "我收到了邀请码，帮我连接并开始使用。",
       "用 sub2sub 把这个任务交给已连接的电脑。"
     ]
