@@ -2,7 +2,7 @@
 
 [简体中文](install.md) · [Back to README](../README.md)
 
-Start with two computers: one sends a task, the other gets to work. Install sub2sub on both and add more devices when you need them. Any computer can send and receive tasks. The computer doing the work signs in with its own execution-tool account and stays online while working.
+Install sub2sub on both the sending and receiving computers. The provider signs in to its chosen Codex or Claude Code subscription account and authorizes pairing. The caller delegates from its own conversation without signing in to the provider's account. The executing device stays online while working. Any computer can send or receive tasks and connect to multiple devices.
 
 Follow the installation and host restart steps below, then generate or connect an invitation in your conversation to start [your first delegation](usage.en.md#delegate-and-follow-up). To look around first, say “Open sub2sub management”. It's enabled by default, can be turned off at any time, and won't open a browser automatically. [Management guide](usage.en.md#local-management-and-statistics)
 

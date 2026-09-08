@@ -84,7 +84,7 @@ async function installClaude(payload, root, release, run, log, executable) {
     await fs.mkdir(path.join(adapter, '.claude-plugin'), { recursive: true });
     for (const name of ['skills', 'docs', 'README.md', 'README.zh-CN.md', 'README.en.md', 'CHANGELOG.md', 'CONTRIBUTING.md', 'LICENSE']) await fs.cp(path.join(plugin, name), path.join(adapter, name), { recursive: true });
     const version = `${release.version}+claude.${Date.now()}`;
-    await fs.writeFile(path.join(adapter, '.claude-plugin/plugin.json'), JSON.stringify({ name: 'sub2sub', version, description: 'Delegate tasks to shared nodes and receive complete results locally.', license: 'MIT' }, null, 2) + '\n');
+    await fs.writeFile(path.join(adapter, '.claude-plugin/plugin.json'), JSON.stringify({ name: 'sub2sub', version, description: "Share AI subscriptions across your team, task by task, without signing in to anyone else's account.", license: 'MIT' }, null, 2) + '\n');
     await fs.writeFile(path.join(adapter, '.mcp.json'), JSON.stringify({ mcpServers: { sub2sub: { command: node, args: [path.join(plugin, 'bin/mcp.mjs')], env: { SUB2SUB_INSTALL_HOST: 'claude', SUB2SUB_INSTALL_DIR: root, SUB2SUB_CLAUDE: executable }, timeout: 1900000 } } }, null, 2) + '\n');
     await fs.mkdir(path.dirname(marketplaceFile), { recursive: true });
     await fs.writeFile(marketplaceFile, JSON.stringify({ name: marketplaceName, owner: { name: 'mekoand' }, plugins: [{ name: 'sub2sub', source: `./versions/${release.version}/claude/sub2sub` }] }, null, 2) + '\n');

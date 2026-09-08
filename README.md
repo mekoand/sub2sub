@@ -7,9 +7,9 @@
   </picture>
 </h1>
 
-**Give your AI a teammate.**
+**Share AI subscriptions across your team, task by task, without signing in to anyone else's account.**
 
-Delegate to Codex or Claude on another computer. Bring the results back to this conversation.
+Delegate tasks, receive results, and request revisions in your current Codex or Claude Code conversation.
 
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-0.7.0-6366f1)](CHANGELOG.md)
@@ -19,16 +19,16 @@ Delegate to Codex or Claude on another computer. Bring the results back to this 
 
 </div>
 
-You're working on your laptop while the office computer is idle. Or you're in Codex and want a hand from Claude on another Mac.
+sub2sub lets you delegate work through an AI subscription a teammate has authorized you to use. The provider stays signed in to Codex or Claude Code on their own device and authorizes connections through invitations. You submit a task and selected files from your own conversation, and their environment executes it.
 
-With sub2sub, delegate a self-contained task from your current Codex or Claude Code conversation to a computer shared by you or a teammate. Work and checks run in that computer's AI environment, and the results are saved locally for you. For revisions, just keep talking.
+Files and responses are saved on your device; the provider keeps their account login. For revisions, continue the same task from the original conversation, reusing its working files and session. The same workflow also works across your own devices.
 
 ## What you can do
 
-- **Put existing subscriptions and devices to work.** Connect several work nodes and choose the tool and model for each task. Each execution account stays on its own device.
-- **Skip the context recap.** “Improve the mobile layout too” continues the same task, with its working files and conversation intact.
-- **Spend less time moving files around.** Returned changes become a complete local copy. Decide when to apply them to your source project, and open saved results even when the node is offline.
-- **Keep sharing on your terms.** Owners choose when to share, which tool to run, and which models to offer. You choose where each task goes; each node runs one task at a time.
+- **Choose where each task runs.** Select an execution tool and available model from your paired nodes, with on-demand queries for a Codex node's remaining quota.
+- **Bring back files and responses together.** Receive a complete local work copy with the inputs and latest changes. Decide when to apply them to your source project, and open saved results offline.
+- **Request revisions on the same task.** “Improve the mobile layout too” continues with the provider's existing working files and session.
+- **Keep sharing under the provider's control.** Providers choose authorized connections, an execution tool, and offered models. They can stop accepting new tasks at any time. Each node runs one task at a time.
 
 Good fits include organizing documents, building offline pages, and making code changes with clear inputs and outputs. Tasks run in separate work copies with task network access, MCP, app, and browser integrations disabled. Prepare the needed materials and local tools before delegating. [Execution scope and limits](docs/usage.en.md#delegate-and-follow-up)
 
@@ -64,9 +64,9 @@ On a device that will send work, paste the invitation:
 
 Confirm the file-transfer scope when prompted. Repeat for other nodes you want to use, giving each a recognizable name. Sharing runs independently after startup. Keep the receiving computer awake and connected; its management conversation can close.
 
-## Try a round trip with your docs
+## Example: delegate from Codex to Claude
 
-Your laptop is connected to `office-mac` and `windows-pc`. The Windows node is busy with another task; the Mac is available and offers the model you need. Send the documentation work to the Mac:
+A teammate is signed in to Claude Code on their Mac and authorizes you to use it through sub2sub. In your own Codex conversation, pair with that device, name the connection `office-mac`, and delegate the documentation task:
 
 > Use sub2sub to send the docs directory to office-mac. Build an offline help site with search, check the links, and return the complete files.
 
@@ -74,7 +74,7 @@ The result is saved locally. Take a look, spot a mobile layout that could use so
 
 > Continue that task. Group the pages by topic and improve the mobile layout.
 
-No need to explain everything again: the node reuses its working files and conversation. Only changed files are transferred back, and you receive a complete local copy. Once the result is ready:
+The provider reuses the task's working files and Claude session. Only changed files are transferred back, and you receive a complete local copy. Once the result is ready:
 
 > Save the latest results, finish the task, and clean up its remote work copy.
 

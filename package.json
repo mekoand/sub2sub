@@ -2,7 +2,7 @@
   "name": "sub2sub",
   "version": "0.7.0",
   "private": true,
-  "description": "Delegate tasks across devices on LAN or Tailscale, continue the same task, and save complete results locally.",
+  "description": "Share AI subscriptions across your team, task by task, without signing in to anyone else's account.",
   "license": "MIT",
   "author": "mekoand",
   "repository": {
