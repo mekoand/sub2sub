@@ -34,11 +34,11 @@ Record `action=skip` only when the user explicitly skips the guide. `action=reop
 
 Before enabling task-file transfer, explain in the user's language:
 
-> 以后你委托给这台电脑的任务，会发送所需文件和指令，可能包含非公开项目源码、文档和必要配置。密码、密钥、订阅凭据、无关文件不在授权内；其他敏感材料需另行确认。你可以随时撤回。是否同意？
+> 以后你委托给这台电脑的任务，会发送所需文件和指令，可能包含非公开项目源码、文档和必要配置，提供方可以接触这些材料。密码、密钥、订阅凭据、无关文件不在授权内；其他敏感材料需另行确认。工作副本按任务保留期保存，确认成果已取回且没有执行中的工作后才按现有流程清理；普通清理保留原生会话历史。你可以随时撤回后续传输授权，但撤回或清理不能收回对方已复制、备份的内容。是否同意？
 
 Set `allowTaskFiles=true` only after explicit agreement. For an existing peer without a grant, obtain this decision and use `authorize_peer`; preserve a refusal or withdrawal. Never edit configuration to manufacture consent.
 
-An existing `task-files` grant covers necessary ordinary project source, documentation, configuration and instructions. Show destination, scope and size once, then proceed within that grant. Inspect for credentials and separately sensitive material. New destinations or expanded scope need their own consent.
+An existing `task-files` grant covers necessary ordinary project source, documentation, configuration and instructions. Show destination, scope and size once, then proceed within that grant. Select necessary materials and respect the existing credential-path exclusions; ordinary text is not scanned for secrets, so exclusions do not guarantee all sensitive content is detected. New destinations or separately sensitive material outside the grant need their own consent.
 
 Application consent does not override host approval. Pass `peer` to `prepare_work_copy` so the host sees destination and saved consent. If host approval rejects a transfer, report its action and reason and obtain the required permission; do not change transport or settings to bypass that rejection.
 
