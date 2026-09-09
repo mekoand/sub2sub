@@ -1,0 +1,54 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { openMcp } from './helpers/mcp.mjs';
+import { stopTestSharing } from './helpers/sharing.mjs';
+import { connect } from '../lib/client.mjs';
+
+test('MCP and management API expose the same paired usage; saved rounds stay synchronized and another caller cannot read it', async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'sub2sub-usage-mcp-'));
+  const processes = [], states = [];
+  t.after(async () => {
+    await Promise.all(processes.map(mcp => mcp.close()));
+    for (const state of states) await stopTestSharing(state);
+    await fs.rm(root, {recursive:true, force:true});
+  });
+  const device = async name => {
+    const stateRoot = path.join(root, name), configPath = path.join(root, `${name}.json`);
+    states.push(stateRoot);
+    await fs.writeFile(configPath, JSON.stringify({stateRoot, deviceName:name, peers:{}, provider:{codexPath:fileURLToPath(new URL('./fixtures/fake-codex.mjs', import.meta.url))}}));
+    const mcp = await openMcp(configPath); processes.push(mcp); return mcp;
+  };
+  const owner = await device('owner'), caller = await device('caller'), guest = await device('guest');
+  const invitation = (await owner.tool('create_pairing', {address:'127.0.0.1',port:0})).invitation;
+  await caller.tool('pair_peer', {invitation,peer:'owner',allowTaskFiles:true});
+  await guest.tool('pair_peer', {invitation:(await owner.tool('create_pairing')).invitation,peer:'owner',allowTaskFiles:true});
+  const source=path.join(root,'source'); await fs.mkdir(source); await fs.writeFile(path.join(source,'brief.txt'),'Synthetic paired usage');
+  const prepared=await caller.tool('prepare_work_copy',{workspace:source,paths:['brief.txt']});
+  const task=await caller.tool('start_task',{peer:'owner',snapshotId:prepared.snapshotId,prompt:'usage-complete'});
+  assert.equal((await caller.tool('resource_statistics')).usageDetails[0].syncStatus,'pending');
+  await caller.tool('collect_result',{taskId:task.taskId});
+  await caller.tool('continue_task',{taskId:task.taskId,prompt:'usage-resume'});
+  const pending=await caller.tool('resource_statistics');
+  assert.deepEqual(pending.usageDetails.map(row=>row.syncStatus),['received','pending']);
+  assert.equal(pending.usagePendingTasks,1);
+  await caller.tool('collect_result',{taskId:task.taskId});
+  const callerSummary=await caller.tool('resource_statistics'), providerSummary=await owner.tool('resource_statistics',{role:'provider'});
+  assert.deepEqual(callerSummary.usageDetails.map(row=>row.tokens),providerSummary.usageDetails.map(row=>row.tokens));
+  assert.deepEqual(providerSummary.usageDetails.map(row=>row.taskId),[task.taskId,task.taskId]);
+  const url = new URL((await caller.tool('web_management')).url);
+  const response=await fetch(`${url.origin}/api/overview?role=caller&days=7`,{headers:{Authorization:`Bearer ${url.hash.slice(1)}`}});
+  assert.equal(response.status,200);
+  const webSummary=(await response.json()).statistics;
+  assert.deepEqual(webSummary.usageDetails,callerSummary.usageDetails);
+  assert.deepEqual(webSummary.usageGroups,callerSummary.usageGroups);
+  const guestConfig=JSON.parse(await fs.readFile(path.join(root,'guest.json'),'utf8'));
+  const denied=await connect(guestConfig.peers.owner,{action:'status',taskId:task.taskId});
+  assert.equal(denied.status,'unknown');
+  assert.equal(denied.rounds,undefined);
+  await assert.rejects(connect(guestConfig.peers.owner,{action:'result',taskId:task.taskId}),/ENOENT|missing|unknown/i);
+  assert.deepEqual((await guest.tool('resource_statistics')).usageDetails,[]);
+});

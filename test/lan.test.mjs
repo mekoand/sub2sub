@@ -14,7 +14,7 @@ import { Client, connect } from '../lib/client.mjs';
 import { Config } from '../lib/config.mjs';
 import { Sharing } from '../lib/lan.mjs';
 
-async function setup(t, { clock = false, deadline = false } = {}) {
+async function setup(t, { clock = false, deadline = false, timeoutMs } = {}) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'sub2sub-lan-test-'));
   const clockFile = path.join(root, 'clock.txt'), initialTime = Date.now();
   if (clock) await fs.writeFile(clockFile, String(initialTime));
@@ -31,7 +31,7 @@ async function setup(t, { clock = false, deadline = false } = {}) {
     states.push(path.join(root, name));
     const file = path.join(root, `${name}.json`);
     await fs.writeFile(file, JSON.stringify({ stateRoot: path.join(root, name), deviceName: name, peers: {}, provider: { codexPath: fileURLToPath(new URL('./fixtures/fake-codex.mjs', import.meta.url)) } }));
-    const mcp = await openMcp(file, name === 'owner' ? ownerOptions : {}); processes.push(mcp); return mcp;
+    const mcp = await openMcp(file, { timeoutMs, ...(name === 'owner' ? ownerOptions : {}) }); processes.push(mcp); return mcp;
   };
   const owner = await device('owner'), caller = await device('caller');
   const source = path.join(root, 'source'); await fs.mkdir(source);
@@ -49,7 +49,7 @@ async function interceptPeer(t, root, intercept) {
       let body = ''; for await (const chunk of req) body += chunk;
       const input = JSON.parse(body);
       const result = await connect(peer, input);
-      if (intercept(input, result) === 'disconnect') { res.destroy(); return; }
+      if (await intercept(input, result) === 'disconnect') { res.destroy(); return; }
       res.end(JSON.stringify({ result }) + '\n');
     } catch (error) { res.end(JSON.stringify({ error: error.message }) + '\n'); }
   });
@@ -58,6 +58,71 @@ async function interceptPeer(t, root, intercept) {
   config.peers.owner.port = server.address().port;
   await fs.writeFile(file, JSON.stringify(config));
 }
+
+test('failed collection recommends collecting the same task without extra requests or execution', async t => {
+  const { root, owner, caller, source } = await setup(t);
+  await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  const task = await caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'write result' });
+  const requests = [];
+  await interceptPeer(t, root, input => { requests.push(input.action); if (input.action === 'result') return 'disconnect'; });
+  await assert.rejects(caller.tool('collect_result', { taskId: task.taskId }), error => {
+    assert.match(error.message, /LAN connection failed/);
+    assert.ok(error.message.includes(task.taskId));
+    assert.match(error.message, /Retry collect_result.*do not rerun/i);
+    return true;
+  });
+  assert.deepEqual(requests, ['result']);
+});
+
+test('lost execution reply preserves its error and recommends status without automatic probes', async t => {
+  const { root, owner, caller, source } = await setup(t);
+  await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  const requests = [];
+  await interceptPeer(t, root, input => { requests.push(input.action); if (input.action === 'run') return 'disconnect'; });
+  await assert.rejects(caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'write result' }), /Task [\w-]+:.*LAN connection failed.*Query task_status.*before submitting/i);
+  assert.deepEqual(requests, ['models', 'run']);
+});
+
+test('failed capability discovery preserves an unknown error without guessing an upgrade is required', async t => {
+  const { root, owner, caller, source } = await setup(t);
+  await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  await fs.writeFile(path.join(root, 'owner/sharing/model-list.json'), '{broken-catalog');
+  await assert.rejects(caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'write result' }), error => {
+    assert.match(error.message, /Cannot confirm provider capabilities/);
+    assert.match(error.message, /cause is unconfirmed/i);
+    assert.doesNotMatch(error.message, /update both endpoints to sub2sub 0\.4/i);
+    return true;
+  });
+  assert.deepEqual((await owner.tool('list_shared_tasks')).tasks, []);
+});
+
+test('oversized input identifies the file and limit and suggests a smaller input', async t => {
+  const { caller, source } = await setup(t);
+  await caller.tool('caller_settings', { inputBytes: 2 });
+  await assert.rejects(caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] }), /File exceeds 2 bytes limit: input\.txt.*smaller/i);
+});
+
+test('saving a received execution response fails with a collection hint for both initial and follow-up turns', { skip: process.platform === 'win32' }, async t => {
+  const { root, owner, caller, source } = await setup(t);
+  await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  const directory = path.join(root, 'caller/tasks');
+  let taskId;
+  await interceptPeer(t, root, async input => {
+    if (input.action === 'run') { taskId = input.taskId; await fs.chmod(directory, 0o500); }
+  });
+  try {
+    await assert.rejects(caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'write result' }), /EACCES.*Retry collect_result.*do not rerun/is);
+  } finally { await fs.chmod(directory, 0o700); }
+  assert.equal((await caller.tool('collect_result', { taskId })).status, 'completed');
+  try {
+    await assert.rejects(caller.tool('continue_task', { taskId, prompt: 'write more' }), /EACCES.*Retry collect_result.*do not rerun/is);
+  } finally { await fs.chmod(directory, 0o700); }
+  assert.equal((await caller.tool('collect_result', { taskId })).status, 'completed');
+});
 
 test('pairing generates and reuses its identity when the system OpenSSL configuration is missing', async t => {
   const { root, owner, caller, processes } = await setup(t);
@@ -142,8 +207,8 @@ test('all models follows the live catalog, invalid effort uploads nothing, and l
   await assert.rejects(caller.tool('list_models', { peer: 'owner' }), /Invalid model capabilities/);
 });
 
-test('advanced limits apply to both endpoints and raised limits permit an actual larger round trip', async t => {
-  const { owner, caller, source } = await setup(t);
+test('advanced limits apply to both endpoints and raised limits permit an actual larger round trip', { timeout: 90000 }, async t => {
+  const { owner, caller, source } = await setup(t, { timeoutMs: 60000 });
   await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
   await fs.writeFile(path.join(source, 'large.bin'), Buffer.alloc(21 * 1024 * 1024, 65));
   await caller.tool('caller_settings', { inputBytes: 24 * 1024 * 1024, resultBytes: 24 * 1024 * 1024 });
@@ -722,8 +787,94 @@ test('new pinned certificates tolerate small clock skew but not expiry or large 
   clock.mock.restore();
 });
 
+test('node admits four independent tasks and applies a lower live limit without cancelling work', { timeout: 30000 }, async t => {
+  const { owner, caller, source, root } = await setup(t);
+  assert.equal((await owner.tool('provider_settings')).maxConcurrent, 4);
+  await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  const failures = [];
+  const running = Array.from({ length: 4 }, () => caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'partial-wait' }).catch(error => { failures.push(error.message); return error; }));
+  let status;
+  for (let i = 0; i < 200; i++) {
+    status = await owner.tool('sharing_status');
+    if (status.activeTasks.length === 4) {
+      const ready = await Promise.all(status.activeTasks.map(task => fs.stat(path.join(root, 'owner/sharing/tasks', task.pairId, task.taskId, 'work/partial.txt')).then(() => true, error => { if (error.code === 'ENOENT') return false; throw error; })));
+      if (ready.every(Boolean)) break;
+    }
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
+  assert.equal(status.occupiedSlots, 4, failures.join("\n"));
+  for (const task of status.activeTasks) assert.equal(await fs.readFile(path.join(root, 'owner/sharing/tasks', task.pairId, task.taskId, 'work/partial.txt'), 'utf8'), 'Stage one is on disk; further work remains.');
+  assert.equal((await caller.tool('check_peer', { peer: 'owner' })).status, 'busy');
+  await assert.rejects(caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'overflow' }), /busy|capacity/i);
+  const peer = JSON.parse(await fs.readFile(path.join(root, 'caller.json'), 'utf8')).peers.owner;
+  await assert.rejects(connect(peer, { action: 'run', protocol: 2, taskId: status.activeTasks[0].taskId, model: 'gpt-5.6-luna', reasoningEffort: 'max', prompt: 'duplicate' }), /already.*running|active turn/i);
+  const pid = status.ownerPid;
+  await owner.tool('provider_settings', { maxConcurrent: 2 });
+  assert.equal((await owner.tool('sharing_status')).occupiedSlots, 4);
+  assert.equal((await owner.tool('sharing_status')).ownerPid, pid);
+  await assert.rejects(owner.tool('provider_settings', { harness: 'claude' }), /finish|cancel/i);
+  await assert.rejects(owner.tool('exit_sharing'), /active/i);
+  for (const task of status.activeTasks.slice(0, 2)) await owner.tool('cancel_shared_task', task);
+  for (let i = 0; i < 100 && (await owner.tool('sharing_status')).occupiedSlots !== 2; i++) await new Promise(resolve => setTimeout(resolve, 20));
+  assert.equal((await caller.tool('check_peer', { peer: 'owner' })).status, 'busy');
+  await owner.tool('cancel_shared_task', status.activeTasks[2]);
+  for (let i = 0; i < 100 && (await owner.tool('sharing_status')).occupiedSlots !== 1; i++) await new Promise(resolve => setTimeout(resolve, 20));
+  assert.equal((await caller.tool('check_peer', { peer: 'owner' })).status, 'available');
+  const extra = await caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'after capacity released' });
+  assert.equal(extra.status, 'completed');
+  await owner.tool('stop_sharing');
+  assert.equal((await owner.tool('sharing_status')).occupiedSlots, 1);
+  await owner.tool('cancel_shared_task', status.activeTasks[3]);
+  await Promise.all(running);
+  assert.equal((await owner.tool('sharing_status')).occupiedSlots, 0);
+  assert.equal((await caller.tool('collect_result', { taskId: status.activeTasks[3].taskId })).status, 'interrupted');
+});
+
+test('simultaneous provider settings preserve each explicit change', async t => {
+  const { owner } = await setup(t);
+  await Promise.all([owner.tool('provider_settings', { maxConcurrent: 2 }), owner.tool('provider_settings', { allModels: true })]);
+  const settings = await owner.tool('provider_settings');
+  assert.equal(settings.maxConcurrent, 2);
+  assert.equal(settings.allowedModels, 'all');
+});
+
+test('revoking a caller interrupts all its turns while another caller keeps executing', { timeout: 30000 }, async t => {
+  const { owner, caller, source, root, device } = await setup(t);
+  const other = await device('other');
+  const pair = await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  await other.tool('pair_peer', { invitation: (await owner.tool('create_pairing')).invitation, peer: 'owner', allowTaskFiles: true });
+  const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  const otherCopy = await other.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  const runs = [caller, caller, other].map((client, i) => client.tool('start_task', { peer: 'owner', snapshotId: i === 2 ? otherCopy.snapshotId : copy.snapshotId, prompt: 'partial-wait' }).catch(error => error));
+  let active;
+  for (let i = 0; i < 200; i++) {
+    active = (await owner.tool('sharing_status')).activeTasks;
+    if (active.length === 3) {
+      const files = await Promise.all(active.map(task => fs.stat(path.join(root, 'owner/sharing/tasks', task.pairId, task.taskId, 'work/partial.txt')).then(() => true, error => { if (error.code === 'ENOENT') return false; throw error; })));
+      if (files.every(Boolean)) break;
+    }
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
+  assert.equal(active.length, 3);
+  await owner.tool('revoke_pairing', { pairId: pair.pairId });
+  assert.ok(await runs[0] instanceof Error);
+  assert.ok(await runs[1] instanceof Error);
+  const remaining = (await owner.tool('sharing_status')).activeTasks;
+  assert.equal(remaining.length, 1);
+  assert.notEqual(remaining[0].pairId, pair.pairId);
+  assert.equal((await other.tool('task_status', { taskId: remaining[0].taskId })).executionActive, true);
+  await owner.tool('cancel_shared_task', remaining[0]);
+  await runs[2];
+  const saved = await other.tool('collect_result', { taskId: remaining[0].taskId });
+  assert.equal(await fs.readFile(path.join(saved.resultDirectory, 'files/partial.txt'), 'utf8'), 'Stage one is on disk; further work remains.');
+  for (const invalid of [0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1]) await assert.rejects(owner.tool('provider_settings', { maxConcurrent: invalid }), /integer|minimum|maximum/i);
+  assert.equal((await owner.tool('provider_settings')).maxConcurrent, 4);
+});
+
 test('provider busy state and revocation stop unauthorized ongoing use', { timeout: 30000 }, async t => {
   const { owner, caller, source } = await setup(t);
+  await owner.tool('provider_settings', { maxConcurrent: 1 });
   await owner.tool('start_sharing', { address: '127.0.0.1', port: 0 });
   const paired = await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing')).invitation, peer: 'owner', allowTaskFiles: true });
   const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
@@ -795,12 +946,68 @@ test('caller disconnection keeps the same provider task recoverable and cancella
   await resumed.tool('cancel_task', { taskId: active.taskId });
   for (let i = 0; i < 100; i++) {
     state = await resumed.tool('task_status', { taskId: active.taskId });
-    if (state.status !== 'running') break;
+    if (state.status !== 'running' && !state.executionActive) break;
     await new Promise(resolve => setTimeout(resolve, 20));
   }
   assert.equal(state.status, 'interrupted');
+  assert.equal(state.executionActive, false);
   await resumed.tool('collect_result', { taskId: active.taskId });
   await resumed.tool('finish_task', { cleanup: 'keep', taskId: active.taskId });
+});
+
+test('status keeps its running ownership snapshot when cancellation finishes during work-copy inspection', { timeout: 30000 }, async t => {
+  const { root, owner, caller, source, processes } = await setup(t);
+  await owner.close();
+  const sharing = new Sharing(new Config(path.join(root, 'owner.json')), path.join(root, 'owner'));
+  processes.push(sharing);
+  const paired = await caller.tool('pair_peer', { invitation: (await sharing.manage('pair', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  const outcome = caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'hang' }).then(value => ({ value }), error => ({ error }));
+  let state;
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const active = sharing.status().activeTask;
+    if (active) {
+      state = await caller.tool('task_status', { taskId: active.taskId });
+      if (state.progress?.includes('Waiting')) break;
+    }
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
+  assert.equal(state.status, 'running');
+  assert.match(state.progress, /Waiting/);
+  const work = await fs.realpath(path.join(root, 'owner/sharing/tasks', paired.pairId, state.taskId, 'work'));
+  const originalLstat = fs.lstat.bind(fs);
+  let entered, release, blocked = false;
+  const inspecting = new Promise(resolve => { entered = resolve; });
+  const gate = new Promise(resolve => { release = resolve; });
+  t.mock.method(fs, 'lstat', async (...args) => {
+    if (!blocked && args[0] === work) {
+      blocked = true;
+      entered();
+      await gate;
+    }
+    return originalLstat(...args);
+  });
+  const checking = caller.tool('task_status', { taskId: state.taskId });
+  let timer;
+  try {
+    await Promise.race([inspecting, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Status did not reach work-copy inspection.')), 5000); })]);
+    await caller.tool('cancel_task', { taskId: state.taskId });
+    assert.equal((await outcome).value.status, 'interrupted');
+  } finally { clearTimeout(timer); release(); }
+  const snapshot = await checking;
+  assert.equal(snapshot.status, 'running');
+  assert.equal(snapshot.executionActive, true);
+  const settled = await caller.tool('task_status', { taskId: state.taskId });
+  assert.equal(settled.status, 'interrupted');
+  assert.equal(settled.executionActive, false);
+  const recordPath = path.join(work, '..', 'state.json');
+  const record = await fs.readFile(recordPath, 'utf8');
+  await fs.writeFile(recordPath, JSON.stringify({ ...JSON.parse(record), status: 'running' }));
+  try {
+    const orphan = await caller.tool('task_status', { taskId: state.taskId });
+    assert.equal(orphan.status, 'unknown');
+    assert.equal(orphan.executionActive, false);
+  } finally { await fs.writeFile(recordPath, record); }
 });
 
 test('malformed configuration reports its error and becomes usable after repair', async t => {

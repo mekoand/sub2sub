@@ -28,7 +28,7 @@ Files and responses are saved on your device; the provider keeps their account l
 - **Choose where each task runs.** Select an execution tool and available model from your paired nodes, with on-demand queries for a Codex node's remaining quota.
 - **Bring back files and responses together.** Receive a complete local work copy with the inputs and latest changes. Decide when to apply them to your source project, and open saved results offline.
 - **Request revisions on the same task.** “Improve the mobile layout too” continues with the provider's existing working files and session.
-- **Keep sharing under the provider's control.** Providers choose authorized connections, an execution tool, and offered models. They can stop accepting new tasks at any time. Each node runs one task at a time.
+- **Keep sharing under the provider's control.** Providers choose authorized connections, an execution tool, and offered models. They can stop accepting new tasks at any time. Each node runs up to four tasks concurrently by default; the provider can adjust the limit. Full nodes reject new work without a queue, and lowering the limit lets existing tasks finish.
 
 Good fits include organizing documents, building offline pages, and making code changes with clear inputs and outputs. Tasks run in separate work copies with task network access, MCP, app, and browser integrations disabled. Prepare the needed materials and local tools before delegating. [Execution scope and limits](docs/usage.en.md#delegate-and-follow-up)
 
@@ -86,7 +86,7 @@ Say this in your conversation:
 
 > Open sub2sub management.
 
-Version 0.7.0 adds a compact local page for nodes, tasks, and saved results, with pairing, settings, and on-demand Codex quota queries. Resource statistics over 7 or 30 days show where your tasks went, how many turns ran, and their measured execution time.
+Version 0.7.0 adds a compact local page for nodes, tasks, and saved results, with pairing, settings, and on-demand Codex quota queries. Resource statistics over 7 or 30 days show where your tasks went, how many turns ran, and their measured execution time. Native model usage is available by turn, model and source, with partial-data notes and JSON export; no prices are calculated.
 
 Management is enabled by default and can be turned off at any time. It shares the plugin process, adds no background service, and does not open a browser automatically. Task instructions and follow-ups stay in your conversation. [Management and statistics](docs/usage.en.md#local-management-and-statistics)
 
