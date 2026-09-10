@@ -108,3 +108,18 @@ test('saved artifacts work with an offline peer, stay inert, and cannot traverse
   record.resultDirectory = path.join(stateRoot, 'elsewhere'); await fs.writeFile(index, JSON.stringify(record));
   assert.equal((await fetch(`${origin}/api/file?id=${id}&answer=true`, { headers })).status, 400);
 });
+
+test('web and conversation share visibility settings without requiring a model call', async t => {
+  const { client, store } = await setup(t, { provider: { codexPath: '/missing/native/codex' } });
+  const { origin, headers } = endpoint(await client.call('web_management', {}));
+  const response = await fetch(`${origin}/api/call`, { method: 'POST', headers, body: JSON.stringify({ name: 'provider_settings', input: { keepSessionVisible: true } }) });
+  const saved = await response.json();
+  assert.equal(response.status, 200); assert.equal(saved.keepSessionVisible, true);
+  assert.equal((await client.call('provider_settings', {})).keepSessionVisible, true);
+  assert.equal((await store.read()).provider.keepSessionVisible, true);
+  await assert.rejects(client.call('provider_settings', { keepSessionVisible: 'false' }), /boolean/);
+  await store.update(config => { config.provider.harness = 'claude'; });
+  const unsupported = await client.call('provider_settings', {});
+  assert.equal(unsupported.keepSessionVisible, true); assert.equal(unsupported.sessionVisibilitySupported, false);
+  assert.match(unsupported.note, /Claude.*unsupported/);
+});

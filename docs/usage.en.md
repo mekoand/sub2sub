@@ -70,6 +70,14 @@ Input and result defaults are 20 MiB and 2,000 files each. Raw file bytes count,
 
 Provider retention supports 1–365 days, default 7. Accepted tasks retain their original setting. Status queries, downloads, and `keep` do not extend the deadline; completing another turn resets it.
 
+## Delegated session visibility
+
+Provider settings include **Keep delegated sessions in the task list** (`keepSessionVisible`), also configurable through conversation. This manages Codex sessions only; Claude reports unsupported and keeps its existing behavior.
+
+Off by default: sessions may appear while executing, archive after each stopped turn, and restore the same session before continuation. On keeps them in the regular native task list for viewing progress. The setting applies only to new tasks; existing tasks retain their creation-time mode, and pre-feature tasks keep their existing behavior. Native-client input or takeover is not supported; the host's input box is not disabled.
+
+Archiving retains native history and leaves work-copy retention and saved results unchanged. An archive error is reported separately from execution status; do not rerun work just to hide it. An unarchive error stops before a new turn starts. Remote file links may stop working after work-copy cleanup; use the caller's saved complete copy. See [validation](validation.md) for the clients and versions actually checked.
+
 ## Local management and statistics
 
 Example requests: “Open sub2sub management”, “Show statistics for resources I used over the last 7 days”, “Help diagnose the office node's connection failure”, and “Submit this issue to GitHub”. The last request authorizes submission; a diagnosis request alone does not.

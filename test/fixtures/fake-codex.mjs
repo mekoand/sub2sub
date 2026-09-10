@@ -49,6 +49,7 @@ lines.on('line', async line => {
       threadId = m.params.threadId || randomUUID();
       model = m.params.model;
       const native = m.method === 'thread/resume' ? JSON.parse(await fs.readFile(path.join(history, threadId + '.json'), 'utf8')) : { id: threadId, cwd: process.cwd(), source: 'vscode', threadSource: m.params.threadSource ?? null, archived: false, parentThreadId: null, forkedFromId: null, status: { type: 'notLoaded' } };
+      if (native.archived) { send({ id: m.id, error: { message: 'thread is archived; unarchive before resuming' } }); break; }
       await fs.writeFile(path.join(history, threadId + '.json'), JSON.stringify(native));
       reply({ thread: { ...native, modelProvider: 'openai' }, model: m.params.model === 'fixture-reroute' ? 'gpt-5.6-luna' : m.params.model, activePermissionProfile: { id: m.params.permissions } }); break;
     case 'turn/start': {
@@ -148,6 +149,25 @@ lines.on('line', async line => {
       const file = path.join(history, m.params.threadId + '.json');
       try { reply({ thread: JSON.parse(await fs.readFile(file, 'utf8')) }); } catch (error) { if (error.code !== 'ENOENT') throw error; send({ id: m.id, error: { message: 'thread not found' } }); }
       break;
+    }
+    case 'thread/archive':
+    case 'thread/unarchive': {
+      const file = path.join(history, m.params.threadId + '.json');
+      const native = JSON.parse(await fs.readFile(file, 'utf8'));
+      const gate = path.join(history, m.method === 'thread/archive' ? 'fail-archive' : 'fail-unarchive');
+      if (await fs.stat(gate).catch(error => { if (error.code !== 'ENOENT') throw error; })) {
+        send({ id: m.id, error: { message: 'fixture archive operation failed' } }); break;
+      }
+      if (m.method === 'thread/archive') {
+        const hold = path.join(history, 'hold-archive');
+        if (await fs.stat(hold).catch(error => { if (error.code !== 'ENOENT') throw error; })) {
+          await fs.writeFile(path.join(history, 'archive-waiting'), native.cwd);
+          while (await fs.stat(hold).catch(error => { if (error.code !== 'ENOENT') throw error; })) await new Promise(resolve => setTimeout(resolve, 10));
+        }
+      }
+      native.archived = m.method === 'thread/archive';
+      await fs.writeFile(file, JSON.stringify(native));
+      reply(m.method === 'thread/unarchive' ? { thread: native } : {}); break;
     }
     case 'thread/name/set': {
       const file = path.join(history, m.params.threadId + '.json');
