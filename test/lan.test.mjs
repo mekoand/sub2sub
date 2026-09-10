@@ -1225,3 +1225,114 @@ test('task listing reports a missing record without hiding malformed records', a
   const ready = (await owner.tool('list_shared_tasks')).tasks[0];
   assert.equal(ready.status, 'ready'); assert.equal(ready.harness, 'codex');
 });
+
+test('session visibility is provider-owned, fixed per task and preserves legacy tasks and cleanup recovery', async t => {
+  const { root, owner, caller, source } = await setup(t);
+  const paired = await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  const nativeRoot = path.join(root, 'owner/sharing/tasks', paired.pairId, '.fake-codex');
+  const native = async id => JSON.parse(await fs.readFile(path.join(nativeRoot, id + '.json'), 'utf8'));
+  const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  assert.equal((await owner.tool('provider_settings')).keepSessionVisible, false);
+  await assert.rejects(caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'hidden', keepSessionVisible: true }), /Unknown|unexpected/i);
+  const first = await caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'normal' });
+  assert.equal(first.keepSessionVisible, false); assert.equal(first.sessionVisibility.status, 'archived');
+  assert.equal((await native(first.threadId)).archived, true);
+  await caller.tool('collect_result', { taskId: first.taskId });
+  await caller.tool('finish_task', { taskId: first.taskId, cleanup: 'workcopy' });
+  await owner.tool('provider_settings', { keepSessionVisible: true });
+  const continued = await caller.tool('continue_task', { taskId: first.taskId, prompt: 'restored normal task' });
+  assert.equal(continued.threadId, first.threadId); assert.equal(continued.sessionVisibility.status, 'archived');
+  assert.equal(continued.keepSessionVisible, false); assert.equal(continued.retentionDays, 7);
+  await caller.tool('collect_result', { taskId: first.taskId });
+  const visible = await caller.tool('start_task', { peer: 'owner', snapshotId: (await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] })).snapshotId, prompt: 'visible' });
+  assert.equal(visible.keepSessionVisible, true); assert.equal((await native(visible.threadId)).archived, false);
+  await owner.tool('provider_settings', { keepSessionVisible: false });
+  await caller.tool('collect_result', { taskId: visible.taskId });
+  const visibleAgain = await caller.tool('continue_task', { taskId: visible.taskId, prompt: 'still visible' });
+  assert.equal(visibleAgain.keepSessionVisible, true); assert.equal((await native(visible.threadId)).archived, false);
+  await caller.tool('collect_result', { taskId: visible.taskId });
+  const stateFile = path.join(root, 'owner/sharing/tasks', paired.pairId, visible.taskId, 'state.json');
+  const legacy = JSON.parse(await fs.readFile(stateFile, 'utf8'));
+  delete legacy.keepSessionVisible; delete legacy.sessionVisibility;
+  await fs.writeFile(stateFile, JSON.stringify(legacy));
+  const old = await caller.tool('continue_task', { taskId: visible.taskId, prompt: 'legacy continuation' });
+  assert.equal(old.keepSessionVisible, undefined); assert.equal((await native(visible.threadId)).archived, false);
+  assert.equal((await native(first.threadId)).archived, true);
+});
+
+test('archive errors preserve successful delivery and unarchive errors do not execute another turn', async t => {
+  const { root, owner, caller, source } = await setup(t);
+  const paired = await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  const nativeRoot = path.join(root, 'owner/sharing/tasks', paired.pairId, '.fake-codex');
+  await fs.mkdir(nativeRoot, { recursive: true }); await fs.writeFile(path.join(nativeRoot, 'fail-archive'), '');
+  const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  const task = await caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'keep these results' });
+  assert.equal(task.status, 'completed'); assert.equal(task.sessionVisibility.action, 'archive');
+  assert.match(task.sessionVisibility.error, /do not rerun/i);
+  const saved = await caller.tool('collect_result', { taskId: task.taskId });
+  assert.equal(saved.status, 'completed'); assert.equal(saved.sessionVisibility.status, 'error');
+  assert.equal(await fs.readFile(path.join(saved.workCopyDirectory, 'answer.txt'), 'utf8'), 'keep these results');
+  assert.equal((await caller.tool('list_tasks')).tasks[0].sessionVisibility.status, 'error');
+  await fs.rm(path.join(nativeRoot, 'fail-archive'));
+  const second = await caller.tool('continue_task', { taskId: task.taskId, prompt: 'another authorized turn' });
+  assert.equal(second.sessionVisibility.status, 'archived');
+  await caller.tool('collect_result', { taskId: task.taskId });
+  await fs.writeFile(path.join(nativeRoot, 'fail-unarchive'), '');
+  await assert.rejects(caller.tool('continue_task', { taskId: task.taskId, prompt: 'must not run' }), /No new turn started/);
+  const status = await caller.tool('task_status', { taskId: task.taskId });
+  assert.equal(status.revision, 2); assert.equal(status.sessionVisibility.action, 'unarchive');
+  assert.equal(status.status, 'completed');
+  const calls = (await fs.readFile(path.join(root, 'owner/sharing/tasks', paired.pairId, task.taskId, 'calls.jsonl'), 'utf8')).trim().split('\n').map(JSON.parse);
+  assert.equal(calls.filter(call => call.method === 'turn/start').length, 2);
+});
+
+test('failed and cancelled Codex rounds are archived after the execution process stops', async t => {
+  const { owner, caller, source } = await setup(t);
+  await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  await assert.rejects(caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'failure' }), /fixture failure/);
+  let tasks = (await owner.tool('list_shared_tasks')).tasks;
+  assert.equal(tasks[0].status, 'failed'); assert.equal(tasks[0].sessionVisibility.status, 'archived');
+  const running = caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'hang' });
+  let task;
+  for (let i = 0; i < 200; i++) {
+    task = (await owner.tool('list_shared_tasks')).tasks.find(item => item.status === 'running');
+    if (task?.threadId) break;
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+  assert.ok(task?.threadId);
+  await owner.tool('cancel_shared_task', { pairId: task.pairId, taskId: task.taskId });
+  const stopped = await running;
+  assert.equal(stopped.status, 'interrupted'); assert.equal(stopped.sessionVisibility.status, 'archived');
+});
+
+
+test('completed results are persisted before native archiving finishes', async t => {
+  const { root, owner, caller, source } = await setup(t);
+  const paired = await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  const nativeRoot = path.join(root, 'owner/sharing/tasks', paired.pairId, '.fake-codex');
+  await fs.mkdir(nativeRoot, { recursive: true });
+  const hold = path.join(nativeRoot, 'hold-archive');
+  await fs.writeFile(hold, '');
+  const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  const outcome = caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'persist before archiving' });
+  try {
+    let cwd;
+    for (let i = 0; i < 500; i++) {
+      cwd = await fs.readFile(path.join(nativeRoot, 'archive-waiting'), 'utf8').catch(error => { if (error.code !== 'ENOENT') throw error; });
+      if (cwd) break;
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+    assert.ok(cwd, 'native archive reached the controlled wait');
+    const state = JSON.parse(await fs.readFile(path.join(cwd, '..', 'state.json'), 'utf8'));
+    assert.equal(state.status, 'completed');
+    assert.match(state.response, /persist before archiving/);
+    assert.ok(state.endedAt);
+    assert.equal(state.rounds.at(-1).status, 'completed');
+    assert.equal(await fs.readFile(path.join(cwd, 'answer.txt'), 'utf8'), 'persist before archiving');
+  } finally {
+    await fs.rm(hold, { force: true });
+    const task = await outcome;
+    assert.equal(task.sessionVisibility.status, 'archived');
+  }
+});
