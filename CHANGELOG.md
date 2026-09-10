@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.0 — 2026-09-10
+
+- Add provider-controlled Codex session visibility. New tasks archive after each stopped turn by default and restore the same session before continuation; optionally keep sessions in the native task list for viewing progress. Existing tasks and file retention remain unchanged. Claude native visibility is unsupported.
+- Configure concurrent tasks per node, defaulting to 4 with first-come admission. Lowering the limit leaves active work running.
+- Capture native Codex and Claude model usage by turn, model and source, with missing-data notes and JSON export; do not estimate prices.
+- Clarify task-file consent and protection limits, and provide actionable recovery suggestions without rerunning completed work.
+- Fix cancellation-time task status races and refresh bilingual product documentation.
+
 ## 0.7.0 — 2026-09-08
 
 - Add lightweight local management using plain HTML/CSS/JavaScript in the MCP process. Enabled by default with a persistent off switch; manage existing nodes, tasks, settings and saved results through a private loopback link.
