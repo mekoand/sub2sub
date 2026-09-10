@@ -7,7 +7,7 @@ install_sub2sub() {
   [ "$#" -le 1 ] || { echo 'Usage: install.sh [codex|claude]' >&2; return 1; }
   [ "$(uname -s)" = Darwin ] || { echo 'This installer supports macOS. On Windows use install.ps1.' >&2; return 1; }
   case "$(uname -m)" in arm64) arch=arm64 ;; x86_64) arch=x64 ;; *) echo 'Unsupported Mac architecture.' >&2; return 1 ;; esac
-  version=${SUB2SUB_VERSION:-0.7.0}
+  version=${SUB2SUB_VERSION:-0.8.0}
   case "$version" in ''|*[!0-9.]*) echo 'Invalid SUB2SUB_VERSION.' >&2; return 1 ;; esac
   base="https://github.com/mekoand/sub2sub/releases/download/v$version"
   asset="sub2sub-darwin-$arch.tar.gz"
