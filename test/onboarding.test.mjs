@@ -145,3 +145,11 @@ test('MCP exposes the guide and defers sharing, pairing and delegation until a r
   assert.equal(restored.settings.caller.limits.inputFiles, 33);
   await assert.rejects(nextConversation.tool('onboarding', { action: 'guess' }), /Invalid action/);
 });
+
+test('renaming a new device does not skip the first-use settings review', async t => {
+  const { client } = await setup(t);
+  await client.call('device_settings', { name: 'My device' });
+  const guide = await client.call('onboarding', {});
+  assert.equal(guide.status, 'pending');
+  assert.equal(guide.settings.deviceName, 'My device');
+});
