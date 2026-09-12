@@ -130,3 +130,11 @@ Providers can stop accepting new work, revoke a caller and interrupt its task, o
 - On Windows, `~` means the current user's home directory.
 
 These directories contain pairing credentials, identities, and task files. Do not share them wholesale. First use creates configuration as needed; `config.example.json` illustrates structure, with device-specific paths to replace.
+
+## Device names and local storage
+
+Ask to rename this device in sub2sub, or edit its display name under Settings in the management page. This does not rename the operating system. Paired devices learn changes on subsequent contact; duplicate names receive local numbers. Leave the connection alias blank to follow the device name. Explicit aliases remain unchanged.
+
+Ask to inspect local storage, or open Settings → Local storage. Inspect task records, input snapshots, answers and outputs, and complete copies, including old versus current files. Shared paths count once in totals. Figures are file bytes; actual disk space reclaimed can differ.
+
+Preview paths, sizes and consequences before deletion. Clear old files only, or all local files, optionally removing the task record and its usage as well. In this version, clearing all local files prevents further collection or continuation of that task; start a new task from original inputs if needed. Source projects, remote data and native client history are preserved. Keeping the record marks it as locally cleared. Local cleanup is manual; provider work copies retain their existing cleanup flow and retention policy.

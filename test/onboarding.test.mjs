@@ -111,7 +111,7 @@ test('the complete summary includes configured advanced values and safe connecti
   assert.equal(guide.settings.provider.retentionDays, 12);
   assert.deepEqual(guide.settings.provider.network, { address: '100.101.102.103', port: 4444 });
   assert.deepEqual(guide.settings.advanced, { configPath, stateRoot, executionPaths: { codex: '/synthetic/codex', claude: '/synthetic/claude' }, supportedLimits: { bytes: 67108864, files: 10000 } });
-  assert.deepEqual(JSON.parse(JSON.stringify(guide.connections)), [{ name: 'office', transport: 'lan', host: '192.168.1.2', port: 5555, status: 'unchecked', transferAuthorization: { scope: 'task-files' } }]);
+  assert.deepEqual(JSON.parse(JSON.stringify(guide.connections)), [{ name: 'office', displayName: 'office', transport: 'lan', host: '192.168.1.2', port: 5555, status: 'unchecked', transferAuthorization: { scope: 'task-files' } }]);
   assert.equal(guide.pairings[0].name, 'Other device');
   assert.doesNotMatch(JSON.stringify(guide), /PRIVATE-/);
 });
