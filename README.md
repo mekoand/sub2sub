@@ -12,7 +12,7 @@
 Delegate tasks, receive results, and request revisions in your current Codex or Claude Code conversation.
 
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.8.0-6366f1)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.8.1-6366f1)](CHANGELOG.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 **English** · [简体中文](README.zh-CN.md) · [Install](docs/install.en.md) · [Usage](docs/usage.en.md)
@@ -87,7 +87,7 @@ Say this in your conversation:
 
 > Open sub2sub management.
 
-Version 0.8.0 provides a compact local page for nodes, tasks, and saved results, with pairing, settings, and on-demand Codex quota queries. Resource statistics over 7 or 30 days show where your tasks went, how many turns ran, and their measured execution time. Native model usage is available by turn, model and source, with partial-data notes and JSON export; no prices are calculated.
+Version 0.8.1 provides a compact local page for nodes, tasks, and saved results, with pairing, settings, and on-demand Codex quota queries. Resource statistics over 7 or 30 days show where your tasks went, how many turns ran, and their measured execution time. Native model usage is available by turn, model and source, with partial-data notes and JSON export; no prices are calculated.
 
 Management is enabled by default and can be turned off at any time. It shares the plugin process, adds no background service, and does not open a browser automatically. Task instructions and follow-ups stay in your conversation. [Management and statistics](docs/usage.en.md#local-management-and-statistics)
 
