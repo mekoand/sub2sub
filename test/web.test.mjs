@@ -123,3 +123,21 @@ test('web and conversation share visibility settings without requiring a model c
   assert.equal(unsupported.keepSessionVisible, true); assert.equal(unsupported.sessionVisibilitySupported, false);
   assert.match(unsupported.note, /Claude.*unsupported/);
 });
+
+test('provider connection rules can be edited through management using the shared nullable schema', async t => {
+  const pairId = randomUUID();
+  const { client, store } = await setup(t, { provider: { pairings: { [pairId]: { name: 'Synthetic caller', pairedAt: new Date().toISOString(), tokenHash: 'a'.repeat(64) } } } });
+  const { origin, headers } = endpoint(await client.call('web_management', {}));
+  const edit = input => fetch(`${origin}/api/call`, { method: 'POST', headers, body: JSON.stringify({ name: 'pairing_settings', input: { pairId, ...input } }) });
+  const expiresAt = '2030-01-15T10:30:00.000Z';
+  let response = await edit({ maxConcurrent: 2, expiresAt });
+  assert.equal(response.status, 200); assert.equal((await response.json()).expiresAt, expiresAt);
+  response = await edit({ maxConcurrent: '2' }); assert.equal(response.status, 400);
+  response = await edit({ maxConcurrent: null, expiresAt: null }); assert.equal(response.status, 200);
+  assert.equal((await response.json()).authorizationStatus, 'active');
+  const saved = (await store.read()).provider.pairings[pairId];
+  assert.equal(saved.maxConcurrent, null); assert.equal(saved.expiresAt, null);
+  const overview = await (await fetch(`${origin}/api/overview?role=provider`, { headers })).json();
+  assert.equal(overview.peers[0].maxConcurrent, null);
+  assert.ok(!JSON.stringify(overview).includes('tokenHash'));
+});

@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
-import { X509Certificate } from 'node:crypto';
+import { X509Certificate, randomUUID } from 'node:crypto';
 import https from 'node:https';
 import selfsigned from 'selfsigned';
 import { openMcp } from './helpers/mcp.mjs';
@@ -14,12 +14,13 @@ import { Client, connect } from '../lib/client.mjs';
 import { Config } from '../lib/config.mjs';
 import { Sharing } from '../lib/lan.mjs';
 
-async function setup(t, { clock = false, deadline = false, timeoutMs } = {}) {
+async function setup(t, { clock = false, deadline = false, modelGate = false, timeoutMs } = {}) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'sub2sub-lan-test-'));
   const clockFile = path.join(root, 'clock.txt'), initialTime = Date.now();
   if (clock) await fs.writeFile(clockFile, String(initialTime));
   const ownerOptions = clock ? { args: ['--import', fileURLToPath(new URL('./fixtures/clock.mjs', import.meta.url)), fileURLToPath(new URL('../bin/mcp.mjs', import.meta.url))], env: { SUB2SUB_TEST_CLOCK: clockFile } } : {};
   if (deadline) Object.assign(ownerOptions, { args: ['--import', fileURLToPath(new URL('./fixtures/deadline.mjs', import.meta.url)), fileURLToPath(new URL('../bin/mcp.mjs', import.meta.url))], env: { SUB2SUB_TEST_DEADLINE: path.join(root, 'deadline') } });
+  if (modelGate) ownerOptions.env = { ...ownerOptions.env, SUB2SUB_TEST_MODEL_GATE: path.join(root, 'model-gate') };
   const processes = [];
   const states = [];
   t.after(async () => {
@@ -1335,4 +1336,133 @@ test('completed results are persisted before native archiving finishes', async t
     const task = await outcome;
     assert.equal(task.sessionVisibility.status, 'archived');
   }
+});
+
+test('connection settings default compatibly, validate input and survive node restart', async t => {
+  const { owner, caller } = await setup(t);
+  const pair = await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  const defaults = await owner.tool('pairing_settings', { pairId: pair.pairId });
+  assert.equal(defaults.maxConcurrent, null); assert.equal(defaults.expiresAt, null);
+  assert.equal(defaults.authorizationStatus, 'active');
+  const expiresAt = new Date(Date.now() + 86400000).toISOString();
+  await Promise.all([
+    owner.tool('pairing_settings', { pairId: pair.pairId, maxConcurrent: 2 }),
+    owner.tool('pairing_settings', { pairId: pair.pairId, expiresAt })
+  ]);
+  for (const input of [{ maxConcurrent: 0 }, { maxConcurrent: '2' }, { expiresAt: 'tomorrow' }, { expiresAt: '2026-02-30T00:00:00Z' }, { expiresAt: '2026-09-12T12:00:00' }, { expiresAt: 12 }]) {
+    await assert.rejects(owner.tool('pairing_settings', { pairId: pair.pairId, ...input }), /Invalid|must be/i);
+  }
+  await owner.tool('exit_sharing');
+  assert.deepEqual(await owner.tool('pairing_settings', { pairId: pair.pairId }), { ...defaults, maxConcurrent: 2, expiresAt });
+  await owner.tool('start_sharing', { address: '127.0.0.1', port: 0 });
+  assert.equal((await owner.tool('list_pairings')).pairings[0].maxConcurrent, 2);
+  await owner.tool('pairing_settings', { pairId: pair.pairId, maxConcurrent: null, expiresAt: null });
+  assert.deepEqual(await owner.tool('pairing_settings', { pairId: pair.pairId }), defaults);
+  await owner.tool('revoke_pairing', { pairId: pair.pairId });
+  await assert.rejects(owner.tool('pairing_settings', { pairId: pair.pairId, expiresAt }), /Unknown|revoked/);
+});
+
+test('expiry lets an accepted turn finish, blocks run and restore, then extension resumes the same task', { timeout: 30000 }, async t => {
+  const { root, owner, caller, source, clockFile, initialTime } = await setup(t, { clock: true });
+  const pair = await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  const expiresAt = new Date(initialTime + 60000).toISOString();
+  await owner.tool('pairing_settings', { pairId: pair.pairId, expiresAt });
+  const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  const running = caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'finish-after-expiry' });
+  let active, work;
+  for (let i = 0; i < 200; i++) {
+    active = (await owner.tool('sharing_status')).activeTask;
+    if (active) {
+      work = path.join(root, 'owner/sharing/tasks', pair.pairId, active.taskId, 'work');
+      if (await fs.stat(path.join(work, 'ready.txt')).catch(error => { if (error.code !== 'ENOENT') throw error; })) break;
+    }
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
+  assert.ok(active); assert.ok(await fs.stat(path.join(work, 'ready.txt')));
+  await fs.writeFile(clockFile, String(initialTime + 60000));
+  assert.equal((await caller.tool('check_peer', { peer: 'owner' })).status, 'expired');
+  assert.equal((await caller.tool('task_status', { taskId: active.taskId })).status, 'running');
+  await fs.writeFile(path.join(work, 'finish.txt'), 'Complete this accepted turn');
+  const first = await running; assert.equal(first.status, 'completed');
+  assert.equal((await owner.tool('pairing_settings', { pairId: pair.pairId })).expiresAt, expiresAt);
+  const saved = await caller.tool('collect_result', { taskId: first.taskId });
+  assert.equal(saved.status, 'completed');
+  await assert.rejects(caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'blocked' }), /authorization has expired/);
+  await assert.rejects(caller.tool('continue_task', { taskId: first.taskId, prompt: 'blocked' }), /authorization has expired/);
+  const peer = JSON.parse(await fs.readFile(path.join(root, 'caller.json'))).peers.owner;
+  for (const action of ['run', 'restore']) await assert.rejects(connect(peer, { action, protocol: 2, taskId: randomUUID(), prompt: 'bypass', model: 'gpt-5.6-luna', reasoningEffort: 'max' }), /authorization has expired/);
+  await caller.tool('cancel_task', { taskId: first.taskId });
+  await caller.tool('finish_task', { taskId: first.taskId, cleanup: 'workcopy' });
+  assert.ok(await fs.stat(saved.responseFile));
+  const extension = new Date(initialTime + 120000).toISOString();
+  await owner.tool('pairing_settings', { pairId: pair.pairId, expiresAt: extension });
+  const continued = await caller.tool('continue_task', { taskId: first.taskId, prompt: 'restored and continued' });
+  assert.equal(continued.threadId, first.threadId); assert.equal(continued.revision, 2);
+  assert.equal((await owner.tool('pairing_settings', { pairId: pair.pairId })).expiresAt, extension);
+});
+
+test('connection limits count concurrent admissions, isolate callers and leave active work running when lowered', { timeout: 30000 }, async t => {
+  const { root, owner, caller, device, source } = await setup(t);
+  const pair = await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  const other = await device('other');
+  const otherPair = await other.tool('pair_peer', { invitation: (await owner.tool('create_pairing')).invitation, peer: 'owner', allowTaskFiles: true });
+  await owner.tool('pairing_settings', { pairId: pair.pairId, maxConcurrent: 1 });
+  const peer = JSON.parse(await fs.readFile(path.join(root, 'caller.json'))).peers.owner;
+  await assert.rejects(connect(peer, { action: 'configurePairing', pairId: pair.pairId, maxConcurrent: null }), /Unknown provider request field/);
+  const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  const running = [0, 1].map(() => caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'partial-wait' }).then(value => ({ value }), error => ({ error })));
+  let status;
+  for (let i = 0; i < 200; i++) {
+    status = await owner.tool('sharing_status');
+    if (status.activeTask && await fs.stat(path.join(root, 'owner/sharing/tasks', pair.pairId, status.activeTask.taskId, 'work/partial.txt')).catch(error => { if (error.code !== 'ENOENT') throw error; })) break;
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
+  assert.equal(status.occupiedSlots, 1);
+  const rejected = await Promise.race(running); assert.match(rejected.error.message, /Connection capacity is full/);
+  assert.equal((await caller.tool('check_peer', { peer: 'owner' })).status, 'busy');
+  assert.equal((await other.tool('check_peer', { peer: 'owner' })).status, 'available');
+  const otherCopy = await other.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  assert.equal((await other.tool('start_task', { peer: 'owner', snapshotId: otherCopy.snapshotId, prompt: 'other connection' })).status, 'completed');
+  await owner.tool('provider_settings', { maxConcurrent: 1 });
+  await assert.rejects(other.tool('start_task', { peer: 'owner', snapshotId: otherCopy.snapshotId, prompt: 'node full' }), /node capacity/);
+  await owner.tool('pairing_settings', { pairId: pair.pairId, maxConcurrent: 2 });
+  await owner.tool('provider_settings', { maxConcurrent: 4 });
+  const second = caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'partial-wait' }).then(value => ({ value }), error => ({ error }));
+  for (let i = 0; i < 200 && (await owner.tool('sharing_status')).occupiedSlots !== 2; i++) await new Promise(resolve => setTimeout(resolve, 20));
+  await owner.tool('pairing_settings', { pairId: pair.pairId, maxConcurrent: 1, expiresAt: new Date(Date.now() - 1000).toISOString() });
+  assert.equal((await owner.tool('sharing_status')).occupiedSlots, 2);
+  assert.equal((await owner.tool('pairing_settings', { pairId: otherPair.pairId })).expiresAt, null);
+  for (const active of (await owner.tool('sharing_status')).activeTasks) await caller.tool('cancel_task', { taskId: active.taskId });
+  await Promise.all([...running, second]);
+  assert.equal((await owner.tool('sharing_status')).occupiedSlots, 0);
+});
+
+test('expiry during model discovery is checked again before reserving an execution slot', { timeout: 30000 }, async t => {
+  const { root, owner, caller, clockFile, initialTime } = await setup(t, { clock: true, modelGate: true });
+  const pair = await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  await owner.tool('pairing_settings', { pairId: pair.pairId, expiresAt: new Date(initialTime + 60000).toISOString() });
+  const peer = JSON.parse(await fs.readFile(path.join(root, 'caller.json'))).peers.owner;
+  const gate = path.join(root, 'model-gate'); await fs.writeFile(gate, 'wait');
+  const run = connect(peer, { action: 'run', protocol: 2, taskId: randomUUID(), prompt: 'must not start', model: 'gpt-5.6-luna', reasoningEffort: 'max' }).then(value => ({ value }), error => ({ error }));
+  for (let i = 0; i < 200 && !await fs.stat(gate + '.started').catch(error => { if (error.code !== 'ENOENT') throw error; }); i++) await new Promise(resolve => setTimeout(resolve, 10));
+  assert.ok(await fs.stat(gate + '.started'));
+  await fs.writeFile(clockFile, String(initialTime + 60000));
+  await fs.unlink(gate);
+  assert.match((await run).error.message, /authorization has expired/);
+  assert.equal((await owner.tool('sharing_status')).occupiedSlots, 0);
+  assert.deepEqual((await owner.tool('list_shared_tasks')).tasks, []);
+});
+
+
+test('model preflight returns connection rules changed during discovery', { timeout: 30000 }, async t => {
+  const { root, owner, caller } = await setup(t, { modelGate: true });
+  const pair = await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  const peer = JSON.parse(await fs.readFile(path.join(root, 'caller.json'))).peers.owner;
+  const gate = path.join(root, 'model-gate'); await fs.writeFile(gate, 'wait');
+  const models = connect(peer, { action: 'models' });
+  for (let i = 0; i < 200 && !await fs.stat(gate + '.started').catch(error => { if (error.code !== 'ENOENT') throw error; }); i++) await new Promise(resolve => setTimeout(resolve, 10));
+  assert.ok(await fs.stat(gate + '.started'));
+  await owner.tool('pairing_settings', { pairId: pair.pairId, expiresAt: new Date(Date.now() - 1000).toISOString() });
+  await fs.unlink(gate);
+  assert.equal((await models).connection.authorizationStatus, 'expired');
 });
