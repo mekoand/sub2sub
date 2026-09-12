@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.1 — 2026-09-13
+
+- Set optional concurrency limits and fixed authorization deadlines per connection. Expiry stops new execution while accepted turns finish; extending the original connection restores access without re-pairing.
+- Ask providers to describe this turn's answer and actual adjustments in their existing final response; no extra summary model calls or diff view.
+- Rename the device in conversation or local settings. Existing pairings sync names on subsequent contact, duplicate display names receive local numbers, and explicit connection aliases remain unchanged.
+- Inspect local task storage and preview manual cleanup of old or all local files, optionally removing task records and usage. Protect shared files, active operations and source projects; changed previews require confirmation again. No automatic local cleanup.
+- Preserve remote cleanup and first-use settings review after local file deletion or device renaming. Clearing all local task files prevents further collection or continuation in this version; deletion previews explain this consequence.
+
 ## 0.8.0 — 2026-09-10
 
 - Add provider-controlled Codex session visibility. New tasks archive after each stopped turn by default and restore the same session before continuation; optionally keep sessions in the native task list for viewing progress. Existing tasks and file retention remain unchanged. Claude native visibility is unsupported.

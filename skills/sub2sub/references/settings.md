@@ -31,3 +31,13 @@ Use ordinary settings first. Keep the user's two roles in separate answers.
 Use the role's settings tool. Both roles can adjust `inputBytes`, `inputFiles`, `resultBytes`, `resultFiles`. The effective limit is the smaller of both sides; query the supported range rather than inventing a limit. Inputs count the full upload; results count the current transfer's changed files. Existing accepted result limits remain available for collection after defaults are tightened. Raising a limit leaves exclusions and transfer consent intact.
 
 The provider can also set `retentionDays`, default seven. Existing tasks retain their accepted duration. Full local copies can accumulate beyond input limits despite individually small deltas; restoration checks the entire copy and reports whether limits or scope need adjustment. Never silently omit required files.
+
+## Device names and local storage
+
+Use `device_settings` to query or change this device's sub2sub display name. It does not rename the operating system. Existing pairings learn changes on subsequent communication. Display `displayName` from `list_peers`, while passing its stable `name` as the tool's `peer` argument. Explicit connection aliases remain; duplicate display names receive local numbers.
+
+For a space question, use `local_storage`. Report caller totals, task sizes, old versus current files, unused input snapshots, and any unreadable or missing paths. Shared directories count once in totals. For provider work copies use `list_shared_tasks` with `details=true` and the existing provider cleanup flow.
+
+For manual local deletion, call `cleanup_local_files` with a task ID and `scope=old` or `all`, initially omitting `confirm`. `old` keeps latest delivery and recovery files. `all` clears all task-local files; `deleteRecord=true` additionally removes the local history and corresponding usage. Deleting a record requires `all` to avoid untracked leftovers. An unused snapshot can be selected by `snapshotId` instead of `taskId`.
+
+Show the preview's selected paths, expected bytes, retained shared paths and consequences. All-file deletion in this version prevents further collection or continuation of that local task; remote data may remain, but recovery is not promised. Keep original source, remote data, config and native history outside the deletion scope. Once the user explicitly chooses the displayed scope, repeat it with `confirm=true` and the returned `previewToken`; if it has changed, show a fresh preview and obtain a new choice; report partial failures honestly. Space queries and viewing a task never imply permission to delete.

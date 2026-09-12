@@ -124,6 +124,19 @@ test('web and conversation share visibility settings without requiring a model c
   assert.match(unsupported.note, /Claude.*unsupported/);
 });
 
+test('management exposes the same device name and local storage preview as conversation tools', async t => {
+  const { client } = await setup(t);
+  const { origin, headers } = endpoint(await client.call('web_management', {}));
+  const call = async (name, input = {}) => {
+    const response = await fetch(`${origin}/api/call`, { method: 'POST', headers, body: JSON.stringify({ name, input }) });
+    assert.equal(response.status, 200); return response.json();
+  };
+  assert.equal((await call('device_settings', { name: '办公室 Mac' })).deviceName, '办公室 Mac');
+  assert.equal((await client.call('device_settings', {})).deviceName, '办公室 Mac');
+  assert.equal((await call('local_storage')).bytes, 0);
+  assert.equal((await (await fetch(`${origin}/api/overview`, { headers })).json()).device, '办公室 Mac');
+});
+
 test('provider connection rules can be edited through management using the shared nullable schema', async t => {
   const pairId = randomUUID();
   const { client, store } = await setup(t, { provider: { pairings: { [pairId]: { name: 'Synthetic caller', pairedAt: new Date().toISOString(), tokenHash: 'a'.repeat(64) } } } });

@@ -1,6 +1,6 @@
 ---
 name: sub2sub
-description: Review first-use settings, check or install updates, open local management, troubleshoot and report problems, query task statistics or quota, share a node, connect with an invitation, delegate or continue tasks, view saved results, and manage settings, connections or work-copy cleanup.
+description: Review first-use settings, check or install updates, open local management, troubleshoot and report problems, query task statistics or quota, share a node, connect with an invitation, delegate or continue tasks, view saved results, and manage device names, connections, local storage or work-copy cleanup.
 ---
 
 # sub2sub
@@ -26,8 +26,9 @@ Record `action=skip` only when the user explicitly skips the guide. `action=reop
 
 - **Getting started:** after the settings review, explain three steps: the provider says “生成邀请码”; the caller pastes it and agrees to the task-file scope; then says “把这个任务交给〈节点名称〉”. Sharing runs in an independent node after startup; the management conversation can close. Keep the device awake and connected, and start sharing manually after reboot. Codex defaults to GPT-5.6 Luna / max. If Claude caller defaults are unset, list the target node’s models and ask the user to choose model and effort before sending files; offer to save that choice. A provider offers all available models for its selected tool.
 - **Share / invite:** call `create_pairing` directly. If the user requests Tailscale, pass the provider's actual Tailscale IPv4 address; use `setup_status` to find it when unknown. It starts or reuses this machine's sharing process. Return the private, single-use invitation and its ten-minute lifetime. Use `setup_status` only when address selection fails. Pairing does not select a task model.
-- **Connect:** explain the consent below, then call `pair_peer` with a memorable name and the user's `allowTaskFiles` decision. Success confirms connectivity; report the peer without another routine check.
+- **Connect:** explain the consent below, then call `pair_peer` with the user's `allowTaskFiles` decision. Omit `peer` to follow the provider device name; supply an explicit alias only when the user chooses one. Success confirms connectivity; report the peer without another routine check.
 - **View saved results:** read the [local delivery format](references/work-copy.md#collect-and-continue), call `list_tasks`, identify the task by peer and times, then read/open its local `workCopyDirectory`, `responseFile` and `resultDirectory/changes.json`. Include Markdown links to the main local output and `responseFile`, with full absolute targets, alongside the saved answer; disclose failed/interrupted execution and any skipped necessary outputs from the saved manifest. This works after remote cleanup or disconnection. Viewing does not call `collect_result`, `task_status`, SSH or another remote access tool. If `deliveryPending=true`, explain that the listed files are the previous save; absent freshness information in older records is unknown.
+- **Device name, local space or manual local deletion:** read [settings and management](references/settings.md).
 - **Settings or status:** read [settings and management](references/settings.md). Keep 使用方 and 提供方 separate; show ordinary settings first and advanced settings only when requested or needed to resolve a concrete limit.
 
 ## Consent once per destination

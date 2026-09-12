@@ -12,7 +12,7 @@
 在当前 Codex 或 Claude Code 对话中，委托任务、取回成果、继续修改。
 
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.8.0-6366f1)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.8.1-6366f1)](CHANGELOG.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 [English](README.md) · **简体中文** · [安装](docs/install.md) · [使用手册](docs/usage.md)
@@ -87,7 +87,7 @@ irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | ie
 
 > 打开 sub2sub 管理页。
 
-0.8.0 提供简洁的本机管理页，集中查看节点、任务和已保存成果，也能配对、调整设置、按需查询 Codex 额度。近 7 天或 30 天的资源统计，帮你看看任务交给了谁、跑了几轮、用了多少执行时间。还可按轮次、实际模型和来源查看原生用量，保留缺失项说明并导出 JSON，不计算价格。
+0.8.1 提供简洁的本机管理页，集中查看节点、任务和已保存成果，也能配对、调整设置、按需查询 Codex 额度。近 7 天或 30 天的资源统计，帮你看看任务交给了谁、跑了几轮、用了多少执行时间。还可按轮次、实际模型和来源查看原生用量，保留缺失项说明并导出 JSON，不计算价格。
 
 管理页默认开启，可以随时关闭；它复用插件进程，不增加后台服务，也不会自动打开浏览器。任务指令和追问继续留在原对话里。[管理页与统计说明](docs/usage.md#本机管理页与统计)
 

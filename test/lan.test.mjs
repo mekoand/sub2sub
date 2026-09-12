@@ -1338,6 +1338,48 @@ test('completed results are persisted before native archiving finishes', async t
   }
 });
 
+test('device display names sync on paired traffic without changing task identity or explicit aliases', async t => {
+  const { owner, caller, source, device } = await setup(t);
+  assert.equal((await owner.tool('device_settings', { name: '办公室 Mac' })).deviceName, '办公室 Mac');
+  const paired = await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, allowTaskFiles: true });
+  const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  const task = await caller.tool('start_task', { peer: paired.peer, snapshotId: copy.snapshotId, prompt: 'write result' });
+  await owner.tool('device_settings', { name: '家里 Mac' });
+  await caller.tool('device_settings', { name: '我的电脑' });
+  await caller.tool('collect_result', { taskId: task.taskId });
+  const peers = (await caller.tool('list_peers', { check: false })).peers;
+  assert.equal(peers[0].displayName, '家里 Mac');
+  assert.equal(peers[0].name, paired.peer);
+  assert.equal((await owner.tool('list_pairings')).pairings[0].name, '我的电脑');
+  const other = await device('other');
+  await other.tool('device_settings', { name: '我的电脑' });
+  await other.tool('pair_peer', { invitation: (await owner.tool('create_pairing')).invitation, peer: '固定别名' });
+  const names = (await owner.tool('list_pairings')).pairings.map(p => p.name);
+  assert.deepEqual(names, ['我的电脑', '我的电脑 2']);
+  assert.deepEqual((await owner.tool('list_pairings')).pairings.map(p => p.name), names);
+  await owner.tool('device_settings', { name: '再次改名' });
+  const alias = (await other.tool('list_peers')).peers[0];
+  assert.equal(alias.displayName, '固定别名');
+  assert.equal(alias.deviceName, '再次改名');
+  await caller.tool('continue_task', { taskId: task.taskId, prompt: 'write result' });
+  await assert.rejects(owner.tool('device_settings', { name: ' '.repeat(3) }), /Invalid|name/);
+});
+
+test('confirmed remote status unlocks local cleanup and local deletion preserves remote cleanup', async t => {
+  const { root, owner, caller, source } = await setup(t);
+  await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  const task = await caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'write result' });
+  await caller.tool('collect_result', { taskId: task.taskId });
+  const recordPath = path.join(root, 'caller', 'tasks', `${task.taskId}.json`);
+  const record = JSON.parse(await fs.readFile(recordPath)); record.status = 'unknown';
+  await fs.writeFile(recordPath, JSON.stringify(record));
+  assert.equal((await caller.tool('task_status', { taskId: task.taskId })).status, 'completed');
+  const preview = await caller.tool('cleanup_local_files', { taskId: task.taskId, scope: 'all' });
+  await caller.tool('cleanup_local_files', { taskId: task.taskId, scope: 'all', confirm: true, previewToken: preview.previewToken });
+  assert.equal((await caller.tool('finish_task', { taskId: task.taskId, cleanup: 'workcopy' })).status, 'released');
+});
+
 test('connection settings default compatibly, validate input and survive node restart', async t => {
   const { owner, caller } = await setup(t);
   const pair = await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
