@@ -118,6 +118,10 @@ lines.on('line', async line => {
         send({ method: 'turn/completed', params: { threadId, turn: { id: 'turn-1', status: 'completed' } } });
         break;
       }
+      if (prompt === 'finish-after-expiry') {
+        await fs.writeFile('ready.txt', 'Executing');
+        while (!await fs.stat('finish.txt').catch(error => { if (error.code !== 'ENOENT') throw error; })) await new Promise(resolve => setTimeout(resolve, 10));
+      }
       if (prompt === 'hang') { send({ method: 'item/agentMessage/delta', params: { threadId, turnId: 'turn-1', delta: 'Waiting for cancellation' } }); break; }
       if (prompt === 'approval') { send({ id: 'owner-approval', method: 'item/commandExecution/requestApproval', params: { command: 'touch outside-workspace' } }); break; }
       if (prompt === 'failure') { send({ method: 'turn/completed', params: { threadId, turn: { id: 'turn-1', status: 'failed', error: { message: 'fixture failure' } } } }); break; }
