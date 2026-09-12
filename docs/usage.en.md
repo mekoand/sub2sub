@@ -6,6 +6,14 @@ sub2sub shares access to authorized AI subscriptions through tasks. Delegate fro
 
 For your first task, start with settings and pairing below. Once connected, jump to [delegating and following up](#delegate-and-follow-up), or open [local management](#local-management-and-statistics) to see your tasks and saved results.
 
+## Sharing rules per connection
+
+Providers can set a connection concurrency limit and fixed authorization deadline under **I provide → Authorized callers → Rules**, or use `pairing_settings` in their conversation. New and existing connections default to no extra limit and no expiry; the node total limit still applies. A blank field (`null` in the tool) removes that limit.
+
+The page uses local time; the tool accepts UTC timestamps. Expiry blocks new tasks and follow-up execution while allowing active turns to finish and existing work to be queried, cancelled and collected. Activity never renews access; the provider can extend the original connection to continue its tasks. Revocation still disconnects immediately and requires pairing again. Work-copy cleanup and saved results are unchanged.
+
+Delivery in the original conversation includes this turn’s answer and actual adjustments, saved artifact links and unfinished work. Management reuses the same saved answer without another summary request or a diff view.
+
 ## Roles and consent
 
 The **caller** delegates work and receives results. The **provider** authorizes its selected Codex or Claude environment to execute the task and keeps that tool's subscription login on its own device. Both run the same plugin and can use either role as appropriate.
