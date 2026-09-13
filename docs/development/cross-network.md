@@ -1,6 +1,6 @@
 # Cross-network development
 
-Implementation of [#43](https://github.com/mekoand/sub2sub/issues/43), part of [#42](https://github.com/mekoand/sub2sub/issues/42). Distribution and existing-connection migration are tracked in #44; real two-device acceptance and product documentation are tracked in #45.
+Implementation of [#43](https://github.com/mekoand/sub2sub/issues/43), part of [#42](https://github.com/mekoand/sub2sub/issues/42). Distribution and explicit existing-connection migration are implemented by #44; real two-device acceptance and product documentation are tracked in #45.
 
 `device_settings.crossNetwork` is a device-wide opt-in, defaulting to false. The independent Node service owns the setting, outgoing cross-network operations and incoming tasks. Enabling the setting does not start accepting tasks. A stopped provider continues to serve authorized status, cancellation and results under the existing protocol.
 
@@ -19,7 +19,9 @@ cd transport/tailcat
 go build -o ../../bin/sub2sub-tailcat .
 ```
 
-On Windows, build `../../bin/sub2sub-tailcat.exe`. Packaged helper delivery belongs to #44; do not publish this source-only step as a completed cross-network release.
+On Windows, build `../../bin/sub2sub-tailcat.exe`. For distribution, use `node scripts/build-tailcat.mjs /absolute/new/helper-directory [platform] [arch]`, then `node scripts/package.mjs /absolute/new/sub2sub --tailcat-dir /absolute/helper-directory`. The builder collects licenses from linked Go modules, records the target and checksum, and excludes local identities. `npm run release` builds a matching helper for each supported archive. Installation validates the helper bytes and runs its offline `--version` check before changing a host installation. Source-only packages retain private-network operation.
+
+Existing pairings do not gain a Tailcat address when either device enables the setting. Use `edit_peer` with `migrate: true` after both devices opt in. It retrieves the provider endpoint through the original pairing, then verifies that pairing over Tailcat before saving. When the old endpoint is unavailable, provide a new invitation from that same provider; its fingerprint must match. The invitation is not consumed to create a replacement pairing. Pair ID, token, file consent and task/session history remain attached to the existing connection. Failure leaves the saved connection unchanged. Older providers must update first; an old caller can continue using its saved private endpoint but must update to read a new cross-network invitation.
 
 ```sh
 npm ci --omit=optional --ignore-scripts

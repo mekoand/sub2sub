@@ -7,6 +7,7 @@ import { promisify } from 'node:util';
 import { Config, codexExecutable, executableOnPath } from '../lib/config.mjs';
 import { processLock } from '../lib/lock.mjs';
 import { Sharing } from '../lib/lan.mjs';
+import { verifyTailcat } from '../lib/tailcat.mjs';
 
 const exec = promisify(execFile);
 const marketplaceName = 'sub2sub';
@@ -53,6 +54,11 @@ async function findCodex(config) {
   throw new Error(`Codex was not found or could not start. Install/open Codex first, or set SUB2SUB_CODEX to the native codex.exe. ${failures.join('\n')}`);
 }
 
+async function verifyReleaseHelper(plugin, release) {
+  if (!release.tailcat) return;
+  await verifyTailcat(path.join(plugin, 'bin'), { platform: release.platform, arch: release.arch, expected: release.tailcat, execute: true });
+}
+
 async function prepareRelease(payload, root, release) {
   const destination = path.join(root, 'versions', release.version);
   const exists = await readOptional(path.join(destination, 'release.json'));
@@ -64,6 +70,7 @@ async function prepareRelease(payload, root, release) {
       await fs.rename(staging, destination);
     } finally { await fs.rm(staging, { recursive: true, force: true }); }
   } else if (JSON.parse(exists).version !== release.version) throw new Error(`Unexpected contents in ${destination}.`);
+  await verifyReleaseHelper(path.join(destination, 'plugins/sub2sub'), release);
   return { destination, node: path.join(destination, 'runtime', process.platform === 'win32' ? 'node.exe' : 'bin/node'), plugin: path.join(destination, 'plugins/sub2sub') };
 }
 
@@ -113,6 +120,7 @@ export async function install(payload, root, log = console.log, target = 'codex'
   payload = path.resolve(payload); root = path.resolve(root);
   const release = await json(path.join(payload, 'release.json'));
   if (!/^\d+\.\d+\.\d+$/.test(release.version) || release.platform !== process.platform || release.arch !== process.arch) throw new Error('This release does not match this operating system and architecture.');
+  await verifyReleaseHelper(path.join(payload, 'plugins/sub2sub'), release);
   const configFile = process.env.SUB2SUB_CONFIG || path.join(os.homedir(), '.config/sub2sub/config.json');
   const store = new Config(configFile), config = await store.read();
   const sharing = await new Sharing(store, config.stateRoot || path.join(os.homedir(), '.local/state/sub2sub')).machineStatus();

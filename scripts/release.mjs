@@ -6,6 +6,8 @@ import { createHash } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
+import { buildTailcat } from './build-tailcat.mjs';
+
 const exec = promisify(execFile);
 const root = fileURLToPath(new URL('../', import.meta.url));
 const output = path.resolve(process.argv[2] || 'dist');
@@ -34,13 +36,15 @@ for (const [platform, arch] of [['darwin', 'arm64'], ['darwin', 'x64'], ['win32'
     else await exec('tar', ['-xzf', path.join(temporary, archive), '-C', temporary]);
     const payload = path.join(temporary, 'payload');
     await fs.mkdir(path.join(payload, 'plugins'), { recursive: true });
-    await exec(process.execPath, [path.join(root, 'scripts/package.mjs'), path.join(payload, 'plugins/sub2sub')]);
+    const helperDirectory = path.join(temporary, 'tailcat');
+    const tailcat = await buildTailcat(helperDirectory, platform, arch);
+    await exec(process.execPath, [path.join(root, 'scripts/package.mjs'), path.join(payload, 'plugins/sub2sub'), '--tailcat-dir', helperDirectory]);
     const binary = platform === 'win32' ? 'node.exe' : 'bin/node';
     await fs.mkdir(path.dirname(path.join(payload, 'runtime', binary)), { recursive: true });
     await fs.copyFile(path.join(temporary, nodeName, binary), path.join(payload, 'runtime', binary));
     await fs.chmod(path.join(payload, 'runtime', binary), 0o755);
     await fs.copyFile(path.join(temporary, nodeName, 'LICENSE'), path.join(payload, 'runtime/LICENSE'));
-    await fs.writeFile(path.join(payload, 'release.json'), JSON.stringify({ version, platform, arch, nodeVersion }, null, 2) + '\n');
+    await fs.writeFile(path.join(payload, 'release.json'), JSON.stringify({ version, platform, arch, nodeVersion, tailcat }, null, 2) + '\n');
     const asset = `sub2sub-${platform}-${arch}.${extension}`;
     const destination = path.join(output, asset);
     await fs.rm(destination, { force: true });
