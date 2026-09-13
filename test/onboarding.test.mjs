@@ -153,3 +153,11 @@ test('renaming a new device does not skip the first-use settings review', async 
   assert.equal(guide.status, 'pending');
   assert.equal(guide.settings.deviceName, 'My device');
 });
+
+test('cross-network defaults off for old and new configurations and queries do not start a node', async t => {
+  const { client, stateRoot } = await setup(t);
+  assert.equal((await client.call('device_settings', {})).crossNetwork.enabled, false);
+  assert.equal((await client.call('onboarding', {})).settings.crossNetwork.enabled, false);
+  await assert.rejects(fs.stat(path.join(stateRoot, 'sharing/runtime.json')), { code: 'ENOENT' });
+  await assert.rejects(client.call('device_settings', { crossNetwork: 'true' }), /boolean/);
+});

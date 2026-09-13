@@ -38,3 +38,14 @@ jobs:
           $tokens = $null
           [System.Management.Automation.Language.Parser]::ParseFile("$PWD/install.ps1", [ref]$tokens, [ref]$parseErrors) | Out-Null
           if ($parseErrors.Count) { throw ($parseErrors | Out-String) }
+  tailcat:
+    name: Tailcat helper build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: transport/tailcat/go.mod
+          cache-dependency-path: transport/tailcat/go.sum
+      - run: go build -o /tmp/sub2sub-tailcat .
+        working-directory: transport/tailcat
