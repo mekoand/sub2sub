@@ -67,18 +67,21 @@ Repeat pairing to add other nodes, give each a name, then choose a node for each
 
 Run `codex` after installation and use the same invitation, delegation, and follow-up prompts in the interactive session. Starting sharing creates an independent node. Closing the CLI session leaves it available; a later session reconnects to the same node. One-shot CLI calls can start sharing too. The computer must remain awake and connected; start sharing manually after a reboot.
 
-## Connecting over Tailscale
+## Cross-network connections
 
-For computers on different networks, [Tailscale](https://tailscale.com/download) can provide connectivity:
+Built-in cross-network service is in the unreleased 0.9.0 candidate; physical two-device acceptance is pending. The latest-release commands above still install the published version. Candidate archives for macOS ARM64, macOS x64 and Windows x64 include the matching Tailcat helper and licenses. Users do not need Go or a separate Tailscale setup.
 
-1. Install Tailscale on the devices that need cross-network connections and join a network where they can reach each other. Teams can invite members or share individual devices.
-2. Find the work node's IPv4 address in Tailscale.
-3. Ask it to generate a sub2sub invitation using that address, for example `100.x.x.x` with the actual address substituted.
-4. Paste the invitation as usual. Keep Tailscale connected and allow the caller to reach the work node's sharing port.
+1. Install compatible versions on both devices. Explicitly enable **Enable cross-network service** in each device's settings, or request it in conversation. It is off by default; pairing and first-use confirmation do not enable it.
+2. Generate and paste one invitation as usual. Authorize task-file transfer separately.
+3. Delegate, collect and continue tasks without choosing a route for each task. Private connections are tried first, with Tailcat used when necessary.
 
-Router port forwarding and Tailscale Funnel are not needed. sub2sub uses the Tailscale IPv4 address; MagicDNS names and IPv6 are not currently accepted. Existing pairings remember their network address. When switching from LAN to Tailscale, save results and explicitly exit the sub2sub node. Start sharing again using its Tailscale address, then ask the caller's assistant to update the connection address.
+When enabled, Tailcat uses public relay services for discovery and connection setup, then tries to establish a direct data path. A direct private data path does not mean Tailcat can bootstrap without public services. Relay speed and availability vary; connectivity is not guaranteed on every network. When disabled, sub2sub does not start Tailcat. Existing private connections still work, and this switch does not disable system VPN software.
 
-Version 0.5 accepts the usual Tailscale `100.64.0.0/10` range, with automated address-handling tests. Real cross-network pairing and result delivery will be tested in a later release. [Tailscale address documentation](https://tailscale.com/docs/concepts/tailscale-ip-addresses)
+Existing connections do not migrate automatically. After both devices enable the service, select **Enable cross-network access** in the caller's connection details, or explicitly request migration. The original identity and new route are verified before saving. Pairing, file consent, task copies and sessions remain attached. If the original address is unreachable, supply a new invitation from the same device. Failed verification preserves the old connection; deleting and re-pairing cannot substitute for migration.
+
+Older providers must update before offering a cross-network endpoint. Older callers can keep their saved direct connection, but must update to read a new cross-network invitation. Existing Tailscale IPv4 connections retain their route, including `100.64.0.0/10`; migration is optional. The original address field still accepts only private IPv4 addresses, not arbitrary public addresses, MagicDNS names or IPv6.
+
+Before disabling the service or exiting the node, finish cross-network tasks and transfers, or explicitly cancel the original task. Unresolved submissions block shutdown until their status is confirmed. Failed shutdown leaves the actual setting enabled and identifies work needing attention. Stopping new work keeps existing tasks, cancellation and results accessible. Device connectivity does not grant execution tasks network, browser, MCP or app permissions.
 
 ## Update
 

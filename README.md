@@ -9,10 +9,10 @@
 
 **Share AI subscriptions across your team, task by task, without signing in to anyone else's account.**
 
-Delegate tasks, receive results, and request revisions in your current Codex or Claude Code conversation.
+Delegate work to another device, bring back responses and files, and request revisions in your current conversation. Connect directly on a private network, or enable cross-network service on both devices to use the same workflow across networks.
 
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.8.1-6366f1)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.9.0_candidate-6366f1)](CHANGELOG.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 **English** · [简体中文](README.zh-CN.md) · [Install](docs/install.en.md) · [Usage](docs/usage.en.md)
@@ -22,6 +22,8 @@ Delegate tasks, receive results, and request revisions in your current Codex or 
 sub2sub lets you delegate work through an AI subscription a teammate has authorized you to use. The provider stays signed in to Codex or Claude Code on their own device and authorizes connections through invitations. You submit a task and selected files from your own conversation, and their environment executes it.
 
 Files and responses are saved on your device; the provider keeps their account login. For revisions, continue the same task from the original conversation, reusing its working files and session. The same workflow also works across your own devices.
+
+> 0.9.0 candidate: built-in cross-network support is not yet released. Physical two-device acceptance is pending; the latest-release installer below still installs the published version.
 
 ## What you can do
 
@@ -93,7 +95,7 @@ Management is enabled by default and can be turned off at any time. It shares th
 
 ## Across networks
 
-Use [Tailscale](https://tailscale.com/) to connect participating devices across networks, then pair using each work node's Tailscale IPv4 address. Address support is included; real cross-network testing is planned for a later release. [Tailscale setup](docs/install.en.md#connecting-over-tailscale)
+Cross-network service is off by default. Enable it on both devices, then exchange one invitation as usual. Private connections are tried first; the bundled Tailcat transport can use public relays when needed. Users do not select routes per task. Existing connections keep their current route until explicitly migrated. [Setup and migration](docs/install.en.md#cross-network-connections).
 
 ## Compatibility
 

@@ -27,6 +27,7 @@ test('release packaging includes only the selected helper, its metadata and lice
   assert.deepEqual(JSON.parse(await fs.readFile(path.join(target, 'bin/tailcat.json'))), metadata);
   assert.equal(await fs.readFile(path.join(target, 'licenses/tailcat/LICENSE'), 'utf8'), 'synthetic license');
   await assert.rejects(fs.stat(path.join(target, 'bin/sub2sub-tailcat.exe')), { code: 'ENOENT' });
+  await fs.access(path.join(target, 'docs/development/cross-network.md'));
   await assert.rejects(fs.stat(path.join(target, 'transport')), { code: 'ENOENT' });
   await fs.writeFile(path.join(built, 'sub2sub-tailcat'), 'changed');
   const other = path.join(root, 'bad/sub2sub'); await fs.mkdir(path.dirname(other));

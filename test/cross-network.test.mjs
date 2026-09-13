@@ -143,7 +143,7 @@ test('an unauthenticated unfinished invitation request cannot keep cross-network
 
 test('explicit migration retains an existing pairing, consent and native task, and failed identity checks retain the old route', async t => {
   const before = process.env.SUB2SUB_TAILCAT;
-  process.env.SUB2SUB_TAILCAT = fileURLToPath(new URL('./fixtures/fake-tailcat.mjs', import.meta.url));
+  process.env.SUB2SUB_TAILCAT = process.env.SUB2SUB_REAL_TAILCAT || fileURLToPath(new URL('./fixtures/fake-tailcat.mjs', import.meta.url));
   t.after(() => { if (before === undefined) delete process.env.SUB2SUB_TAILCAT; else process.env.SUB2SUB_TAILCAT = before; });
   const { root, device } = await setup(t);
   const owner = await device('owner'), caller = await device('caller');
