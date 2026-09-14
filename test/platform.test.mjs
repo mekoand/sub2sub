@@ -96,7 +96,7 @@ test('sharing accepts the Tailscale IPv4 range and rejects adjacent public addre
     await assert.rejects(async () => lanRequest({ ...peer, host }, '/pair', {}), new RegExp(`network boundary: ${host.replaceAll('.', '\\.')}`));
   }
   for (const host of ['100.63.255.255', '100.128.0.1', '8.8.8.8', 'example.com']) {
-    await assert.rejects(async () => lanRequest({ ...peer, host }, '/pair', {}), /LAN or Tailscale/);
+    await assert.rejects(async () => lanRequest({ ...peer, host }, '/pair', {}), /private-network/);
   }
 });
 

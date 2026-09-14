@@ -10,6 +10,9 @@ The assistant uses existing queries to check versions, sharing, and task state, 
 
 | Symptom | Next step |
 | --- | --- |
+| Cross-network service is off or unavailable | Check both device settings; generating an invitation does not enable it. Install the matching candidate package if the helper is missing; migrate existing connections explicitly |
+| Public relay is unreachable | Keep the original connection and check private reachability. Retry only unsubmitted operations; inspect the original task when submission or its result is uncertain |
+| Disabling cross-network service is refused | Finish tasks and transfers or explicitly cancel the original task. Keep the service enabled while status is uncertain; do not delete a connection or rerun work to bypass protection |
 | An old management link no longer opens | Ask to open sub2sub management again in the original conversation; links change with the plugin process. If you disabled it, ask to enable it again first |
 | Statistics look incomplete or duration is unknown | Statistics use retained turn, time and native usage records. — means unknown; check coverage and pending-sync notes. Older work is not backfilled |
 | `ECONNREFUSED` after pairing | Check that the device is awake and connected, then start sharing again. Reuse the existing pairing |

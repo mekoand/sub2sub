@@ -2,7 +2,7 @@
 
 [返回 README](../README.zh-CN.md)
 
-sub2sub 是一个通过 stdio 暴露工具的本地 MCP 服务。调用方和提供方运行同一套程序，LAN协议连接两端，提供方节点独立运行，使用当前选择的 Codex App Server 或 Claude Agent SDK 执行任务。
+sub2sub 是一个通过 stdio 暴露工具的本地 MCP 服务。调用方和提供方运行同一套程序，私网 HTTPS 或主动开启的 Tailcat 通道连接两端，提供方节点独立运行，使用当前选择的 Codex App Server 或 Claude Agent SDK 执行任务。
 
 ```mermaid
 flowchart TB
@@ -10,7 +10,10 @@ flowchart TB
     B[本机浏览器] --> H[同进程 HTTP 管理入口]
     H --> C
     M --> C[Client / 配置与本地索引]
-    C -->|LAN HTTPS| S[独立 Sharing 节点]
+    C -->|私网 HTTPS 优先| S[独立 Sharing 节点]
+    C -->|双方开启时| T[Tailcat 字节通道]
+    T -->|同一 TLS 身份与配对协议| S
+    T -.-> D[公共 DERP 发现与可选数据中继]
     S --> P[Provider / 任务状态与工作副本]
     P --> A[Codex App Server / Claude Agent SDK]
     A --> W[受限任务工作目录]
@@ -31,6 +34,7 @@ flowchart TB
 | `bin/launch.sh` | macOS/POSIX Node运行时发现及启动 |
 | `lib/client.mjs` | 调用方流程、任务索引、结果保存和续做 |
 | `lib/lan.mjs` | HTTPS共享、邀请码、配对、并发名额及到期检查 |
+| `lib/tailcat.mjs` / `transport/tailcat/` | 固定服务的 Tailcat helper、进程生命周期和发行完整性校验 |
 | `lib/provider.mjs` | 提供方任务状态、执行、同步确认、恢复和清理 |
 | `lib/codex.mjs` | App Server握手、原生会话、轮次事件和执行权限 |
 | `lib/claude.mjs` | 官方 SDK 的模型查询、Bash 沙箱执行及会话管理 |
@@ -60,7 +64,7 @@ flowchart TB
 
 额度查询由实际执行节点使用自身账号完成，返回当前窗口与采集时间，不缓存旧账号数字，也不负责自动选节点。
 
-没有中央服务、持久队列、自动故障转移或自动无限重试。SSH和本地transport保留用于开发与兼容验证，用户日常流程使用LAN邀请配对。
+没有自建中央协调服务或持久任务队列。日常流程使用同一邀请码和配对协议，私网 HTTPS 优先；默认关闭的 Tailcat 服务在双方主动开启后可用于跨网，启动依赖公共 DERP 发现，数据可经直接通道或中继。只有 HTTP 请求尚未发出时的连接失败才允许尝试另一通道，不重放已提交的任务。SSH 和本地 transport 保留用于开发与兼容验证。详见[跨网开发说明](development/cross-network.md)。
 
 本机网页默认随 MCP 初始化，独立共享入口不启动网页。随机 loopback 端口与内存令牌属于当前 MCP 进程；令牌放在私密链接片段中，API 校验令牌及 Host/Origin，不开放跨域。页面复用 Client 操作和既有确认/授权/清理边界，不提供执行任务的接口。静态资源随包分发，无额外运行依赖、构建框架或数据库；成果仅在已保存文件清单内按文本或附件返回，拒绝路径穿越及符号链接。
 

@@ -9,10 +9,10 @@
 
 **无需登录对方账号，按任务粒度在团队中共享 AI 订阅。**
 
-在当前 Codex 或 Claude Code 对话中，委托任务、取回成果、继续修改。
+在当前对话中委托另一台设备处理任务，取回答复与文件，再继续修改。私网内可直接连接；双方主动开启跨网络服务后，也可在不同网络之间使用同一流程。
 
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.8.1-6366f1)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.9.0_candidate-6366f1)](CHANGELOG.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 [English](README.md) · **简体中文** · [安装](docs/install.md) · [使用手册](docs/usage.md)
@@ -22,6 +22,8 @@
 sub2sub 让你使用队友授权共享的 AI 订阅完成任务。提供方在自己的设备上保持 Codex 或 Claude Code 登录，通过邀请码授权连接；你在自己的对话中提交任务和选定文件，由对方的执行环境处理。
 
 文件和答复保存到你的设备上，账号登录始终由提供方保管。需要修改时，在原对话里继续同一项任务，沿用已有工作文件和会话。这套方式同样适用于你自己的多台设备。
+
+> 0.9.0 候选版：内置跨网络功能尚未发布，真实双机验收待完成。下方 latest 安装命令仍安装已发布版本。
 
 ## 它能帮你做什么
 
@@ -93,7 +95,7 @@ irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | ie
 
 ## 跨网络使用
 
-可以通过 [Tailscale](https://tailscale.com/) 连接不同网络中的设备，再使用各工作节点的 Tailscale IPv4 地址配对。地址支持已加入，真实跨网络实测安排在后续版本。[Tailscale 配置说明](docs/install.md#跨网络使用-tailscale)
+跨网络连接服务默认关闭。双方主动开启后，照常交换一个邀请码即可，用户无需为每项任务选择连接方式。系统优先尝试私网直连，必要时通过内置 Tailcat 连接，可使用公共中继。旧连接保持原方式，用户可以主动迁移。[开启与迁移说明](docs/install.md#跨网络连接)
 
 ## 兼容性
 

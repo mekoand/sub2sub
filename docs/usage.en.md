@@ -6,6 +6,9 @@ sub2sub shares access to authorized AI subscriptions through tasks. Delegate fro
 
 For your first task, start with settings and pairing below. Once connected, jump to [delegating and following up](#delegate-and-follow-up), or open [local management](#local-management-and-statistics) to see your tasks and saved results.
 
+
+Cross-network service is off by default. Enable it on both devices before pairing across networks; existing connections retain their route until explicitly migrated. Active work, transfers and unresolved submissions block disabling the service until completed or explicitly cancelled. [Setup, migration and compatibility](install.en.md#cross-network-connections). This feature remains in the unreleased 0.9.0 candidate.
+
 ## Sharing rules per connection
 
 Providers can set a connection concurrency limit and fixed authorization deadline under **I provide → Authorized callers → Rules**, or use `pairing_settings` in their conversation. New and existing connections default to no extra limit and no expiry; the node total limit still applies. A blank field (`null` in the tool) removes that limit.
