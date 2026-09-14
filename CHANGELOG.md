@@ -1,12 +1,14 @@
 # Changelog
 
-## 0.9.0 — Unreleased
+## 0.9.0 — 2026-09-15
 
 - Opt in to cross-network connections per device. Private HTTPS remains the first route; Tailcat can carry the same authenticated pairing, task execution and result traffic when direct access fails before submission. The service is off by default.
 - Prevent disabling cross-network service or exiting the node while accepted cross-network work, transfers or unresolved submissions remain. Finish or explicitly cancel the original task before closing.
 - Explicitly add cross-network access to existing connections while preserving pairing identity, task history and file consent. Failed verification leaves the original connection unchanged.
 - Bundle a matching Tailcat helper and dependency licenses in macOS ARM64, macOS x64 and Windows x64 archives. Verify the helper before installation and retain running nodes and user settings.
-- Physical two-device cross-network acceptance remains pending; automated and same-host transport checks do not establish production reliability or public relay availability.
+- Keep local node management reachable after Wi-Fi/hotspot changes and choose the current private address when restarting without an explicit address.
+- Offer direct Codex and Claude Code installation choices, a small first-task walkthrough, and clear registration-failure recovery steps while retaining the original error.
+- Validate actual Codex tasks and continuation across two Apple Silicon Macs on different networks, including restart recovery, shutdown protection, and direct/DERP result transfer. Other hardware/host combinations and relay availability are not implied by this acceptance.
 
 ## 0.8.1 — 2026-09-13
 

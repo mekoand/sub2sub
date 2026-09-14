@@ -22,7 +22,7 @@ Windows，在桌面登录用户的 PowerShell 中运行：
 irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | iex
 ```
 
-看到 `Installed sub2sub` 后，**完整退出并重新打开 Codex 桌面应用**；仅关闭窗口或新建对话可能仍使用旧插件进程。CLI 用户退出并重新启动 `codex`。第一次使用可说“生成 sub2sub 邀请码”，或粘贴对方发来的邀请码。
+看到 `Installed sub2sub` 后，**完整退出并重新打开 Codex 桌面应用**；仅关闭窗口或新建对话可能仍使用旧插件进程。CLI 用户退出并重新启动 `codex`。先说“查询 sub2sub 状态和版本，不修改设置”，确认当前对话已加载插件，再按 [README](../README.zh-CN.md#连接工作节点) 配对。
 
 安装器下载对应系统的发行包、校验下载内容、定位 Codex，并通过原生插件命令安装。无需自己建目录、编辑 JSON 或运行 npm。Git 仅在按整个 Git 仓库选择文件时需要；明确选择文件或目录无需 Git。
 
@@ -69,7 +69,7 @@ Windows PowerShell：
 
 ## 跨网络连接
 
-0.9.0 候选版提供内置跨网络服务，尚未发布；真实双机验收待完成。本文的 latest 安装命令仍指向已发布版本。候选包为 macOS ARM64、macOS x64、Windows x64 附带对应 Tailcat 组件及许可证，用户无需安装 Go 或另行配置 Tailscale。
+0.9.0 提供内置跨网络服务。发行包为 macOS ARM64、macOS x64、Windows x64 附带对应 Tailcat 组件及许可证，用户无需安装 Go 或另行配置 Tailscale。
 
 1. 双方安装兼容版本，在本机设置中主动打开“开启跨网络连接服务”，或在对话中明确要求开启。默认关闭，配对和首次设置确认不会自动开启。
 2. 提供方照常生成邀请码，使用方粘贴邀请码连接；文件传输仍需单独授权。
@@ -98,6 +98,10 @@ Windows PowerShell：
 需要指定已发布版本时，先设置 `SUB2SUB_VERSION`，再运行同一命令。只有包含一键安装发行包的版本才支持此方式。回退前退出节点并查看版本说明。旧版不支持本版的 Claude 任务和分工具设置；先保存并结束 Claude 任务、按需清理其历史，再切回 Codex。不要用旧版继续或清理保留的 Claude 任务。
 
 ## 安装异常
+
+**插件登记失败：**若出现 `plugin add/install/update failed` 或 `Operation not permitted`，安装尚未确认完成，即使程序文件已经存在。在你本机正常终端运行 `codex plugin list` 或 `claude plugin list`，检查 `sub2sub@sub2sub` 的版本和启用状态；重试时使用相同宿主和原安装目录（自定义目录沿用 `SUB2SUB_INSTALL_DIR`）。`Operation not permitted` 表示系统拒绝了该操作，单凭这行信息无法确定权限来源；保留错误末尾用于排查，不需要删除配对或使用 sudo。
+
+安装和重启后先说“查询 sub2sub 状态和版本，不修改设置”。确认当前对话已加载所需版本，再按 [README 首次使用步骤](../README.zh-CN.md#连接工作节点) 配对和委托。
 
 - **下载失败：**确认当前网络可访问 GitHub Releases，再次运行安装命令。
 - **找不到 Codex：**先打开并登录 Codex。特殊安装位置可设置 `SUB2SUB_CODEX` 为原生可执行文件的绝对路径，再重试；Windows 需要 `codex.exe`，不能填写 `.cmd` / `.bat`。

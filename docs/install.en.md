@@ -22,7 +22,7 @@ Windows, in the desktop user's PowerShell session:
 irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | iex
 ```
 
-After `Installed sub2sub` appears, **fully quit and reopen the Codex desktop app**. Closing a window or starting a new conversation may retain the old plugin process. CLI users should exit and restart `codex`. Ask to generate a sub2sub invitation or paste an invitation from the other computer.
+After `Installed sub2sub` appears, **fully quit and reopen the Codex desktop app**. Closing a window or starting a new conversation may retain the old plugin process. CLI users should exit and restart `codex`. Ask “Show sub2sub status and version without changing settings,” then follow the [README pairing steps](../README.md#connect-your-work-nodes).
 
 The installer downloads and checks the release, locates Codex, and installs through its native plugin commands. No manual directories, JSON editing, or npm commands are needed. Git is only needed for selecting a whole Git repository; explicitly selecting files or directories works without it.
 
@@ -69,7 +69,7 @@ Run `codex` after installation and use the same invitation, delegation, and foll
 
 ## Cross-network connections
 
-Built-in cross-network service is in the unreleased 0.9.0 candidate; physical two-device acceptance is pending. The latest-release commands above still install the published version. Candidate archives for macOS ARM64, macOS x64 and Windows x64 include the matching Tailcat helper and licenses. Users do not need Go or a separate Tailscale setup.
+Built-in cross-network service is available in 0.9.0. Release archives for macOS ARM64, macOS x64 and Windows x64 include the matching Tailcat helper and licenses. Users do not need Go or a separate Tailscale setup.
 
 1. Install compatible versions on both devices. Explicitly enable **Enable cross-network service** in each device's settings, or request it in conversation. It is off by default; pairing and first-use confirmation do not enable it.
 2. Generate and paste one invitation as usual. Authorize task-file transfer separately.
@@ -98,6 +98,10 @@ Both hosts use the plugin ID `sub2sub@sub2sub`. The Codex installer also migrate
 Set `SUB2SUB_VERSION` before running the same command to select a published version that includes installer assets. Exit the node and check release notes before downgrading. Older releases do not support Claude tasks or per-tool settings: save and finish Claude work, clean up its history if desired, and switch back to Codex first. Do not use an older release to continue or clean up retained Claude tasks.
 
 ## Installation problems
+
+**Plugin registration failed:** if `plugin add/install/update failed` or `Operation not permitted` appears, installation is not confirmed even if program files exist. In your normal terminal, run `codex plugin list` or `claude plugin list` and check the version and enabled status of `sub2sub@sub2sub`. Retry with the same host and original installation directory (retain `SUB2SUB_INSTALL_DIR` for a custom directory). `Operation not permitted` means the system denied the operation; that line alone does not identify the source of the restriction. Keep the error tail for diagnosis; do not delete pairings or use sudo.
+
+After installing and restarting, ask “Show sub2sub status and version without changing settings.” Confirm the loaded version before following the [README first-use steps](../README.md#connect-your-work-nodes).
 
 - **Download failed:** check access to GitHub Releases, then run the command again.
 - **Codex not found:** open and sign in to Codex first. For custom locations, set `SUB2SUB_CODEX` to the native executable's absolute path. Windows requires `codex.exe`, not a `.cmd` or `.bat` launcher.

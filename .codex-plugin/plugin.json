@@ -9,7 +9,7 @@
   "interface": {
     "displayName": "sub2sub",
     "shortDescription": "跨设备委托 AI 任务，取回文件与答复",
-    "longDescription": "在当前 Codex 或 Claude Code 对话中，把任务交给自己或团队授权的设备，取回文件与答复并继续修改。提供方保管自己的订阅登录并控制共享。私网优先直连，双方可主动开启默认关闭的跨网络服务；0.9.0 候选版的真实双机跨网验收待完成。附带可关闭的本机管理页和资源统计。",
+    "longDescription": "在当前 Codex 或 Claude Code 对话中，把任务交给自己或团队授权的设备，取回文件与答复并继续修改。提供方保管自己的订阅登录并控制共享。私网优先直连，双方可主动开启默认关闭的跨网络服务。附带可关闭的本机管理页和资源统计。",
     "developerName": "mekoand",
     "category": "Productivity",
     "composerIcon": "./docs/assets/icon.svg",

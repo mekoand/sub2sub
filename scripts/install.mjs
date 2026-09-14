@@ -18,6 +18,10 @@ async function readOptional(file) {
   catch (error) { if (error.code === 'ENOENT') return undefined; throw error; }
 }
 
+function registrationError(error, target) {
+  return new Error(`${error.message}\n${target === 'claude' ? 'Claude Code' : 'Codex'} plugin registration or verification failed; installation is not confirmed. Program files may already exist.\nIn your normal terminal, run "${target} plugin list" and check sub2sub@sub2sub for the requested version and enabled status. Retry the same installation target and original installation directory.\nSee https://github.com/mekoand/sub2sub/blob/main/docs/install.en.md#installation-problems`, { cause: error });
+}
+
 async function findCodex(config) {
   try { return await codexExecutable(process.env.SUB2SUB_CODEX ? {} : config); }
   catch (error) {
@@ -108,9 +112,9 @@ async function installClaude(payload, root, release, run, log, executable) {
     } catch (error) {
       if (previous === undefined) await fs.rm(marketplaceFile, { force: true });
       else await fs.writeFile(marketplaceFile, previous);
-      throw error;
+      throw registrationError(error, 'claude');
     }
-    log(`Installed sub2sub ${release.version} for Claude Code. Start a NEW Claude Code session.\nProgram files: ${destination}\nPairings and saved results stay in their existing locations.`);
+    log(`Installed sub2sub ${release.version} for Claude Code. Start a NEW Claude Code session.\nThen ask: "Show sub2sub status and version without changing settings."\nProgram files: ${destination}\nPairings and saved results stay in their existing locations.`);
     return { version: release.version, root, node, host: 'claude', pluginId };
   } finally { await unlock(); }
 }
@@ -175,11 +179,11 @@ export async function install(payload, root, log = console.log, target = 'codex'
     } catch (error) {
       if (previous === undefined) await fs.rm(marketplaceFile, { force: true });
       else await fs.writeFile(marketplaceFile, previous);
-      throw error;
+      throw registrationError(error, 'codex');
     }
     // Finish migration only after the replacement is confirmed usable.
     for (const old of duplicates) { log(`Replacing ${old.pluginId}...`); await run(['plugin', 'remove', old.pluginId]); }
-    log(`Installed sub2sub ${release.version}. Fully quit and reopen Codex Desktop to load the updated plugin; closing a window or starting a new conversation is not sufficient. For Codex CLI, exit and restart the CLI session.\nProgram files: ${destination}\nPairings and saved results stay in their existing locations.`);
+    log(`Installed sub2sub ${release.version} for Codex. Fully quit and reopen Codex Desktop to load the updated plugin; closing a window or starting a new conversation is not sufficient. For Codex CLI, exit and restart the CLI session.\nThen ask: "Show sub2sub status and version without changing settings."\nProgram files: ${destination}\nPairings and saved results stay in their existing locations.`);
     return { version: release.version, root, node, codex: executable, pluginId };
   } finally { await unlock(); }
 }

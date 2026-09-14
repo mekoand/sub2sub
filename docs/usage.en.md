@@ -7,7 +7,7 @@ sub2sub shares access to authorized AI subscriptions through tasks. Delegate fro
 For your first task, start with settings and pairing below. Once connected, jump to [delegating and following up](#delegate-and-follow-up), or open [local management](#local-management-and-statistics) to see your tasks and saved results.
 
 
-Cross-network service is off by default. Enable it on both devices before pairing across networks; existing connections retain their route until explicitly migrated. Active work, transfers and unresolved submissions block disabling the service until completed or explicitly cancelled. [Setup, migration and compatibility](install.en.md#cross-network-connections). This feature remains in the unreleased 0.9.0 candidate.
+Cross-network service is off by default. Enable it on both devices before pairing across networks; existing connections retain their route until explicitly migrated. Active work, transfers and unresolved submissions block disabling the service until completed or explicitly cancelled. [Setup, migration and compatibility](install.en.md#cross-network-connections).
 
 ## Sharing rules per connection
 
