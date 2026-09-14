@@ -39,13 +39,22 @@ jobs:
           [System.Management.Automation.Language.Parser]::ParseFile("$PWD/install.ps1", [ref]$tokens, [ref]$parseErrors) | Out-Null
           if ($parseErrors.Count) { throw ($parseErrors | Out-String) }
   tailcat:
-    name: Tailcat helper build
-    runs-on: ubuntu-latest
+    name: Tailcat package / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
       - uses: actions/setup-go@v5
         with:
           go-version-file: transport/tailcat/go.mod
           cache-dependency-path: transport/tailcat/go.sum
-      - run: go build -o /tmp/sub2sub-tailcat .
-        working-directory: transport/tailcat
+      - run: npm ci --omit=optional --ignore-scripts
+      - run: node scripts/build-tailcat.mjs helper-build
+      - run: node --input-type=module -e "import { verifyTailcat } from './lib/tailcat.mjs'; await verifyTailcat('helper-build', { manifest:'manifest.json', platform:process.platform, arch:process.arch, execute:true });"
+      - run: node --test test/tailcat-package.test.mjs

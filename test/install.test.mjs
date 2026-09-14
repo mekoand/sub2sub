@@ -6,6 +6,7 @@ import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 import { install } from '../scripts/install.mjs';
 
 // Windows runs the native installer smoke test with the actual Codex executable.
@@ -21,7 +22,7 @@ test('installer supports fresh install, replacement, repeat install, path refres
   const release = { version: '0.5.0', platform: process.platform, arch: process.arch };
   await fs.writeFile(path.join(payload, 'release.json'), JSON.stringify(release));
   process.env.SUB2SUB_CONFIG = path.join(work, 'config.json');
-  const originalConfig = JSON.stringify({ deviceName: 'retained', peers: { existing: { token: 'fixture-only' } }, stateRoot: path.join(work, 'state') });
+  const originalConfig = JSON.stringify({ deviceName: 'retained', crossNetwork: { enabled: true }, peers: { existing: { token: 'fixture-only' } }, stateRoot: path.join(work, 'state') });
   await fs.writeFile(process.env.SUB2SUB_CONFIG, originalConfig);
   process.env.SUB2SUB_TEST_CATALOG = path.join(work, 'codex.json');
   await fs.writeFile(process.env.SUB2SUB_TEST_CATALOG, JSON.stringify({ marketplaces: [], installed: [{ name: 'sub2sub', pluginId: 'sub2sub@personal', version: '0.4.3', installed: true, enabled: true }, { name: 'unrelated', pluginId: 'unrelated@personal', installed: true }] }));
@@ -68,6 +69,21 @@ fs.writeFileSync(file, JSON.stringify(data)); console.log(JSON.stringify(data));
   await fs.access(first.node);
   delete process.env.SUB2SUB_TEST_FAIL_INSTALL;
   assert.equal((await install(payload, root, () => {})).version, '0.5.1');
+  const helperDirectory = path.join(payload, 'plugins/sub2sub/bin');
+  const helper = Buffer.from('#!/usr/bin/env node\nconsole.log(' + JSON.stringify(JSON.stringify({ protocol: 1, version: '0.6.0', platform: process.platform, arch: process.arch })) + ');\n');
+  const metadata = { version: '0.6.0', platform: process.platform, arch: process.arch, file: 'sub2sub-tailcat', sha256: createHash('sha256').update(helper).digest('hex') };
+  await fs.writeFile(path.join(helperDirectory, metadata.file), helper, { mode: 0o755 });
+  await fs.writeFile(path.join(helperDirectory, 'tailcat.json'), JSON.stringify(metadata));
+  release.version = '0.5.2'; release.tailcat = metadata;
+  await fs.writeFile(path.join(payload, 'release.json'), JSON.stringify(release));
+  await install(payload, root, () => {});
+  assert.equal(await fs.readFile(process.env.SUB2SUB_CONFIG, 'utf8'), originalConfig);
+  const catalogBefore = await fs.readFile(process.env.SUB2SUB_TEST_CATALOG, 'utf8');
+  await fs.writeFile(path.join(root, 'versions/0.5.2/plugins/sub2sub/bin/sub2sub-tailcat'), 'damaged installed helper');
+  await assert.rejects(install(payload, root, () => {}), /checksum/);
+  assert.equal(await fs.readFile(process.env.SUB2SUB_TEST_CATALOG, 'utf8'), catalogBefore);
+  assert.equal(await fs.readFile(process.env.SUB2SUB_CONFIG, 'utf8'), originalConfig);
+
 });
 
 test('Claude installer works without local Codex and preserves existing user data', { skip: process.platform === 'win32' }, async t => {

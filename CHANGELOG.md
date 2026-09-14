@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.0 — Unreleased
+
+- Opt in to cross-network connections per device. Private HTTPS remains the first route; Tailcat can carry the same authenticated pairing, task execution and result traffic when direct access fails before submission. The service is off by default.
+- Prevent disabling cross-network service or exiting the node while accepted cross-network work, transfers or unresolved submissions remain. Finish or explicitly cancel the original task before closing.
+- Explicitly add cross-network access to existing connections while preserving pairing identity, task history and file consent. Failed verification leaves the original connection unchanged.
+- Bundle a matching Tailcat helper and dependency licenses in macOS ARM64, macOS x64 and Windows x64 archives. Verify the helper before installation and retain running nodes and user settings.
+- Physical two-device cross-network acceptance remains pending; automated and same-host transport checks do not establish production reliability or public relay availability.
+
 ## 0.8.1 — 2026-09-13
 
 - Set optional concurrency limits and fixed authorization deadlines per connection. Expiry stops new execution while accepted turns finish; extending the original connection restores access without re-pairing.

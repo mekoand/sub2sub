@@ -11,6 +11,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: transport/tailcat/go.mod
+          cache-dependency-path: transport/tailcat/go.sum
       - run: npm ci --omit=dev --omit=optional --ignore-scripts
       - run: npm run check
       - run: npm test

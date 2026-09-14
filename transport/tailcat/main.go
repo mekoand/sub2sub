@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -19,6 +20,8 @@ import (
 )
 
 const servicePort = 443
+
+var tailcatVersion = "0.6.0"
 
 type identity struct {
 	RegionID tailcfg.DERPRegionID `json:"regionId,omitempty"`
@@ -35,6 +38,16 @@ func main() {
 }
 
 func run() error {
+	if len(os.Args) == 2 && os.Args[1] == "--version" {
+		platform, arch := runtime.GOOS, runtime.GOARCH
+		if platform == "windows" {
+			platform = "win32"
+		}
+		if arch == "amd64" {
+			arch = "x64"
+		}
+		return json.NewEncoder(os.Stdout).Encode(map[string]any{"protocol": 1, "version": tailcatVersion, "platform": platform, "arch": arch})
+	}
 	if len(os.Args) < 3 || (os.Args[1] == "serve" && len(os.Args) != 4) || (os.Args[1] == "dial" && len(os.Args) != 3) {
 		return fmt.Errorf("expected serve <identity-file> <loopback-port> or dial <tailcat-address>")
 	}
