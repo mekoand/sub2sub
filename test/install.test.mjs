@@ -33,7 +33,7 @@ const file = process.env.SUB2SUB_TEST_CATALOG, data = JSON.parse(fs.readFileSync
 if (args.includes('--help') || args[0] === '--version') { console.log('Codex fixture'); process.exit(0); }
 if (args[1] === 'marketplace' && args[2] === 'add') data.marketplaces = [{name: 'sub2sub', root: args[3]}];
 if (args[1] === 'add') {
-  if (process.env.SUB2SUB_TEST_FAIL_INSTALL) { console.error('installation test failure'); process.exit(1); }
+  if (process.env.SUB2SUB_TEST_FAIL_INSTALL) { console.error('Operation not permitted (os error 1)'); process.exit(1); }
   const root = data.marketplaces[0].root;
   const market = JSON.parse(fs.readFileSync(path.join(root, '.agents/plugins/marketplace.json')));
   const manifest = JSON.parse(fs.readFileSync(path.join(root, market.plugins[0].source.path, '.codex-plugin/plugin.json')));
@@ -44,7 +44,10 @@ if (args[1] === 'remove') data.installed = data.installed.filter(p => p.pluginId
 fs.writeFileSync(file, JSON.stringify(data)); console.log(JSON.stringify(data));
 `, { mode: 0o755 });
   process.env.SUB2SUB_CODEX = fake;
-  const first = await install(payload, root, () => {});
+  const logs = [];
+  const first = await install(payload, root, message => logs.push(message));
+  assert.match(logs.join('\n'), /Installed sub2sub 0.5.0 for Codex/);
+  assert.match(logs.join('\n'), /Show sub2sub status and version/);
   assert.equal(await fs.readFile(process.env.SUB2SUB_CONFIG, 'utf8'), originalConfig);
   const catalog = JSON.parse(await fs.readFile(process.env.SUB2SUB_TEST_CATALOG, 'utf8'));
   assert.deepEqual(catalog.installed.map(p => p.pluginId).sort(), ['sub2sub@sub2sub', 'unrelated@personal']);
@@ -63,7 +66,22 @@ fs.writeFileSync(file, JSON.stringify(data)); console.log(JSON.stringify(data));
   const previous = await fs.readFile(marketplaceFile, 'utf8');
   release.version = '0.5.1'; await fs.writeFile(path.join(payload, 'release.json'), JSON.stringify(release));
   process.env.SUB2SUB_TEST_FAIL_INSTALL = '1';
-  await assert.rejects(install(payload, root, () => {}), /installation test failure/);
+  logs.length = 0;
+  await assert.rejects(install(payload, root, message => logs.push(message)), error => {
+    assert.match(error.message, /Operation not permitted \(os error 1\)/);
+    assert.match(error.message, /plugin registration or verification failed/i);
+    assert.match(error.message, /codex plugin list/);
+    assert.match(error.message, /original installation directory/);
+    return true;
+  });
+  assert.doesNotMatch(logs.join('\n'), /Installed sub2sub/);
+  await assert.rejects(promisify(execFile)(process.execPath, [fileURLToPath(new URL('../scripts/install.mjs', import.meta.url)), payload, root]), error => {
+    assert.equal(error.code, 1);
+    assert.match(error.stderr, /Operation not permitted/);
+    assert.match(error.stderr, /codex plugin list/);
+    assert.doesNotMatch(error.stdout, /Installed sub2sub/);
+    return true;
+  });
   assert.equal(await fs.readFile(marketplaceFile, 'utf8'), previous);
   assert.equal(await fs.readFile(process.env.SUB2SUB_CONFIG, 'utf8'), originalConfig);
   await fs.access(first.node);
@@ -130,7 +148,10 @@ fs.writeFileSync(file, JSON.stringify(data)); console.log(JSON.stringify(args[1]
   const codexMarketplace = JSON.stringify({ name: 'sub2sub', plugins: ['codex fixture must remain unchanged'] });
   await fs.writeFile(path.join(root, '.agents/plugins/marketplace.json'), codexMarketplace);
   const coreMcp = await fs.readFile(path.join(payload, 'plugins/sub2sub/.mcp.json'), 'utf8');
-  const installed = await install(payload, root, () => {}, 'claude');
+  const logs = [];
+  const installed = await install(payload, root, message => logs.push(message), 'claude');
+  assert.match(logs.join('\n'), /Installed sub2sub 0.5.3 for Claude Code/);
+  assert.match(logs.join('\n'), /Show sub2sub status and version/);
   assert.equal(installed.host, 'claude');
   assert.equal(await fs.readFile(process.env.SUB2SUB_CONFIG, 'utf8'), original);
   const catalog = JSON.parse(await fs.readFile(process.env.SUB2SUB_TEST_CLAUDE_CATALOG, 'utf8'));
@@ -161,7 +182,14 @@ fs.writeFileSync(file, JSON.stringify(data)); console.log(JSON.stringify(args[1]
   const previous = await fs.readFile(marketplaceFile, 'utf8');
   await fs.writeFile(path.join(payload, 'release.json'), JSON.stringify({ version: '0.5.4', platform: process.platform, arch: process.arch }));
   process.env.SUB2SUB_TEST_CLAUDE_FAIL = '1';
-  await assert.rejects(install(payload, root, () => {}, 'claude'), /Claude installation test failure/);
+  logs.length = 0;
+  await assert.rejects(install(payload, root, message => logs.push(message), 'claude'), error => {
+    assert.match(error.message, /Claude installation test failure/);
+    assert.match(error.message, /claude plugin list/);
+    assert.match(error.message, /plugin registration or verification failed/i);
+    return true;
+  });
+  assert.doesNotMatch(logs.join('\n'), /Installed sub2sub/);
   assert.equal(await fs.readFile(marketplaceFile, 'utf8'), previous);
   assert.equal(await fs.readFile(process.env.SUB2SUB_CONFIG, 'utf8'), original);
   delete process.env.SUB2SUB_TEST_CLAUDE_FAIL;

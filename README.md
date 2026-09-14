@@ -12,7 +12,7 @@
 Delegate work to another device, bring back responses and files, and request revisions in your current conversation. Connect directly on a private network, or enable cross-network service on both devices to use the same workflow across networks.
 
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.9.0_candidate-6366f1)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.9.0-6366f1)](CHANGELOG.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 **English** · [简体中文](README.zh-CN.md) · [Install](docs/install.en.md) · [Usage](docs/usage.en.md)
@@ -23,7 +23,6 @@ sub2sub lets you delegate work through an AI subscription a teammate has authori
 
 Files and responses are saved on your device; the provider keeps their account login. For revisions, continue the same task from the original conversation, reusing its working files and session. The same workflow also works across your own devices.
 
-> 0.9.0 candidate: built-in cross-network support is not yet released. Physical two-device acceptance is pending; the latest-release installer below still installs the published version.
 
 ## What you can do
 
@@ -37,11 +36,11 @@ Good fits include organizing documents, building offline pages, and making code 
 
 ## Install
 
-Install sub2sub on each computer where you want to send or receive tasks. Start with the devices you need and add more whenever you want.
+Install on both the computer sending tasks and the computer receiving them. Choose the app where you will use sub2sub below; the receiving device can choose its execution tool separately. Sign in to that app first. Packages include Node and certificate generation; no npm setup is needed.
 
-For Codex, install it and sign in first, then run the command for your system. Packages include Node and certificate generation. Claude Code callers can use the [Claude installation commands](docs/install.en.md#claude-code) without installing Codex locally. On macOS, work nodes can offer Codex or Claude Code.
+### Codex
 
-**macOS · Terminal**
+**macOS · Terminal** (Apple Silicon or Intel, detected automatically)
 
 ```sh
 /bin/bash -o pipefail -c 'curl -fsSL https://github.com/mekoand/sub2sub/releases/latest/download/install.sh | /bin/bash'
@@ -53,19 +52,61 @@ For Codex, install it and sign in first, then run the command for your system. P
 irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | iex
 ```
 
-Fully quit and reopen the Codex desktop app, or exit and restart `codex` in your terminal. On a new device, sub2sub shows all current settings and waits for your confirmation before proceeding. Later, say “Check sub2sub updates” or “Upgrade sub2sub” in that host. Installation preserves pairings and saved results; restarting the host loads the updated code, and running nodes are not automatically restarted. [Installation guide](docs/install.en.md)
+After `Installed sub2sub` appears, **fully quit and reopen Codex Desktop**, or exit and restart the Codex CLI. Closing only a window or starting another conversation may keep the old plugin loaded.
+
+### Claude Code
+
+**macOS · Terminal** (Apple Silicon or Intel)
+
+```sh
+/bin/bash -o pipefail -c 'curl -fsSL https://github.com/mekoand/sub2sub/releases/latest/download/install.sh | /bin/bash -s -- claude'
+```
+
+**Windows x64 · PowerShell**
+
+```powershell
+& ([scriptblock]::Create((irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1))) -Target claude
+```
+
+After installation, start a **new Claude Code session**. Caller-only devices do not need Codex. Claude execution on receiving devices requires macOS; Windows can send tasks from Claude Code. [Requirements and custom paths](docs/install.en.md#claude-code)
+
+### Confirm that it loaded
+
+In your restarted app, ask:
+
+> Show sub2sub status and version without changing settings.
+
+Check the version loaded in the current conversation. A stopped sharing node is normal before you start receiving tasks. On first use, review the settings when prompted; this does not enable cross-network service or authorize file transfer.
+
+To update later, say “Upgrade sub2sub” in the app you installed it into. Pairings and saved results are preserved. Restart that app to load the update; an existing sharing node keeps running until you explicitly restart it while idle. [Install, update and troubleshooting](docs/install.en.md)
 
 ## Connect your work nodes
 
-On a device that will receive work:
+For devices on different networks, first ask to **enable cross-network connection service on each device**. It is off by default. For devices already reachable on a private network, leave it off. [Cross-network setup and existing connections](docs/install.en.md#cross-network-connections)
+
+On the computer that will **receive tasks**:
 
 > Generate a sub2sub invitation.
 
-On a device that will send work, paste the invitation:
+On the computer that will **send tasks**, paste that invitation:
 
 > Connect this sub2sub invitation and name it office-mac.
 
-Confirm the file-transfer scope when prompted. Repeat for other nodes you want to use, giving each a recognizable name. Sharing runs independently after startup. Keep the receiving computer awake and connected; its management conversation can close.
+Confirm the file-transfer scope when prompted. Give each connection a recognizable name. Sharing runs independently after startup: keep the receiving computer awake and connected; its management conversation can close.
+
+## Try one small task
+
+Choose a short, non-sensitive text file such as `notes.txt` in your current workspace, then ask:
+
+> Use sub2sub to send only notes.txt to office-mac. Summarize it in summary.md and return that file and a short answer.
+
+After the task completes, open the local `summary.md` link. Success means the answer and file have been saved on your computer; a connected node alone does not mean a task has completed. Your source file remains unchanged.
+
+To revise the result in the same conversation:
+
+> Continue that task. Make summary.md shorter and save the updated result locally.
+
+The receiving device reuses the original task and working files. You can open saved results even when it goes offline. [Delegation, results and cleanup](docs/usage.en.md)
 
 ## Example: delegate from Codex to Claude
 
@@ -89,7 +130,7 @@ Say this in your conversation:
 
 > Open sub2sub management.
 
-Version 0.8.1 provides a compact local page for nodes, tasks, and saved results, with pairing, settings, and on-demand Codex quota queries. Resource statistics over 7 or 30 days show where your tasks went, how many turns ran, and their measured execution time. Native model usage is available by turn, model and source, with partial-data notes and JSON export; no prices are calculated.
+The local management page provides a compact view for nodes, tasks, and saved results, with pairing, settings, and on-demand Codex quota queries. Resource statistics over 7 or 30 days show where your tasks went, how many turns ran, and their measured execution time. Native model usage is available by turn, model and source, with partial-data notes and JSON export; no prices are calculated.
 
 Management is enabled by default and can be turned off at any time. It shares the plugin process, adds no background service, and does not open a browser automatically. Task instructions and follow-ups stay in your conversation. [Management and statistics](docs/usage.en.md#local-management-and-statistics)
 
