@@ -7,3 +7,6 @@ coverage/
 .env.*
 !.env.example
 dist/
+
+/bin/sub2sub-tailcat
+/bin/sub2sub-tailcat.exe
