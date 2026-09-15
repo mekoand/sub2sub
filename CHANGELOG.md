@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.1 — 2026-09-16
+
+- Add a natural-language installation prompt for Codex and Claude Code alongside the manual commands.
+- Explain the invitation, delegation, local-result and follow-up workflow before first-use settings, with a persistent Help page and copyable examples.
+- Simplify local management: prioritize tasks, hide empty usage sections, collapse accounting notes and remove repeated explanatory text while preserving consent and lifecycle guidance.
+- Add an optional GitHub/Star link in the footer; no automatic external requests or tracking.
+
 ## 0.9.0 — 2026-09-15
 
 - Opt in to cross-network connections per device. Private HTTPS remains the first route; Tailcat can carry the same authenticated pairing, task execution and result traffic when direct access fails before submission. The service is off by default.

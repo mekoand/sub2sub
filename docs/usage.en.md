@@ -25,6 +25,8 @@ Pair with the provider's invitation and give the connection a name. Confirm task
 
 Keep invitations private. Do not publish them in issues, documentation, or screenshots.
 
+Open “Help” in the management footer for invitation, connection, small-file task and follow-up examples. A short explanation also precedes first-use settings. Viewing help starts neither sharing nor cross-network service.
+
 ## First use
 
 On a new device, the assistant first explains and shows all current settings, including when you have already given it a task. The summary covers caller defaults for Codex and Claude, the provider's execution tool and model restrictions, input/result limits for both roles, retention and cleanup conditions, device name and advanced paths, existing connections and transfer consent, authorized callers, and current sharing state. Review it and confirm before connecting, sharing or delegating; the assistant then continues your original request.
