@@ -12,7 +12,7 @@
 在当前对话中委托另一台设备处理任务，取回答复与文件，再继续修改。私网内可直接连接；双方主动开启跨网络服务后，也可在不同网络之间使用同一流程。
 
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.9.0-6366f1)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.9.1-6366f1)](CHANGELOG.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 [English](README.md) · **简体中文** · [安装](docs/install.md) · [使用手册](docs/usage.md)
@@ -37,6 +37,14 @@ sub2sub 让你使用队友授权共享的 AI 订阅完成任务。提供方在�
 ## 安装
 
 发起任务和接收任务的电脑都需要安装。按你准备用 sub2sub 的应用选择命令，并先登录该应用；接收任务的设备可以另外选择执行工具。安装包自带 Node 和证书生成能力，无需运行 npm。
+
+### 让 AI 帮你安装
+
+把下面这段话发给你正在使用的 Codex 或 Claude Code：
+
+> 请按照 https://github.com/mekoand/sub2sub 的安装说明，为我当前使用的应用安装 sub2sub 最新正式版。请核对并报告安装版本，确认是最新正式版且已启用，再告诉我如何重启，以及第一次怎样使用。
+
+助手会根据当前宿主和系统选择安装方法；无法执行安装时，可让它给出对应命令。安装后仍需按提示重启应用。你也可以按下方步骤手动安装。
 
 ### Codex
 
@@ -153,5 +161,7 @@ npm test
 [开发与打包](docs/development.md) · [架构](docs/architecture.md) · [贡献指南](CONTRIBUTING.md) · [版本记录](CHANGELOG.md)
 
 遇到问题，直接在原对话里说“帮我排查 sub2sub 的这个问题”。需要反馈时，再说“把这个问题提交到 GitHub”：助手会整理公开草稿并查重，使用宿主已有能力提交；没有提交能力时，把草稿交给你。[故障排查](docs/troubleshooting.md) · [Issues](https://github.com/mekoand/sub2sub/issues)
+
+如果 sub2sub 对你有帮助，欢迎到 [GitHub](https://github.com/mekoand/sub2sub) 关注更新或点一个 Star。
 
 [MIT](LICENSE) © 2026 mekoand

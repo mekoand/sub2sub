@@ -12,7 +12,7 @@
 Delegate work to another device, bring back responses and files, and request revisions in your current conversation. Connect directly on a private network, or enable cross-network service on both devices to use the same workflow across networks.
 
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.9.0-6366f1)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.9.1-6366f1)](CHANGELOG.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 **English** · [简体中文](README.zh-CN.md) · [Install](docs/install.en.md) · [Usage](docs/usage.en.md)
@@ -37,6 +37,14 @@ Good fits include organizing documents, building offline pages, and making code 
 ## Install
 
 Install on both the computer sending tasks and the computer receiving them. Choose the app where you will use sub2sub below; the receiving device can choose its execution tool separately. Sign in to that app first. Packages include Node and certificate generation; no npm setup is needed.
+
+### Ask your AI to install it
+
+Send this to the Codex or Claude Code app you are using:
+
+> Follow the installation instructions at https://github.com/mekoand/sub2sub to install the latest stable sub2sub release for the app I am using. Check and report the installed version, confirm it is the latest stable release and enabled, then tell me how to restart and get started.
+
+The assistant chooses the installation method for your host and system. If it cannot run the installer, ask for the matching command. Restart the app as instructed after installation. You can also install manually below.
 
 ### Codex
 
@@ -153,5 +161,7 @@ npm test
 [Development and packaging](docs/development.md) · [Architecture](docs/architecture.md) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
 If something gets stuck, ask “Help diagnose this sub2sub problem” in the original conversation. When you want to report it, say “Submit this issue to GitHub”. The assistant prepares a public-safe draft, checks for duplicates, and uses the host's existing submission tools. If those are unavailable, it gives you the draft. [Troubleshooting](docs/troubleshooting.en.md) · [Issues](https://github.com/mekoand/sub2sub/issues)
+
+If sub2sub helps you, follow updates or leave a star on [GitHub](https://github.com/mekoand/sub2sub).
 
 [MIT](LICENSE) © 2026 mekoand

@@ -6,6 +6,14 @@ Install sub2sub on both the sending and receiving computers. The provider signs 
 
 Follow the installation and host restart steps below, then generate or connect an invitation in your conversation to start [your first delegation](usage.en.md#delegate-and-follow-up). To look around first, say “Open sub2sub management”. It's enabled by default, can be turned off at any time, and won't open a browser automatically. [Management guide](usage.en.md#local-management-and-statistics)
 
+### Ask your AI to install it
+
+Send this to the Codex or Claude Code app you are using:
+
+> Follow the installation instructions at https://github.com/mekoand/sub2sub to install the latest stable sub2sub release for the app I am using. Check and report the installed version, confirm it is the latest stable release and enabled, then tell me how to restart and get started.
+
+The assistant chooses the installation method for your host and system. If it cannot run the installer, ask for the matching command. Restart the app as instructed after installation. You can also install manually below.
+
 ## Codex
 
 Install and sign in to a plugin-capable Codex version first. Packages support Apple Silicon / Intel Macs and Windows x64, and include Node and certificate-generation dependencies.
