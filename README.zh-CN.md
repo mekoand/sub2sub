@@ -12,7 +12,7 @@
 在当前对话中委托另一台设备处理任务，取回答复与文件，再继续修改。私网内可直接连接；双方主动开启跨网络服务后，也可在不同网络之间使用同一流程。
 
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.9.1-6366f1)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.9.2-6366f1)](CHANGELOG.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 [English](README.md) · **简体中文** · [安装](docs/install.md) · [使用手册](docs/usage.md)
