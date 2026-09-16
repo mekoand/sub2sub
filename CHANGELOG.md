@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.2 — 2026-09-16
+
+- Remove default size and file-count ceilings for task inputs and returned results. Transfers above 64 MiB show a notice and continue automatically.
+- Set optional size limits in MiB in local management, including decimals; leave fields blank for unlimited. Preserve explicit limits on both devices and limits already accepted by existing tasks.
+- Stream file content through disk-backed snapshots and bounded chunks across upload, collection and work-copy restoration. Active uploads can continue beyond the former fixed deadline.
+- Preserve older-node compatibility and explain their limits before sending oversized inputs. Fix interrupted-transfer cleanup, legacy snapshot handling and temporary-file cleanup after failed scans.
+
 ## 0.9.1 — 2026-09-16
 
 - Add a natural-language installation prompt for Codex and Claude Code alongside the manual commands.

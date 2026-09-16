@@ -27,7 +27,7 @@ test('first-use summary shows both roles and advanced defaults without requiring
   assert.deepEqual(guide.settings.caller.execution.codex, { model: 'gpt-5.6-luna', reasoningEffort: 'max' });
   assert.deepEqual(guide.settings.caller.execution.claude, { model: null, reasoningEffort: null });
   assert.equal(guide.settings.caller.modelAvailability, 'unverified');
-  assert.deepEqual(guide.settings.caller.limits, { inputBytes: 20971520, inputFiles: 2000, resultBytes: 20971520, resultFiles: 2000 });
+  assert.deepEqual(guide.settings.caller.limits, { inputBytes: null, inputFiles: null, resultBytes: null, resultFiles: null });
   assert.equal(guide.settings.provider.harness, 'codex');
   assert.deepEqual(guide.settings.provider.allowedModels, { codex: 'all', claude: 'all' });
   assert.equal(guide.settings.provider.retentionDays, 7);
@@ -110,7 +110,7 @@ test('the complete summary includes configured advanced values and safe connecti
   assert.equal(guide.settings.provider.limits.inputBytes, 123456);
   assert.equal(guide.settings.provider.retentionDays, 12);
   assert.deepEqual(guide.settings.provider.network, { address: '100.101.102.103', port: 4444 });
-  assert.deepEqual(guide.settings.advanced, { configPath, stateRoot, executionPaths: { codex: '/synthetic/codex', claude: '/synthetic/claude' }, supportedLimits: { bytes: 67108864, files: 10000 } });
+  assert.deepEqual(guide.settings.advanced, { configPath, stateRoot, executionPaths: { codex: '/synthetic/codex', claude: '/synthetic/claude' }, supportedLimits: { bytes: null, files: null } });
   assert.deepEqual(JSON.parse(JSON.stringify(guide.connections)), [{ name: 'office', displayName: 'office', transport: 'lan', host: '192.168.1.2', port: 5555, status: 'unchecked', transferAuthorization: { scope: 'task-files' } }]);
   assert.equal(guide.pairings[0].name, 'Other device');
   assert.doesNotMatch(JSON.stringify(guide), /PRIVATE-/);

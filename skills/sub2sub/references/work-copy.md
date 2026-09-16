@@ -7,7 +7,7 @@ Read for task preparation, result collection or cleanup.
 1. Identify the task and authorized provider. Choose required sources, tests, configuration and instructions. Default selection is current Git-tracked content, including uncommitted edits; use explicit paths for untracked or narrower task inputs.
 2. Call `prepare_work_copy` with `peer`. Show destination, scope, file count and size before transfer. It freezes a local snapshot; later source edits are not included.
 3. Check task-specific sensitive content. Credentials, unrelated files and separately sensitive material are outside the ordinary grant. Filename exclusions do not replace content inspection. Links, special files, common secret paths and dependency caches are excluded or rejected.
-4. Use the returned constraints to resolve excess size/count by adjusting authorized advanced limits or narrowing scope. Do not truncate input or rename credentials to evade exclusions.
+4. Transfer limits default to unlimited. Respect finite limits set by either side and retained task limits. Resolve a limit error by adjusting authorized settings or narrowing scope. Show the returned size warning above 64 MiB, including possible slowness outside the local network, then continue without another confirmation. This notice does not replace file-scope or host authorization. If an older node limits the transfer, explain the upgrade requirement. Do not truncate input or rename credentials to evade exclusions.
 
 ## Collect and continue
 

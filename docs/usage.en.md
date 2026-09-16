@@ -79,7 +79,11 @@ Query a local or paired node's **usage** to read current Codex account-wide allo
 
 Advanced settings hold transfer limits and retention. Lists show each node's offered tool and each task's original tool alongside its times and saved results.
 
-Input and result defaults are 20 MiB and 2,000 files each. Raw file bytes count, not compressed or base64 sizes. Supported limits are 1–67,108,864 bytes and 1–10,000 files. Both peers' limits apply, taking the smaller value. Restoring a cleaned task checks the complete upload size again.
+Input and result transfers default to unlimited bytes and file counts. The management page accepts size limits in MiB (including decimals) and file counts as integers. Tool API size parameters remain positive integer bytes. Use `null` (blank fields in the management page) for unlimited. When both peers set a limit, the smaller value applies; an unlimited peer honors the other peer's finite limit. Saved finite settings and limits already accepted by existing tasks are preserved.
+
+Transfers strictly above 64 MiB of raw file content display a notice and continue without another confirmation. Non-local networks may be slower. Input limits count the complete work copy; result limits count this transfer's changes. Restoration checks the full input again. Unlimited does not promise bandwidth or disk capacity; actual failures remain errors.
+
+Both nodes need chunked-transfer support. Older nodes retain their original limits, with an explanation before sending oversized inputs. An older local sharing process must also be restarted after active tasks finish to load the updated installation; upgrades do not restart active nodes automatically.
 
 Provider retention supports 1–365 days, default 7. Accepted tasks retain their original setting. Status queries, downloads, and `keep` do not extend the deadline; completing another turn resets it.
 
