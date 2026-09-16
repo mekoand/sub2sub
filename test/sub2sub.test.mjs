@@ -56,7 +56,7 @@ test('transfer rejects traversal, symlinks, duplicate paths, malformed content, 
   assert.throws(() => validateFiles([entry, { ...entry, path: 'ok/nested' }]), /conflict/);
   assert.throws(() => validateFiles([{ ...entry, content: 'invalid%' }]), /content/);
   await fs.writeFile(path.join(source, 'large'), Buffer.alloc(MAX_BYTES + 1));
-  await assert.rejects(snapshot(source, ['large']), /20971520 bytes/);
+  await assert.rejects(snapshot(source, ['large'], { maxBytes: MAX_BYTES }), /20971520 bytes/);
   await assert.rejects(materialize(path.join(root, 'destination'), [{ ...entry, path: '../escape' }]));
   await assert.rejects(fs.stat(path.join(root, 'escape')), { code: 'ENOENT' });
 });
@@ -73,7 +73,7 @@ test('base64 validation handles large valid files up to 20 MiB without recursion
   assert.deepEqual(await fs.readFile(path.join(collected.resultDirectory, 'files/large.bin')), output);
   const entry = { path: 'boundary.bin', content: Buffer.alloc(MAX_BYTES).toString('base64'), executable: false };
   assert.equal(validateFiles([entry]), MAX_BYTES);
-  assert.throws(() => validateFiles([entry, { path: 'extra', content: 'YQ==', executable: false }]), /20971520 bytes/);
+  assert.throws(() => validateFiles([entry, { path: 'extra', content: 'YQ==', executable: false }], { maxBytes: MAX_BYTES }), /20971520 bytes/);
   for (const content of ['A', 'AAA', 'A===', 'AA=A', 'AAAA=', 'AAAA\n', 'AAAA-___']) {
     assert.throws(() => validateFiles([{ ...entry, content }]), /Invalid file content/);
   }

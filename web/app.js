@@ -218,10 +218,10 @@ function resources() {
     state.role==='provider'&&peers.length?el('details',{},el('summary',{},t('已授权调用方','Authorized callers')),peers.map(peer=>el('div',{class:'file'},el('div',{class:'filename'},peer.name,el('p',{class:'sub'},`${t('并发上限','Concurrency limit')}: ${peer.maxConcurrent??t('沿用节点限制','Node limit')} · ${peer.expiresAt?`${peer.authorizationStatus==='expired'?t('已到期','Expired'):t('到期','Expires')} ${time(peer.expiresAt)}`:t('不过期','No expiry')}`)),btn(t('规则','Rules'),()=>pairingSettings(peer)),btn(t('撤销授权','Revoke'),()=>confirmation(t('撤销授权','Revoke caller'),`${peer.name}\n${t('会中断此调用方的活动任务并撤销后续访问，保留任务记录与成果。','Interrupts this caller’s active tasks and revokes future access. Retains task records and results.')}`,()=>call('revoke_pairing',{pairId:peer.pairId,cleanup:'keep'})))))):null);
 }
 function advancedFields(values,provider=false) {
-  const names={inputBytes:t('输入字节上限','Input bytes'),inputFiles:t('输入文件数上限','Input file count'),resultBytes:t('返回字节上限','Result bytes'),resultFiles:t('返回文件数上限','Result file count'),retentionDays:t('保留天数','Retention days')};
-  return el('details',{},el('summary',{},t('高级设置','Advanced settings')),el('div',{class:'fields'},Object.entries(names).filter(([name])=>provider||name!=='retentionDays').map(([name,label])=>field(label,name,values[name]??'','number'))));
+  const names={inputBytes:t('输入大小上限（MiB）','Input size limit (MiB)'),inputFiles:t('输入文件数上限','Input file count'),resultBytes:t('返回大小上限（MiB）','Result size limit (MiB)'),resultFiles:t('返回文件数上限','Result file count'),retentionDays:t('保留天数','Retention days')};
+  return el('details',{},el('summary',{},t('高级设置','Advanced settings')),el('p',{class:'sub'},t('传输上限留空表示不限量。超过 64 MiB 时提示后继续，非局域网连接可能更慢。','Leave transfer limits blank for unlimited. Above 64 MiB, a notice appears and transfer continues; non-local networks may be slower.')),el('div',{class:'fields'},Object.entries(names).filter(([name])=>provider||name!=='retentionDays').map(([name,label])=>{const size=name.endsWith('Bytes'), value=values[name];const control=field(label,name,value==null?'':size?value/1048576:value,'number');if(size)control.querySelector('input').step='any';return control;})));
 }
-function limits(values) {const result={};for(const name of ['inputBytes','inputFiles','resultBytes','resultFiles','retentionDays'])if(values.get(name))result[name]=Number(values.get(name));return result;}
+function limits(values) {const result={};for(const name of ['inputBytes','inputFiles','resultBytes','resultFiles','retentionDays'])if(values.has(name) && (name!=='retentionDays'||values.get(name)))result[name]=values.get(name)?(name.endsWith('Bytes')?Math.round(Number(values.get(name))*1048576):Number(values.get(name))):null;return result;}
 const bytes = value => value == null ? t('未知','Unknown') : value < 1024 ? `${value} B` : value < 1024*1024 ? `${(value/1024).toFixed(1)} KB` : `${(value/1024/1024).toFixed(1)} MB`;
 const storageKind = kind => ({record:t('任务记录','Task record'),result:t('答复与成果','Answer and outputs'),workcopy:t('完整工作副本','Complete work copy'),snapshot:t('输入快照','Input snapshot')}[kind] || kind);
 async function storage() {
@@ -273,7 +273,8 @@ async function settings() {
 }
 function showOnboarding(data) {
   const s=data.settings;
-  const limitText=v=>`${t('输入','Input')}: ${(v.inputBytes/1048576).toLocaleString(language)} MiB / ${v.inputFiles} ${t('个文件','files')}\n${t('返回','Result')}: ${(v.resultBytes/1048576).toLocaleString(language)} MiB / ${v.resultFiles} ${t('个文件','files')}`;
+  const limitValue=(v,unit)=>v==null?t('不限量','Unlimited'):`${(unit==='MiB'?v/1048576:v).toLocaleString(language)} ${unit}`;
+  const limitText=v=>`${t('输入','Input')}: ${limitValue(v.inputBytes,'MiB')} / ${limitValue(v.inputFiles,t('个文件','files'))}\n${t('返回','Result')}: ${limitValue(v.resultBytes,'MiB')} / ${limitValue(v.resultFiles,t('个文件','files'))}`;
   const rows=[
     [t('设备','Device'),s.deviceName],
     [t('跨网络连接','Cross-network connections'),s.crossNetwork.enabled?t('已开启；双方均需主动开启','On; both devices must opt in'):t('已关闭；默认关闭，确认设置不会开启','Off by default; confirming settings leaves it off')],
@@ -285,7 +286,7 @@ function showOnboarding(data) {
     [t('提供方传输上限与保留期限','Provider limits and retention'),`${limitText(s.provider.limits)}\n${s.provider.retentionDays} ${t('天','days')}`],
     [t('配置与数据位置','Configuration and data'),`${s.advanced.configPath}\n${s.advanced.stateRoot}`],
     [t('执行工具位置','Execution tool paths'),Object.entries(s.advanced.executionPaths).map(([tool,v])=>`${tool}: ${v}`).join('\n')],
-    [t('最大可设传输上限','Maximum configurable transfer limits'),`${s.advanced.supportedLimits.bytes/1048576} MiB / ${s.advanced.supportedLimits.files} ${t('个文件','files')}`],
+    [t('最大可设传输上限','Maximum configurable transfer limits'),`${limitValue(s.advanced.supportedLimits.bytes,'MiB')} / ${limitValue(s.advanced.supportedLimits.files,t('个文件','files'))}`],
     [t('连接及文件授权','Connections and file consent'),data.connections.map(peer=>`${peer.displayName || peer.name} · ${peer.host || peer.taskRoot || peer.transport}${peer.port?':'+peer.port:''} · ${peer.transferAuthorization.scope==='task-files'?t('允许任务文件','Task files allowed'):t('未授权','Not authorized')} · ${t('连接尚未检查','Connection unchecked')}`).join('\n') || t('暂无连接','No connections')],
     [t('已授权调用方','Authorized callers'),data.pairings.map(peer=>`${peer.name} · ${peer.pairId}`).join('\n') || t('暂无调用方','No callers')],
     [t('本机共享与监听地址','Sharing and listen address'),`${labelStatus(data.sharing.status)} · ${s.provider.network.address==='auto-select'?t('自动选择地址','Automatic address'):s.provider.network.address}:${s.provider.network.port}`]

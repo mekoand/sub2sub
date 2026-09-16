@@ -1,3 +1,4 @@
+import { readRequest, writeMessage, releaseReceived, STREAM_TYPE } from '../lib/transfer.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -46,13 +47,16 @@ async function interceptPeer(t, root, intercept) {
   const peer = { ...config.peers.owner };
   const identity = JSON.parse(await fs.readFile(path.join(root, 'owner/sharing/identity.json'), 'utf8'));
   const server = https.createServer(identity, async (req, res) => {
+    let received, result;
     try {
-      let body = ''; for await (const chunk of req) body += chunk;
-      const input = JSON.parse(body);
-      const result = await connect(peer, input);
+      received = await readRequest(req);
+      const input = received.value;
+      result = await connect(peer, input);
       if (await intercept(input, result) === 'disconnect') { res.destroy(); return; }
-      res.end(JSON.stringify({ result }) + '\n');
+      if (received.streaming) { res.setHeader('content-type', STREAM_TYPE); await writeMessage(res, { result }); res.end(); }
+      else res.end(JSON.stringify({ result }) + '\n');
     } catch (error) { res.end(JSON.stringify({ error: error.message }) + '\n'); }
+    finally { await releaseReceived(received?.value); await releaseReceived(result); }
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   t.after(async () => { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); });
@@ -212,6 +216,7 @@ test('advanced limits apply to both endpoints and raised limits permit an actual
   const { owner, caller, source } = await setup(t, { timeoutMs: 60000 });
   await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
   await fs.writeFile(path.join(source, 'large.bin'), Buffer.alloc(21 * 1024 * 1024, 65));
+  await owner.tool('provider_settings', { inputBytes: 20 * 1024 * 1024 });
   await caller.tool('caller_settings', { inputBytes: 24 * 1024 * 1024, resultBytes: 24 * 1024 * 1024 });
   const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['large.bin'] });
   await assert.rejects(caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'large-result' }), /limit|exceeds/i);
@@ -1166,7 +1171,7 @@ test('renaming a legacy connection preserves concurrent collection fields', asyn
 });
 
 
-test('small incremental build outputs can accumulate beyond the restoration input limit', async t => {
+test('incremental outputs can exceed the accepted restoration limit, which later defaults cannot loosen', async t => {
   const { owner, caller, source } = await setup(t);
   await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
   await caller.tool('caller_settings', { inputBytes: 1024, resultBytes: 1024 });
@@ -1183,9 +1188,8 @@ test('small incremental build outputs can accumulate beyond the restoration inpu
   assert.equal((await caller.tool('task_status', { taskId: task.taskId })).inspection.workCopyExists, false);
   await caller.tool('caller_settings', { inputBytes: 4096 });
   await owner.tool('provider_settings', { inputBytes: 4096 });
-  const restored = await caller.tool('continue_task', { taskId: task.taskId, prompt: 'check-accumulated' });
-  assert.equal(restored.status, 'completed');
-  assert.equal(restored.threadId, task.threadId);
+  await assert.rejects(caller.tool('continue_task', { taskId: task.taskId, prompt: 'check-accumulated' }), /limit|exceeds/i);
+  assert.equal((await caller.tool('task_status', { taskId: task.taskId })).inspection.workCopyExists, false);
 });
 
 test('expiry leaves an active turn intact and cancellation starts a fresh retention period', async t => {
@@ -1507,4 +1511,66 @@ test('model preflight returns connection rules changed during discovery', { time
   await owner.tool('pairing_settings', { pairId: pair.pairId, expiresAt: new Date(Date.now() - 1000).toISOString() });
   await fs.unlink(gate);
   assert.equal((await models).connection.authorizationStatus, 'expired');
+});
+
+
+test('LAN streams a file above 64 MiB and warns without confirmation', { timeout: 120000 }, async t => {
+  const { owner, caller, source, root } = await setup(t, { timeoutMs: 90000 });
+  await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  const file = await fs.open(path.join(source, 'large.bin'), 'w');
+  await file.truncate(65 * 1024 * 1024); await file.close();
+  const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['large.bin'] });
+  assert.match(copy.warning, /非局域网/);
+  const task = await caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'file transfer' });
+  const config = JSON.parse(await fs.readFile(path.join(root, 'caller.json'), 'utf8'));
+  const work = path.join(root, 'owner/sharing/tasks', config.peers.owner.pairId, task.taskId, 'work');
+  assert.equal((await fs.stat(path.join(work, 'large.bin'))).size, copy.bytes);
+  await fs.copyFile(path.join(work, 'large.bin'), path.join(work, 'large-output.bin'));
+  const result = await caller.tool('collect_result', { taskId: task.taskId });
+  assert.equal((await fs.stat(path.join(result.workCopyDirectory, 'large-output.bin'))).size, copy.bytes);
+});
+
+test('an active upload may take more than 60 seconds without restarting the task', { timeout: 100000 }, async t => {
+  const { Writable } = await import('node:stream');
+  const { readMessages } = await import('../lib/transfer.mjs');
+  const { readJson } = await import('../lib/files.mjs');
+  const { owner, caller, source, root } = await setup(t, { timeoutMs: 90000 });
+  await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  await fs.writeFile(path.join(source, 'slow.bin'), Buffer.alloc(1024 * 1024, 37));
+  const prepared = await caller.tool('prepare_work_copy', { workspace: source, paths: ['slow.bin'] });
+  const copy = await readJson(path.join(root, 'caller/snapshots', prepared.snapshotId + '.json'));
+  const peer = (await readJson(path.join(root, 'caller.json'))).peers.owner;
+  const id = randomUUID(), started = performance.now();
+  const result = await new Promise((resolve, reject) => {
+    const request = https.request({ hostname: peer.host, port: peer.port, method: 'POST', path: '/rpc', rejectUnauthorized: false,
+      headers: { 'content-type': STREAM_TYPE, authorization: `Bearer ${peer.token}` } }, response => {
+      void (async () => {
+        let result;
+        for await (const message of readMessages(response)) {
+          if (message.error) throw new Error(message.error);
+          if (message.result) result = message.result;
+        }
+        assert.ok(result); resolve(result);
+      })().catch(reject);
+    });
+    request.on('error', reject);
+    request.on('socket', socket => socket.once('secureConnect', () => {
+      assert.equal(new X509Certificate(socket.getPeerCertificate().raw).fingerprint256.replaceAll(':', ''), peer.fingerprint);
+      let delayed = 0;
+      const slow = new Writable({ highWaterMark: 1, write(chunk, encoding, callback) {
+        request.write(chunk, error => {
+          if (error) return callback(error);
+          if (chunk.toString().startsWith('["chunk"') && delayed++ < 2) setTimeout(callback, 31000);
+          else callback();
+        });
+      } });
+      slow.on('error', reject);
+      void writeMessage(slow, { action: 'run', protocol: 3, taskId: id, snapshot: { files: copy.files },
+        prompt: 'slow upload', model: 'gpt-5.6-luna', reasoningEffort: 'max' }).then(() => { slow.end(); request.end(); }, reject);
+    }));
+  });
+  assert.ok(performance.now() - started > 60000);
+  assert.equal(result.status, 'completed');
+  assert.equal(result.taskId, id);
+  assert.equal(result.revision, 1);
 });
