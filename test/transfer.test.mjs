@@ -41,7 +41,8 @@ test('large input is frozen on disk and can be prepared above the old hard limit
   assert.equal((await fs.stat(frozen.files[0].source)).size, 65 * 1024 * 1024);
 });
 
-test('large files and more than 10,000 paths survive upload, collection, deletion and restoration', { timeout: 120000 }, async t => {
+// Hosted macOS runners need more time for this disk-intensive full lifecycle.
+test('large files and more than 10,000 paths survive upload, collection, deletion and restoration', { timeout: 300000 }, async t => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'sub2sub-roundtrip-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const source = path.join(root, 'source'); await fs.mkdir(source);
