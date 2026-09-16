@@ -5,6 +5,7 @@ const [mode, address, port] = process.argv.slice(2);
 process.stdin.resume();
 process.stdin.on('end', () => process.exit());
 if (mode === 'serve') {
+  if (process.env.SUB2SUB_TEST_TAILCAT_START_DELAY_MS) await new Promise(resolve => setTimeout(resolve, Number(process.env.SUB2SUB_TEST_TAILCAT_START_DELAY_MS)));
   const server = net.createServer(incoming => {
     const outgoing = net.connect(Number(port), '127.0.0.1');
     incoming.pipe(outgoing).pipe(incoming);
