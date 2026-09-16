@@ -36,6 +36,9 @@ test('one device setting is visible to other managers without starting sharing',
 });
 
 test('explicitly enabled devices pair and continue one task through the transport helper', async t => {
+  const delay = process.env.SUB2SUB_TEST_TAILCAT_START_DELAY_MS;
+  process.env.SUB2SUB_TEST_TAILCAT_START_DELAY_MS = '700';
+  t.after(() => { if (delay === undefined) delete process.env.SUB2SUB_TEST_TAILCAT_START_DELAY_MS; else process.env.SUB2SUB_TEST_TAILCAT_START_DELAY_MS = delay; });
   const before = process.env.SUB2SUB_TAILCAT;
   process.env.SUB2SUB_TAILCAT = process.env.SUB2SUB_REAL_TAILCAT || fileURLToPath(new URL('./fixtures/fake-tailcat.mjs', import.meta.url));
   t.after(() => { if (before === undefined) delete process.env.SUB2SUB_TAILCAT; else process.env.SUB2SUB_TAILCAT = before; });
@@ -64,6 +67,14 @@ test('explicitly enabled devices pair and continue one task through the transpor
   assert.equal((await caller.call('collect_result', { taskId: first.taskId })).status, 'completed');
   await owner.call('exit_sharing', {});
   await owner.call('start_sharing', {});
+  // Private sharing starts independently; the cross-network helper may still be starting.
+  const until = performance.now() + 40000;
+  let network = (await owner.call('sharing_status', {})).crossNetwork;
+  while (network.status === 'idle' && performance.now() < until) {
+    await new Promise(resolve => setTimeout(resolve, 25));
+    network = (await owner.call('sharing_status', {})).crossNetwork;
+  }
+  assert.equal(network.status, 'ready', network.reason || 'Cross-network helper did not become ready after restart.');
   assert.equal((await caller.call('check_peer', { peer: 'owner' })).status, 'available');
   await owner.call('stop_sharing', {});
   assert.equal((await caller.call('collect_result', { taskId: first.taskId })).status, 'completed');
