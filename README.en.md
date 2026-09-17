@@ -15,13 +15,19 @@ Currently supports Codex and Claude Code, with support for more tools in develop
 [![Version](https://img.shields.io/badge/version-0.9.2-6366f1)](CHANGELOG.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**English** · [简体中文](README.zh-CN.md) · [Install](docs/install.en.md) · [Usage](docs/usage.en.md)
+**English** · [简体中文](README.zh-CN.md) · [Install](docs/install.en.md) · [Usage](docs/usage.en.md) · [Contribute](CONTRIBUTING.md) · [Security](SECURITY.md)
 
 </div>
 
 sub2sub connects your devices and those your teammates authorize you to use, so you can share AI resources and collaborate through familiar AI tools. Send selected files, bring responses and results back, and continue the same task in your conversation. Account credentials stay with their owners, and hosts control what they share.
 
 A **Host** shares AI capabilities and executes authorized tasks. A **Client** delegates tasks and receives results. One device can serve both roles. Connect directly on a private network, or enable cross-network service on both devices.
+
+Start with [installation](#install), then [connect two devices](#connect-your-work-nodes). For a first task, send a small non-sensitive text file and ask for a summary.
+
+![sub2sub local management with synthetic demo data](docs/assets/management-demo.png)
+
+*The current management UI with synthetic device names and task records; no real accounts or task content are shown.*
 
 ## What you can do
 
@@ -147,12 +153,22 @@ Cross-network service is off by default. Enable it on both devices, then exchang
 
 ## Compatibility
 
-Packages are available for macOS and Windows x64, with installation targets for Codex and Claude Code. Codex can execute on both platforms; Claude execution currently supports macOS. Task delegation is validated with Codex Desktop and with Codex CLI and Claude Code on macOS. WorkBuddy remains untested. [Validation details](docs/validation.md)
+The managing app is where you use the plugin; the Host chooses its execution tool separately.
+
+| System | Managing apps / Client | Host execution | Validation and limits |
+| --- | --- | --- | --- |
+| macOS (Apple Silicon / Intel packages) | Codex Desktop, Codex CLI, Claude Code | Codex or Claude Code | Real tasks and Mac-to-Mac transfers validated on Apple Silicon; Intel installation has not had equivalent device testing. |
+| Windows x64 | Codex and Claude Code installation targets | Codex; Claude execution unavailable | Native installation, platform tests, and Mac-to-Windows Codex tasks validated; equivalent Windows Client end-to-end testing remains incomplete. |
+| Linux | Source development only; no release installer/package | Not advertised as a supported Host platform | Linux source CI passes; this does not establish distribution or real-device support. |
+
+WorkBuddy and other managing apps remain untested. [Versions and validation details](docs/validation.md)
+
+The current release is [v0.9.2](https://github.com/mekoand/sub2sub/releases/tag/v0.9.2). `main` can contain changes awaiting release, including the Host/Client terminology and environment guidance described here. Connection Token budgets, expiry-based full cleanup, and automatic Host selection are tracked in [#60](https://github.com/mekoand/sub2sub/issues/60), [#61](https://github.com/mekoand/sub2sub/issues/61), and [#62](https://github.com/mekoand/sub2sub/issues/62); they are not part of v0.9.2. Check [releases](https://github.com/mekoand/sub2sub/releases) before relying on a feature.
 
 ## Development
 
 ```sh
-npm ci
+npm ci --omit=optional --ignore-scripts
 npm run check
 npm test
 ```
@@ -161,6 +177,10 @@ npm test
 
 If something gets stuck, ask “Help diagnose this sub2sub problem” in the original conversation. When you want to report it, say “Submit this issue to GitHub”. The assistant prepares a public-safe draft, checks for duplicates, and uses the host's existing submission tools. If those are unavailable, it gives you the draft. [Troubleshooting](docs/troubleshooting.en.md) · [Issues](https://github.com/mekoand/sub2sub/issues)
 
-If sub2sub helps you, follow updates or leave a star on [GitHub](https://github.com/mekoand/sub2sub).
+## Contribute and give feedback
+
+Documentation, translations, bug reproductions, focused fixes, and tool-adapter proposals are welcome. Start with the [contribution guide](CONTRIBUTING.md) ([中文](CONTRIBUTING.zh-CN.md)). Use [Issues](https://github.com/mekoand/sub2sub/issues) for bugs, proposals, and planned work; report vulnerabilities through the [private security channel](SECURITY.md). See the [changelog](CHANGELOG.md) for updates and the [MIT License](LICENSE) for licensing.
+
+sub2sub is community-maintained. Please keep discussion respectful and evidence-based. You are responsible for following the terms of the AI services you use. This project is not an official OpenAI or Anthropic product and does not imply their endorsement.
 
 [MIT](LICENSE) © 2026 mekoand

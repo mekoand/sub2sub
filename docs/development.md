@@ -7,7 +7,7 @@ End users should use the [installer](install.en.md). Source development requires
 ```sh
 git clone https://github.com/mekoand/sub2sub.git
 cd sub2sub
-npm ci
+npm ci --omit=optional --ignore-scripts
 npm run check
 npm test
 ```
@@ -15,7 +15,7 @@ npm test
 Windows platform checks:
 
 ```powershell
-npm ci
+npm ci --omit=optional --ignore-scripts
 node --test test/platform.test.mjs
 ```
 

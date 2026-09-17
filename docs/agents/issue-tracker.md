@@ -4,6 +4,7 @@ Future requirements, specifications and work status are tracked in [mekoand/sub2
 
 ## Plan the work
 
+- Pure wording and typo fixes may go directly to a PR without an issue. Features and behavior changes follow the issue workflow below.
 - Search existing issues before creating one. A small change needs one issue; a larger effort may have a parent specification and independently verifiable child tasks.
 - Each implementation issue states the problem, expected result, scope and non-goals, acceptance criteria, and blocking issues. Write from the user's perspective; each task should deliver a complete, testable behavior.
 - Discuss unresolved product choices before marking work ready. Matt's `grill-with-docs` → `to-spec` → `to-tickets` flow fits larger work; an already clear small change can go directly to one issue. Contributors can follow this workflow without installing the skills.
@@ -30,4 +31,4 @@ gh issue view 1 --repo mekoand/sub2sub --comments
 
 Replace `1` with the relevant issue number. Read labels along with the body and comments. When a Matt skill says to publish a specification or ticket, create a GitHub issue; when it says to fetch a ticket, read that issue. For multiline issue, comment and PR bodies, use a file with actual newlines and `--body-file`.
 
-**PRs as a request surface: no.** Incoming reports are triaged as issues; implementation PRs stay linked to their issues.
+**PRs as a request surface: no.** Incoming reports are triaged as issues; implementation PRs stay linked to their issues. The wording-only exception above does not cover behavior changes.
