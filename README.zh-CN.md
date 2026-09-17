@@ -12,7 +12,7 @@
 目前支持 Codex 和 Claude Code，更多工具支持正在开发中。
 
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.9.2-6366f1)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.9.3-6366f1)](CHANGELOG.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 [English](README.md) · **简体中文** · [安装](docs/install.md) · [使用手册](docs/usage.md) · [参与贡献](CONTRIBUTING.zh-CN.md) · [安全报告](SECURITY.md)
@@ -163,7 +163,7 @@ irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | ie
 
 WorkBuddy 和其他管理应用尚未实测。[版本与验证详情](docs/validation.md)
 
-当前正式版为 [v0.9.2](https://github.com/mekoand/sub2sub/releases/tag/v0.9.2)。`main` 可能包含尚未发布的改动，包括本文使用的 Host/Client 术语和执行环境指引。连接 Token 预算、到期完整清理和自动选择 Host 分别在 [#60](https://github.com/mekoand/sub2sub/issues/60)、[#61](https://github.com/mekoand/sub2sub/issues/61)、[#62](https://github.com/mekoand/sub2sub/issues/62) 跟踪，不属于 v0.9.2；使用前请核对[发行说明](https://github.com/mekoand/sub2sub/releases)。
+[v0.9.3](https://github.com/mekoand/sub2sub/releases/tag/v0.9.3) 包含连接 Token 预算、到期完整清理和自动选择 Host，均默认关闭。预算在每轮结束后结算，可能超出设定额度；Host 只在提交任务前选择。`main` 可能包含尚未发布的改动，请核对所安装版本的[发行说明](https://github.com/mekoand/sub2sub/releases)。
 
 ## 开发
 

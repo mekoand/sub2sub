@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.9.3 — 2026-09-18
+
+- Set an optional cumulative Token budget per connection. Settle native usage after each stopped turn and block new execution when exhausted; running turns can exceed the limit. Missing usage pauses new execution until the Host explicitly accepts the gap. Retain accounting after task cleanup.
+- Opt in to complete task cleanup on expiry, including uncollected files and owned native history. Clients accept the Host's current retention policy before uploading; active work stays protected and failed cleanup is retried. Existing retention behavior remains the default.
+- Let a Client opt in to ordered Host selection before submitting a new task. Preserve its chosen tool, model, reasoning level, and file authorization; once submitted, keep the task and all follow-ups on the same Host without automatic resubmission.
+- Use consistent Host / Client terminology and explain how to complete required checks when the two devices have different environments. Preserve saved synchronization files when performing local verification.
+- Add bilingual contribution guidance, compatibility and validation limits, private vulnerability reporting, issue and PR templates, and a management screenshot using synthetic data.
+- Preserve original execution and cleanup errors when a later accounting or state-write operation also fails.
+
 ## 0.9.2 — 2026-09-16
 
 - Remove default size and file-count ceilings for task inputs and returned results. Transfers above 64 MiB show a notice and continue automatically.
