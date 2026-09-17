@@ -286,6 +286,14 @@ test('round trip and follow-up preserve session; collect then finish removes onl
   assert.equal(scope.filesystem[':minimal'], 'read');
   assert.equal(scope.filesystem[process.execPath], 'read');
   assert.ok(start.developerInstructions.includes(JSON.stringify(process.execPath)));
+  for (const call of calls.filter(c => ['thread/start', 'thread/resume'].includes(c.method))) {
+    assert.match(call.params.developerInstructions, /Check only the tools and dependencies needed for this task/);
+    assert.match(call.params.developerInstructions, /client may complete verification locally/);
+    assert.match(call.params.developerInstructions, /If a missing requirement blocks execution or verification that the task explicitly requires on the host/);
+    assert.match(call.params.developerInstructions, /Never lower the task's completion criteria/);
+    assert.doesNotMatch(call.params.developerInstructions, /checks delivery completeness only/);
+  }
+  assert.equal(calls.filter(c => c.method === 'turn/start').length, 2);
   assert.equal(scope.filesystem[await fs.realpath(path.join(root, 'provider', first.taskId, 'work'))], 'write');
   assert.equal(scope.network.enabled, false);
   assert.equal(turn.permissions, start.permissions);

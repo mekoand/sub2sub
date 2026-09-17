@@ -53,6 +53,13 @@ test('provider switches tools independently, offers per-tool defaults, and refus
   assert.equal(await fs.readFile(path.join(saved.workCopyDirectory, 'answer.txt'), 'utf8'), 'first');
   const next = await caller.tool('continue_task', { taskId: task.taskId, prompt: 'follow-up' });
   assert.equal(next.threadId, task.threadId);
+  const workPair = (await manager.tool('list_pairings')).pairings[0].pairId;
+  const { appendSystemPrompt: instructions } = JSON.parse(await fs.readFile(path.join(root, 'sharing/tasks', workPair, task.taskId, 'claude-initialize.json'), 'utf8'));
+  assert.match(instructions, /Check only the tools and dependencies needed for this task/);
+  assert.match(instructions, /client may complete verification locally/);
+  assert.match(instructions, /If a missing requirement blocks execution or verification that the task explicitly requires on the host/);
+  assert.match(instructions, /Never lower the task's completion criteria/);
+  assert.doesNotMatch(instructions, /checks delivery completeness only/);
   await caller.tool('collect_result', { taskId: task.taskId });
   const background = await caller.tool('continue_task', { taskId: task.taskId, prompt: 'background-complete' });
   assert.equal(background.status, 'completed');

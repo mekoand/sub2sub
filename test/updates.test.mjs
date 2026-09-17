@@ -103,9 +103,9 @@ test('uncertain sharing, unknown host/root and source/newer versions never insta
   delete process.env.SUB2SUB_INSTALL_HOST;
   const unknown = await client.call('update_plugin', { action: 'install' });
   assert.equal(unknown.status, 'deferred');
-  assert.match(unknown.reason, /host is unknown/);
+  assert.match(unknown.reason, /managing app is unknown/);
   process.env.SUB2SUB_INSTALL_HOST = 'codex';
-  await assert.rejects(client.call('update_plugin', { action: 'install', host: 'claude' }), /differs from the current session host/);
+  await assert.rejects(client.call('update_plugin', { action: 'install', host: 'claude' }), /differs from the current managing app/);
   const catalog = JSON.parse(await fs.readFile(process.env.SUB2SUB_TEST_CATALOG));
   for (const [version, expected] of [['0.9.2+codex.999', 'current'], ['0.10.0+codex.999', 'newer_installed'], ['0.10.0-rc.1', 'deferred']]) {
     catalog.installed[0].version = version;
@@ -156,6 +156,6 @@ test('active provider records defer even when the listener is stopped', async t 
   await fs.writeFile(path.join(directory, 'state.json'), state);
   const result = await client.call('update_plugin', { action: 'install' });
   assert.equal(result.status, 'deferred');
-  assert.match(result.reason, /Provider task .*running/);
+  assert.match(result.reason, /Host task .*running/);
   assert.equal(await fs.readFile(path.join(directory, 'state.json'), 'utf8'), state);
 });
