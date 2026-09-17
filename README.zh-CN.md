@@ -15,13 +15,19 @@
 [![Version](https://img.shields.io/badge/version-0.9.2-6366f1)](CHANGELOG.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-[English](README.md) · **简体中文** · [安装](docs/install.md) · [使用手册](docs/usage.md)
+[English](README.md) · **简体中文** · [安装](docs/install.md) · [使用手册](docs/usage.md) · [参与贡献](CONTRIBUTING.zh-CN.md) · [安全报告](SECURITY.md)
 
 </div>
 
 sub2sub 连接你自己的设备和队友授权的设备，让你在熟悉的 AI 工具中共享资源、协作完成任务。发送选定的文件，取回答复与成果，再在原对话中继续修改。账号凭据由各自保管，共享范围由共享端掌握。
 
 **共享端 Host** 开放 AI 能力、执行授权任务；**使用端 Client** 发起任务、接收成果。同一台设备可以兼任两种角色。私网内可直接连接；跨网络连接需要双方主动开启服务。
+
+先[安装插件](#安装)，再[连接两台设备](#连接工作节点)。第一次使用时，可以只发送一份不含敏感信息的短文本，要求整理为摘要。
+
+![sub2sub 本机管理页，使用合成示例数据](docs/assets/management-demo.png)
+
+*当前管理页使用合成设备名和任务记录展示，不包含真实账号或任务内容。*
 
 ## 它能帮你做什么
 
@@ -147,20 +153,34 @@ irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | ie
 
 ## 兼容性
 
-提供 macOS 和 Windows x64 安装包，可选择安装到 Codex 或 Claude Code。Codex 可在两种平台执行任务，Claude 执行目前支持 macOS。任务委托已在 Codex 桌面端及 macOS 的 Codex CLI、Claude Code 中验证。WorkBuddy 尚未实测。[验证详情](docs/validation.md)
+管理插件的应用是使用插件的入口；Host 的执行工具单独选择。
+
+| 系统 | 管理应用 / Client 使用端 | Host 执行工具 | 验证与限制 |
+| --- | --- | --- | --- |
+| macOS（Apple Silicon / Intel 安装包） | Codex Desktop、Codex CLI、Claude Code | Codex 或 Claude Code | Apple Silicon 已验证真实任务和 Mac 间传输；Intel 安装尚未完成同等实机验证。 |
+| Windows x64 | 提供 Codex 和 Claude Code 安装入口 | Codex；暂不支持 Claude 执行 | 已验证原生安装、平台测试及 Mac 到 Windows 的 Codex 任务；Windows Client 的同等端到端验证尚不完整。 |
+| Linux | 仅源码开发；暂无正式安装器或发行包 | 不声明为已支持的 Host 平台 | Linux 源码 CI 通过，不等于完成发行或实机支持。 |
+
+WorkBuddy 和其他管理应用尚未实测。[版本与验证详情](docs/validation.md)
+
+当前正式版为 [v0.9.2](https://github.com/mekoand/sub2sub/releases/tag/v0.9.2)。`main` 可能包含尚未发布的改动，包括本文使用的 Host/Client 术语和执行环境指引。连接 Token 预算、到期完整清理和自动选择 Host 分别在 [#60](https://github.com/mekoand/sub2sub/issues/60)、[#61](https://github.com/mekoand/sub2sub/issues/61)、[#62](https://github.com/mekoand/sub2sub/issues/62) 跟踪，不属于 v0.9.2；使用前请核对[发行说明](https://github.com/mekoand/sub2sub/releases)。
 
 ## 开发
 
 ```sh
-npm ci
+npm ci --omit=optional --ignore-scripts
 npm run check
 npm test
 ```
 
-[开发与打包](docs/development.md) · [架构](docs/architecture.md) · [贡献指南](CONTRIBUTING.md) · [版本记录](CHANGELOG.md)
+[开发与打包](docs/development.md) · [架构](docs/architecture.md) · [贡献指南](CONTRIBUTING.zh-CN.md) · [版本记录](CHANGELOG.md)
 
 遇到问题，直接在原对话里说“帮我排查 sub2sub 的这个问题”。需要反馈时，再说“把这个问题提交到 GitHub”：助手会整理公开草稿并查重，使用宿主已有能力提交；没有提交能力时，把草稿交给你。[故障排查](docs/troubleshooting.md) · [Issues](https://github.com/mekoand/sub2sub/issues)
 
-如果 sub2sub 对你有帮助，欢迎到 [GitHub](https://github.com/mekoand/sub2sub) 关注更新或点一个 Star。
+## 参与贡献与反馈
+
+欢迎改进文档和翻译、复现缺陷、提交小修复，或提出工具适配方案。请先阅读[贡献指南](CONTRIBUTING.zh-CN.md)（[English](CONTRIBUTING.md)）。缺陷、建议和后续规划统一在 [Issues](https://github.com/mekoand/sub2sub/issues) 跟踪；安全漏洞使用[私密报告入口](SECURITY.md)。更新见[版本记录](CHANGELOG.md)，授权见 [MIT 许可证](LICENSE)。
+
+sub2sub 是社区维护项目，请尊重参与者，并根据事实讨论。使用者应遵守所用 AI 服务的条款。本项目不是 OpenAI 或 Anthropic 的官方产品，也不代表上游官方背书。
 
 [MIT](LICENSE) © 2026 mekoand
