@@ -7,11 +7,12 @@ const executing = process.argv.includes('default_permissions="sub2sub-task"');
 const directory = executing ? path.dirname(process.cwd()) : process.cwd();
 const history = path.join(executing ? path.dirname(directory) : directory, '.fake-codex');
 await fs.mkdir(history, { recursive: true });
-if (executing) await fs.writeFile(path.join(directory, 'process.json'), JSON.stringify({ args: process.argv.slice(2) }));
+if (executing) await fs.writeFile(path.join(directory, 'process.json'), JSON.stringify({ args: process.argv.slice(2), pid: process.pid }));
 const lines = createInterface({ input: process.stdin });
 const send = v => process.stdout.write(JSON.stringify(v) + '\n');
 let threadId;
 let model;
+let threadConfig;
 lines.on('line', async line => {
   const m = JSON.parse(line);
   if (!m.method) return;
@@ -48,6 +49,7 @@ lines.on('line', async line => {
       if (m.params.modelProvider !== 'openai') { send({ id: m.id, error: { message: 'Default provider is third-party; explicitly select openai.' } }); break; }
       threadId = m.params.threadId || randomUUID();
       model = m.params.model;
+      threadConfig = m.params.config;
       const native = m.method === 'thread/resume' ? JSON.parse(await fs.readFile(path.join(history, threadId + '.json'), 'utf8')) : { id: threadId, cwd: process.cwd(), source: 'vscode', threadSource: m.params.threadSource ?? null, archived: false, parentThreadId: null, forkedFromId: null, status: { type: 'notLoaded' } };
       if (native.archived) { send({ id: m.id, error: { message: 'thread is archived; unarchive before resuming' } }); break; }
       await fs.writeFile(path.join(history, threadId + '.json'), JSON.stringify(native));
@@ -58,6 +60,10 @@ lines.on('line', async line => {
         break;
       }
       const prompt = m.params.input[0].text;
+      if (prompt === 'usage-budget-restricted' && !['multi_agent', 'multi_agent_v2'].every(name => threadConfig?.features?.[name] === false && process.argv.includes(`features.${name}=false`))) {
+        send({ id: m.id, error: { message: 'Budgeted execution must disable native child work in process and thread config.' } });
+        break;
+      }
       if (prompt.startsWith('cleanup-')) {
         const file = path.join(history, threadId + '.json');
         const saved = JSON.parse(await fs.readFile(file, 'utf8'));
