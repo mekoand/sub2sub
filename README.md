@@ -25,7 +25,7 @@ A **Host** shares AI capabilities and executes authorized tasks. A **Client** de
 
 ## What you can do
 
-- **Choose where each task runs.** Select an execution tool and available model from your paired nodes, with on-demand queries for a Codex node's remaining quota.
+- **Choose where each task runs.** Select an execution tool and available model from your paired nodes, with on-demand queries for a Codex node's remaining quota. Optionally enable [ordered host selection](docs/usage.en.md#automatic-host-selection) before new task submission; submitted tasks never reroute automatically.
 - **Bring back files and responses together.** Receive a complete local work copy with the inputs and latest changes. Decide when to apply them to your source project, and open saved results offline.
 - **Request revisions on the same task.** “Improve the mobile layout too” continues with the host's existing working files and session.
 - **Choose session visibility.** New Codex tasks archive after each turn and restore on continuation by default. Hosts can keep them in the native task list; existing tasks and file retention stay unchanged. [Details](docs/usage.en.md#delegated-session-visibility).
