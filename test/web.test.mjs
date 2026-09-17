@@ -154,3 +154,18 @@ test('provider connection rules can be edited through management using the share
   assert.equal(overview.peers[0].maxConcurrent, null);
   assert.ok(!JSON.stringify(overview).includes('tokenHash'));
 });
+
+
+test('management settings share opt-in retention validation with MCP and onboarding', async t => {
+  const { client, store } = await setup(t);
+  const { origin, headers } = endpoint(await client.call('web_management', {}));
+  const invoke = input => fetch(`${origin}/api/call`, { method: 'POST', headers, body: JSON.stringify({ name: 'provider_settings', input }) });
+  assert.equal((await (await invoke({})).json()).advanced.cleanupAllOnExpiry, false);
+  assert.equal((await invoke({ cleanupAllOnExpiry: 'true' })).status, 400);
+  const saved = await (await invoke({ cleanupAllOnExpiry: true, retentionDays: 3 })).json();
+  assert.equal(saved.advanced.cleanupAllOnExpiry, true);
+  assert.equal(saved.advanced.retentionDays, 3);
+  assert.equal((await store.read()).provider.cleanupAllOnExpiry, true);
+  assert.equal((await client.call('onboarding', {})).settings.provider.cleanupAllOnExpiry, true);
+  assert.equal((await (await invoke({ cleanupAllOnExpiry: false })).json()).advanced.cleanupAllOnExpiry, false);
+});
