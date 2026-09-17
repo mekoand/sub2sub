@@ -232,3 +232,39 @@ test('management and MCP share ordered selection settings without exposing task 
   const forbidden = await fetch(`${url.origin}/api/call`, { method: 'POST', headers, body: JSON.stringify({ name: 'start_task', input: {} }) });
   assert.equal(forbidden.status, 400);
 });
+
+test('automatic selection respects current retention consent and budget while expiry preserves consumption', async t => {
+  const { root, client, hosts, copy, requests } = await setup(t);
+  await client.tool('caller_settings', { autoSelectHost: true, candidateHosts: ['first', 'second'] });
+  const policy = { cleanupAllOnExpiry: true, retentionDays: 1 };
+  await hosts.first.tool('provider_settings', policy);
+  const config = JSON.parse(await fs.readFile(path.join(root, 'client.json'), 'utf8'));
+  const pairId = config.peers.first.pairId;
+  await hosts.first.tool('pairing_settings', { pairId, tokenLimit: 180 });
+  const start = () => client.tool('start_task', { snapshotId: copy.snapshotId, prompt: 'usage-complete' });
+  const fallback = await start();
+  assert.equal(fallback.peer, 'second');
+  assert.match(fallback.selection.skipped[0].reason, /retention consent/i);
+  assert.equal(requests.first.filter(request => request.action === 'run').length, 0);
+
+  await client.tool('authorize_peer', { peer: 'first', allowTaskFiles: true, retentionPolicy: policy });
+  const selected = await start();
+  assert.equal(selected.peer, 'first');
+  assert.equal(selected.cleanupAllOnExpiry, true);
+  assert.equal((await hosts.first.tool('pairing_settings', { pairId })).budget.usedTokens, 180);
+  assert.equal((await start()).peer, 'second');
+  assert.equal(requests.first.filter(request => request.action === 'run').length, 1);
+
+  await hosts.first.tool('exit_sharing');
+  const stateFile = path.join(root, 'first/sharing/tasks', pairId, selected.taskId, 'state.json');
+  const state = JSON.parse(await fs.readFile(stateFile, 'utf8'));
+  state.expiresAt = new Date(Date.now() - 1).toISOString();
+  await fs.writeFile(stateFile, JSON.stringify(state));
+  await hosts.first.tool('start_sharing');
+  const expired = (await hosts.first.tool('list_shared_tasks')).tasks.find(task => task.taskId === selected.taskId);
+  assert.equal(expired.status, 'expired');
+  assert.equal(expired.cleanup.nativeHistory, 'deleted');
+  const budget = (await hosts.first.tool('pairing_settings', { pairId })).budget;
+  assert.equal(budget.usedTokens, 180);
+  assert.equal(budget.status, 'exhausted');
+});
