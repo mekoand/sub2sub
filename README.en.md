@@ -7,9 +7,9 @@
   </picture>
 </h1>
 
-**Share AI subscriptions across your team, task by task, without signing in to anyone else's account.**
+**A safer, lighter, smoother way to share AI resources and work together.**
 
-Delegate work to another device, bring back responses and files, and request revisions in your current conversation. Connect directly on a private network, or enable cross-network service on both devices to use the same workflow across networks.
+Currently supports Codex and Claude Code, with support for more tools in development.
 
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-0.9.2-6366f1)](CHANGELOG.md)
@@ -19,20 +19,19 @@ Delegate work to another device, bring back responses and files, and request rev
 
 </div>
 
-sub2sub lets you delegate work through an AI subscription a teammate has authorized you to use. The provider stays signed in to Codex or Claude Code on their own device and authorizes connections through invitations. You submit a task and selected files from your own conversation, and their environment executes it.
+sub2sub connects your devices and those your teammates authorize you to use, so you can share AI resources and collaborate through familiar AI tools. Send selected files, bring responses and results back, and continue the same task in your conversation. Account credentials stay with their owners, and hosts control what they share.
 
-Files and responses are saved on your device; the provider keeps their account login. For revisions, continue the same task from the original conversation, reusing its working files and session. The same workflow also works across your own devices.
-
+A **Host** shares AI capabilities and executes authorized tasks. A **Client** delegates tasks and receives results. One device can serve both roles. Connect directly on a private network, or enable cross-network service on both devices.
 
 ## What you can do
 
 - **Choose where each task runs.** Select an execution tool and available model from your paired nodes, with on-demand queries for a Codex node's remaining quota.
 - **Bring back files and responses together.** Receive a complete local work copy with the inputs and latest changes. Decide when to apply them to your source project, and open saved results offline.
-- **Request revisions on the same task.** “Improve the mobile layout too” continues with the provider's existing working files and session.
-- **Choose session visibility.** New Codex tasks archive after each turn and restore on continuation by default. Providers can keep them in the native task list; existing tasks and file retention stay unchanged. [Details](docs/usage.en.md#delegated-session-visibility).
-- **Keep sharing under the provider's control.** Providers choose authorized connections, an execution tool, and offered models. They can stop accepting new tasks at any time. Each node runs up to four tasks concurrently by default; the provider can adjust the limit. Full nodes reject new work without a queue, and lowering the limit lets existing tasks finish.
+- **Request revisions on the same task.** “Improve the mobile layout too” continues with the host's existing working files and session.
+- **Choose session visibility.** New Codex tasks archive after each turn and restore on continuation by default. Hosts can keep them in the native task list; existing tasks and file retention stay unchanged. [Details](docs/usage.en.md#delegated-session-visibility).
+- **Keep sharing under the host's control.** Hosts choose authorized connections, an execution tool, and offered models. They can stop accepting new tasks at any time. Each node runs up to four tasks concurrently by default; the host can adjust the limit. Full nodes reject new work without a queue, and lowering the limit lets existing tasks finish.
 
-Good fits include organizing documents, building offline pages, and making code changes with clear inputs and outputs. Tasks run in separate work copies with task network access, MCP, app, and browser integrations disabled. Prepare the needed materials and local tools before delegating. [Execution scope and limits](docs/usage.en.md#delegate-and-follow-up)
+Good fits include organizing documents, building offline pages, and making code changes with clear inputs and outputs. Tasks run in separate work copies with task network access, MCP, app, and browser integrations disabled. The host checks the environment needed for the task. By default, checks unavailable there can be completed on the client; an explicit requirement to run on the host still applies. Required checks must pass before claiming completion. [Execution scope and limits](docs/usage.en.md#delegate-and-follow-up)
 
 ## Install
 
@@ -76,7 +75,7 @@ After `Installed sub2sub` appears, **fully quit and reopen Codex Desktop**, or e
 & ([scriptblock]::Create((irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1))) -Target claude
 ```
 
-After installation, start a **new Claude Code session**. Caller-only devices do not need Codex. Claude execution on receiving devices requires macOS; Windows can send tasks from Claude Code. [Requirements and custom paths](docs/install.en.md#claude-code)
+After installation, start a **new Claude Code session**. Client-only devices do not need Codex. Claude execution on receiving devices requires macOS; Windows can send tasks from Claude Code. [Requirements and custom paths](docs/install.en.md#claude-code)
 
 ### Confirm that it loaded
 
@@ -126,7 +125,7 @@ The result is saved locally. Take a look, spot a mobile layout that could use so
 
 > Continue that task. Group the pages by topic and improve the mobile layout.
 
-The provider reuses the task's working files and Claude session. Only changed files are transferred back, and you receive a complete local copy. Once the result is ready:
+The host reuses the task's working files and Claude session. Only changed files are transferred back, and you receive a complete local copy. Once the result is ready:
 
 > Save the latest results, finish the task, and clean up its remote work copy.
 

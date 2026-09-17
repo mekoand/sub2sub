@@ -12,6 +12,7 @@ let current;
 lines.on('line', async line => {
   const message = JSON.parse(line);
   if (message.type === 'control_request') {
+    if (session && message.request.subtype === 'initialize') await fs.writeFile(path.join(path.dirname(process.cwd()), 'claude-initialize.json'), JSON.stringify(message.request));
     if (message.request.subtype === 'interrupt' && current?.message.content === 'background-ignore-interrupt') return;
     if (message.request.subtype === 'stop_task') await fs.writeFile(path.join(process.cwd(), 'answer.txt'), 'background-stopped');
     const response = message.request.subtype === 'initialize' ? {

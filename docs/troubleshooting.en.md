@@ -19,12 +19,12 @@ The assistant uses existing queries to check versions, sharing, and task state, 
 | `ECONNREFUSED` after pairing | Check that the device is awake and connected, then start sharing again. Reuse the existing pairing |
 | Connection timeout | Check the selected IPv4 address, reachability, sleep state, and inbound port permission |
 | Invalid or expired invitation | Request a new invitation; it lasts 10 minutes, is single-use, and replaces the previous one |
-| Provider busy | The node has reached its concurrent task limit (default 4). Wait for a task to finish or ask the provider to adjust the limit |
+| Host busy | The node has reached its concurrent task limit (default 4). Wait for a task to finish or ask the host to adjust the limit |
 | Unsupported model or effort | Choose from returned actual options; pairing does not prove model access or remaining usage |
 | Turn reaches the 30-minute limit | In 0.5.2+, available stage results are saved automatically. Read the saved files and unfinished status, then choose whether to continue the same task. Retry `collect_result` if saving failed |
 | Result limit exceeded | Remove unnecessary task-generated temporary output or explicitly adjust both peers' limits; preserve needed files |
 | Save confirmation failed | Retry `collect_result` on the same task, not a duplicate execution |
-| Cleanup refused | Check unsaved outputs, running state, filesystem permissions, and host approval feedback |
+| Cleanup refused | Check unsaved outputs, running state, filesystem permissions, and managing-app approval feedback |
 | Native Codex not found on Windows | Use actual `codex.exe`, not an npm `.cmd` or `.bat` shim |
 | Windows certificate generation fails | Update to 0.5, which includes certificate generation and no longer needs external OpenSSL; include the underlying error if it persists |
 | Windows Codex initialization fails or times out | Start sharing from the logged-in user's desktop session. An SSH session can read quota but may fail to start native Codex work |
@@ -33,7 +33,7 @@ The assistant uses existing queries to check versions, sharing, and task state, 
 | Cannot switch execution tool | Finish or cancel the active turn first. Retained tasks need their original tool selected before continuation |
 | Claude quota shows unsupported | Claude quota is not available in this version; no Codex balance is substituted |
 | Browser not found | Inspect standard installation locations as well as PATH; installed does not mean callable in the sandbox |
-| New version not loaded | Check sub2sub updates to distinguish session, actual host installation and node versions. Fully quit and reopen Codex desktop (a new conversation or closing the window is insufficient), or exit/restart the CLI. Exit/start an independent node when idle. For 0.5.3, save work and end the old provider conversation first; see the installation guide |
+| New version not loaded | Check sub2sub updates to distinguish session, actual host installation and node versions. Fully quit and reopen Codex desktop (a new conversation or closing the window is insufficient), or exit/restart the CLI. Exit/start an independent node when idle. For 0.5.3, save work and end the old host conversation first; see the installation guide |
 
 ## Execution failure versus delivery failure
 
@@ -49,7 +49,7 @@ New tasks provide an internal `.sub2sub` directory for disposable caches and tem
 
 ## Report an issue
 
-Say “Submit this issue to GitHub” in the original conversation. The assistant prepares a public-safe draft, checks for duplicates, and uses the host's existing GitHub tools to submit it, returning the actual issue link. If submission tools are unavailable, it gives you a draft to post manually.
+Say “Submit this issue to GitHub” in the original conversation. The assistant prepares a public-safe draft, checks for duplicates, and uses the managing app's existing GitHub tools to submit it, returning the actual issue link. If submission tools are unavailable, it gives you a draft to post manually.
 
 Include platform and versions, the failing phase, minimal reproduction, expected/actual behavior, and sanitized error/status output. State whether execution is still active and whether the latest necessary results were saved.
 

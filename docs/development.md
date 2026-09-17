@@ -19,7 +19,7 @@ npm ci
 node --test test/platform.test.mjs
 ```
 
-The runtime uses Node built-ins, `selfsigned` for certificates, and the official Claude Agent SDK for Claude execution. The SDK uses the provider's native Claude CLI; platform-specific optional CLI binaries are excluded from packages. Dependencies are included in release packages, together with their license files. Existing sharing identities are reused.
+The runtime uses Node built-ins, `selfsigned` for certificates, and the official Claude Agent SDK for Claude execution. The SDK uses the host's native Claude CLI; platform-specific optional CLI binaries are excluded from packages. Dependencies are included in release packages, together with their license files. Existing sharing identities are reused.
 
 ## Plugin folder
 
@@ -57,6 +57,6 @@ The builder downloads Node from nodejs.org, checks its published checksum, and c
 
 Each archive contains the plugin, its dependencies, and a private Node runtime with the Node license. It contains no credentials, pairings, task history, or user files. Installation generates machine-specific startup paths.
 
-The installer accepts an optional `codex` or `claude` target. Both use the same release directory and runtime. Claude receives a small plugin directory containing the shared Skill, documentation and an MCP entry pointing to that runtime and task service. Its local marketplace is separate from Codex's; updates register only the selected host. Installation selects the management host only. The node independently selects Codex App Server or Claude Agent SDK for execution; both use the same provider lifecycle and delivery code.
+The installer accepts an optional `codex` or `claude` target. Both use the same release directory and runtime. Claude receives a small plugin directory containing the shared Skill, documentation and an MCP entry pointing to that runtime and task service. Its local marketplace is separate from Codex's; updates register only the selected host. Installation selects the managing app only. The node independently selects Codex App Server or Claude Agent SDK for execution; both use the same host lifecycle and delivery code.
 
 Keep the version in `package.json`, `.codex-plugin/plugin.json`, and both bootstrap scripts aligned. The release workflow builds assets as a draft release. Publish that draft after reviewing CI and installer smoke tests so the README's `latest/download` links remain usable.

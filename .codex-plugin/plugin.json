@@ -1,15 +1,15 @@
 {
   "name": "sub2sub",
   "version": "0.9.2",
-  "description": "Delegate AI tasks across your devices or team, receive files and responses, and continue in the same conversation.",
+  "description": "A safer, lighter, smoother way to share AI resources and work together.",
   "author": {
     "name": "mekoand"
   },
   "skills": "./skills/",
   "interface": {
     "displayName": "sub2sub",
-    "shortDescription": "跨设备委托 AI 任务，取回文件与答复",
-    "longDescription": "在当前 Codex 或 Claude Code 对话中，把任务交给自己或团队授权的设备，取回文件与答复并继续修改。提供方保管自己的订阅登录并控制共享。私网优先直连，双方可主动开启默认关闭的跨网络服务。附带可关闭的本机管理页和资源统计。",
+    "shortDescription": "更安全、更轻量、更流畅的 AI 资源共享与团队协作方式",
+    "longDescription": "sub2sub 连接你自己的设备和队友授权的设备，让你在熟悉的 AI 工具中共享资源、协作完成任务。发送选定的文件，取回答复与成果，再在原对话中继续修改。账号凭据由各自保管，共享范围由共享端掌握。目前支持 Codex 和 Claude Code，更多工具支持正在开发中。",
     "developerName": "mekoand",
     "category": "Productivity",
     "composerIcon": "./docs/assets/icon.svg",

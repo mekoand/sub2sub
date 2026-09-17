@@ -96,7 +96,7 @@ test('failed capability discovery preserves an unknown error without guessing an
   const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
   await fs.writeFile(path.join(root, 'owner/sharing/model-list.json'), '{broken-catalog');
   await assert.rejects(caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'write result' }), error => {
-    assert.match(error.message, /Cannot confirm provider capabilities/);
+    assert.match(error.message, /Cannot confirm host capabilities/);
     assert.match(error.message, /cause is unconfirmed/i);
     assert.doesNotMatch(error.message, /update both endpoints to sub2sub 0\.4/i);
     return true;
@@ -551,7 +551,7 @@ test('incompatible capabilities stop upload and restoration cannot select arbitr
   await caller.tool('collect_result', { taskId: task.taskId });
   await caller.tool('finish_task', { taskId: task.taskId, cleanup: 'workcopy' });
   const config = JSON.parse(await fs.readFile(path.join(root, 'caller.json'), 'utf8'));
-  await assert.rejects(connect(config.peers.owner, { action: 'restore', protocol: 2, taskId: task.taskId, threadId: 'another-thread', workspace: '/another/task', prompt: 'test' }), /Unknown provider request field/);
+  await assert.rejects(connect(config.peers.owner, { action: 'restore', protocol: 2, taskId: task.taskId, threadId: 'another-thread', workspace: '/another/task', prompt: 'test' }), /Unknown host request field/);
   assert.equal((await caller.tool('task_status', { taskId: task.taskId })).inspection.workCopyExists, false);
 });
 
@@ -772,7 +772,7 @@ test('callers cannot access another pairing tasks or choose execution paths', { 
   // A caller controls its own configuration and can send arbitrary wire requests.
   const connection = JSON.parse(await fs.readFile(path.join(root, 'stranger.json'), 'utf8')).peers.owner;
   await assert.rejects(connect(connection, { action: 'result', taskId: task.taskId }), /ENOENT/);
-  await assert.rejects(connect(connection, { action: 'run', taskId: task.taskId, prompt: 'escape', root: '/tmp/escape' }), /Unknown provider request field/);
+  await assert.rejects(connect(connection, { action: 'run', taskId: task.taskId, prompt: 'escape', root: '/tmp/escape' }), /Unknown host request field/);
   await assert.rejects(connect({ ...connection, token: 'x'.repeat(43) }, { action: 'check' }), /not paired|revoked/);
   assert.equal((await caller.tool('task_status', { taskId: task.taskId })).status, 'completed');
 });
@@ -1454,7 +1454,7 @@ test('connection limits count concurrent admissions, isolate callers and leave a
   const otherPair = await other.tool('pair_peer', { invitation: (await owner.tool('create_pairing')).invitation, peer: 'owner', allowTaskFiles: true });
   await owner.tool('pairing_settings', { pairId: pair.pairId, maxConcurrent: 1 });
   const peer = JSON.parse(await fs.readFile(path.join(root, 'caller.json'))).peers.owner;
-  await assert.rejects(connect(peer, { action: 'configurePairing', pairId: pair.pairId, maxConcurrent: null }), /Unknown provider request field/);
+  await assert.rejects(connect(peer, { action: 'configurePairing', pairId: pair.pairId, maxConcurrent: null }), /Unknown host request field/);
   const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
   const running = [0, 1].map(() => caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'partial-wait' }).then(value => ({ value }), error => ({ error })));
   let status;

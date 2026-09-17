@@ -16,6 +16,6 @@ Before exploring or changing code, follow [the domain reading rules](docs/agents
 
 ## Product boundary
 
-Before changing delegation, read [the architecture](docs/architecture.md). The provider checks the quality of its work; the caller checks delivery completeness. Plugin regression tests are separate from those task checks.
+Before changing delegation, read [the architecture](docs/architecture.md). The host performs available task checks; the client checks delivery completeness and may complete verification locally when the host lacks the environment. Explicit host-side execution or verification requirements still apply. Required checks must pass before claiming full completion. Plugin regression tests are separate from those task checks.
 
 For implementation, testing and review, follow [CONTRIBUTING.md](CONTRIBUTING.md).

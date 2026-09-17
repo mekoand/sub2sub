@@ -2,7 +2,7 @@
 
 [简体中文](install.md) · [Back to README](../README.md)
 
-Install sub2sub on both the sending and receiving computers. The provider signs in to its chosen Codex or Claude Code subscription account and authorizes pairing. The caller delegates from its own conversation without signing in to the provider's account. The executing device stays online while working. Any computer can send or receive tasks and connect to multiple devices.
+Install sub2sub on both the sending and receiving computers. The host signs in to its chosen Codex or Claude Code subscription account and authorizes pairing. The client delegates from its own conversation without signing in to the host's account. The executing device stays online while working. Any computer can send or receive tasks and connect to multiple devices.
 
 Follow the installation and host restart steps below, then generate or connect an invitation in your conversation to start [your first delegation](usage.en.md#delegate-and-follow-up). To look around first, say “Open sub2sub management”. It's enabled by default, can be turned off at any time, and won't open a browser automatically. [Management guide](usage.en.md#local-management-and-statistics)
 
@@ -43,7 +43,7 @@ Download archives from [Releases](https://github.com/mekoand/sub2sub/releases). 
 
 ## Claude Code
 
-Install the native Claude Code CLI and sign in, then run the command for your system. A computer that only sends tasks from Claude Code does not need Codex installed. A macOS work node can also execute through its Claude subscription: install Claude Code 2.1.263 or later, sign in, then ask sub2sub to select Claude as the provider tool. This selection is independent of the app used to manage sub2sub. Claude execution on Windows is not supported yet.
+Install the native Claude Code CLI and sign in, then run the command for your system. A computer that only sends tasks from Claude Code does not need Codex installed. A macOS work node can also execute through its Claude subscription: install Claude Code 2.1.263 or later, sign in, then ask sub2sub to select Claude as the host tool. This selection is independent of the app used to manage sub2sub. Claude execution on Windows is not supported yet.
 
 macOS:
 
@@ -69,7 +69,7 @@ Both installation targets can coexist in the same program directory and reuse pa
 
 Invitations are single-use and expire after 10 minutes. Paired connections can be reused. If the operating system asks for network access, allow the work node to accept connections on the private network you use. The default port is `47631`.
 
-Repeat pairing to add other nodes, give each a name, then choose a node for each task. Each node runs up to four tasks concurrently by default. Providers can adjust the limit; full nodes reject new work without a queue.
+Repeat pairing to add other nodes, give each a name, then choose a node for each task. Each node runs up to four tasks concurrently by default. Hosts can adjust the limit; full nodes reject new work without a queue.
 
 ## Using the CLI
 
@@ -85,9 +85,9 @@ Built-in cross-network service is available in 0.9.0. Release archives for macOS
 
 When enabled, Tailcat uses public relay services for discovery and connection setup, then tries to establish a direct data path. A direct private data path does not mean Tailcat can bootstrap without public services. Relay speed and availability vary; connectivity is not guaranteed on every network. When disabled, sub2sub does not start Tailcat. Existing private connections still work, and this switch does not disable system VPN software.
 
-Existing connections do not migrate automatically. After both devices enable the service, select **Enable cross-network access** in the caller's connection details, or explicitly request migration. The original identity and new route are verified before saving. Pairing, file consent, task copies and sessions remain attached. If the original address is unreachable, supply a new invitation from the same device. Failed verification preserves the old connection; deleting and re-pairing cannot substitute for migration.
+Existing connections do not migrate automatically. After both devices enable the service, select **Enable cross-network access** in the client's connection details, or explicitly request migration. The original identity and new route are verified before saving. Pairing, file consent, task copies and sessions remain attached. If the original address is unreachable, supply a new invitation from the same device. Failed verification preserves the old connection; deleting and re-pairing cannot substitute for migration.
 
-Older providers must update before offering a cross-network endpoint. Older callers can keep their saved direct connection, but must update to read a new cross-network invitation. Existing Tailscale IPv4 connections retain their route, including `100.64.0.0/10`; migration is optional. The original address field still accepts only private IPv4 addresses, not arbitrary public addresses, MagicDNS names or IPv6.
+Older hosts must update before offering a cross-network endpoint. Older clients can keep their saved direct connection, but must update to read a new cross-network invitation. Existing Tailscale IPv4 connections retain their route, including `100.64.0.0/10`; migration is optional. The original address field still accepts only private IPv4 addresses, not arbitrary public addresses, MagicDNS names or IPv6.
 
 Before disabling the service or exiting the node, finish cross-network tasks and transfers, or explicitly cancel the original task. Unresolved submissions block shutdown until their status is confirmed. Failed shutdown leaves the actual setting enabled and identifies work needing attention. Stopping new work keeps existing tasks, cancellation and results accessible. Device connectivity does not grant execution tasks network, browser, MCP or app permissions.
 
@@ -95,11 +95,11 @@ Before disabling the service or exiting the node, finish cross-network tasks and
 
 Say “check sub2sub updates” in your conversation. The assistant calls `update_plugin` with `action=check`, a read-only query for the latest published stable release. It distinguishes the current conversation version, the host's actual registered installation and the running node version. An unreachable or stopped node is reported explicitly; loaded code is not proof of the installed version.
 
-An explicit “upgrade sub2sub” request permits `action=install`. This reuses the release download, checksum and installer flow for the managing host's registered directory. It does not infer the host from the provider execution tool, create another installation or downgrade a newer/source/prerelease installation. If older installation metadata cannot identify the host, specify it; if registration cannot establish the directory, use the original installation procedure above. Codex and Claude installations update separately.
+An explicit “upgrade sub2sub” request permits `action=install`. This reuses the release download, checksum and installer flow for the managing app's registered directory. It does not infer the managing app from the host execution tool, create another installation or downgrade a newer/source/prerelease installation. If older installation metadata cannot identify the managing app, specify it; if registration cannot establish the directory, use the original installation procedure above. Codex and Claude installations update separately.
 
-Active tasks, unsaved caller work or uncertain local state defer installation. Wait for work to end, check task status and save results, then retry. Upgrading does not cancel tasks, clean data or restart nodes. Pairings, certificates, configuration, task data, saved results and previous program versions are retained. Errors identify the check or download/installation stage. After an interrupted attempt, inspect the host plugin list before retrying; an installation attempt is not confirmed success.
+Active tasks, unsaved client work or uncertain local state defer installation. Wait for work to end, check task status and save results, then retry. Upgrading does not cancel tasks, clean data or restart nodes. Pairings, certificates, configuration, task data, saved results and previous program versions are retained. Errors identify the check or download/installation stage. After an interrupted attempt, inspect the host plugin list before retrying; an installation attempt is not confirmed success.
 
-After installation is verified in host registration, fully quit and reopen the Codex desktop app. A new conversation or closing its window does not ensure the new code is loaded. CLI users should exit and restart `codex` or `claude`. Independent nodes keep running the old version; when idle, use the existing exit-node and start-sharing operations from the new session. **For 0.5.3, sharing belongs to the old provider conversation and has no independent-node exit command: finish work and save results, end that old provider conversation, then start sharing in the new one.** Version 0.5.3 has no conversation update tool, so its first upgrade still uses the installation command above. Pair again only if identity changed. Peers use existing capability checks; arbitrary old/new combinations are not guaranteed compatible.
+After installation is verified in app registration, fully quit and reopen the Codex desktop app. A new conversation or closing its window does not ensure the new code is loaded. CLI users should exit and restart `codex` or `claude`. Independent nodes keep running the old version; when idle, use the existing exit-node and start-sharing operations from the new session. **For 0.5.3, sharing belongs to the old host conversation and has no independent-node exit command: finish work and save results, end that old host conversation, then start sharing in the new one.** Version 0.5.3 has no conversation update tool, so its first upgrade still uses the installation command above. Pair again only if identity changed. Peers use existing capability checks; arbitrary old/new combinations are not guaranteed compatible.
 
 Both hosts use the plugin ID `sub2sub@sub2sub`. The Codex installer also migrates older sub2sub installations from other sources after confirming the replacement is enabled. The Claude installer manages its user-scope installation only. Other plugins remain unchanged.
 
