@@ -1693,6 +1693,25 @@ test('a result already transferred can finish saving when full expiry runs befor
   assert.equal((await caller.tool('task_status', { taskId: task.taskId })).status, 'expired');
 });
 
+test('full expiry reports both native cleanup and retry-state write failures', { skip: process.platform === 'win32' || process.getuid?.() === 0 }, async t => {
+  const { root, owner, caller, source, clockFile, initialTime } = await setup(t, { clock: true });
+  await owner.tool('provider_settings', { cleanupAllOnExpiry: true, retentionDays: 1 });
+  const pair = await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  await caller.tool('authorize_peer', { peer: 'owner', allowTaskFiles: true, retentionPolicy: pair.retentionPolicy });
+  const task = await caller.tool('start_task', { peer: 'owner', snapshotId: (await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] })).snapshotId, prompt: 'cleanup-delete-and-record-failure' });
+  const directory = path.join(root, 'owner/sharing/tasks', pair.pairId, task.taskId);
+  try {
+    await fs.writeFile(clockFile, String(initialTime + 2 * 86400000));
+    const failed = (await owner.tool('list_shared_tasks')).tasks[0];
+    assert.equal(failed.cleanup.status, 'failed');
+    assert.match(failed.cleanup.reason, /fixture native deletion failed/);
+    assert.match(failed.cleanup.reason, /EACCES|EPERM/);
+    assert.equal(failed.inspection.workCopyExists, true);
+  } finally { await fs.chmod(directory, 0o700); }
+  await fs.writeFile(clockFile, String(initialTime + 2 * 86400000 + 61000));
+  assert.equal((await owner.tool('list_shared_tasks')).tasks[0].status, 'expired');
+});
+
 
 test('full expiry waits for an in-flight result transfer under the existing task lock', async t => {
   const { root, owner, caller, source, clockFile, initialTime } = await setup(t, { clock: true });

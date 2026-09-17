@@ -68,7 +68,8 @@ lines.on('line', async line => {
         const file = path.join(history, threadId + '.json');
         const saved = JSON.parse(await fs.readFile(file, 'utf8'));
         saved.archived = prompt === 'cleanup-archived';
-        saved.failDelete = prompt === 'cleanup-delete-failure';
+        saved.failDelete = ['cleanup-delete-failure', 'cleanup-delete-and-record-failure'].includes(prompt);
+        saved.failRecordWrite = prompt === 'cleanup-delete-and-record-failure';
         await fs.writeFile(file, JSON.stringify(saved));
         if (prompt === 'cleanup-child') await fs.writeFile(path.join(history, 'child-' + threadId + '.json'), JSON.stringify({ id: 'child-' + threadId, cwd: '/different/child/cwd', source: 'subAgent', archived: false, parentThreadId: threadId, status: { type: 'notLoaded' } }));
       }
@@ -194,6 +195,7 @@ lines.on('line', async line => {
       const saved = JSON.parse(await fs.readFile(file, 'utf8'));
       if (saved.failDelete) {
         saved.failDelete = false; await fs.writeFile(file, JSON.stringify(saved));
+        if (saved.failRecordWrite) await fs.chmod(path.dirname(saved.cwd), 0o500);
         send({ id: m.id, error: { message: 'fixture native deletion failed' } }); break;
       }
       for (const name of await fs.readdir(history)) {
