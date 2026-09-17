@@ -30,7 +30,7 @@ Use ordinary settings first. Keep the user's two roles in separate answers.
 
 Use the role's settings tool. Both roles can adjust `inputBytes`, `inputFiles`, `resultBytes`, `resultFiles`. The effective limit is the smaller of both sides; query the supported range rather than inventing a limit. Inputs count the full upload; results count the current transfer's changed files. Existing accepted result limits remain available for collection after defaults are tightened. Raising a limit leaves exclusions and transfer consent intact.
 
-The host can also set `retentionDays`, default seven. Existing tasks retain their accepted duration. Full local copies can accumulate beyond input limits despite individually small deltas; restoration checks the entire copy and reports whether limits or scope need adjustment. Never silently omit required files.
+The host can also set `retentionDays` (1–365, default seven) and opt into `cleanupAllOnExpiry` (default false). Full expiry applies only to new tasks whose file-transfer consent accepts its exact rule; follow the skill's consent and cleanup sections. Existing tasks retain their accepted rule and duration when settings change. Full local copies can accumulate beyond input limits despite individually small deltas; restoration checks the entire copy and reports whether limits or scope need adjustment. Never silently omit required files.
 
 ## Device names and local storage
 
