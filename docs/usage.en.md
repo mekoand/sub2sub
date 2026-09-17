@@ -65,6 +65,16 @@ A follow-up reuses the remote work copy and native conversation. Existing tasks 
 
 A turn is ready for delivery after execution ends and its results are saved. Failed or interrupted tasks may expose recovery files; retrieving those files does not mean execution succeeded.
 
+## Automatic host selection
+
+Manual host selection remains the default. Enable **Settings → Automatic host selection** and enter existing connection names in priority order, one per line, or ask to configure that order in your conversation. Disabling it or clearing the candidates restores manual selection. Renaming a connection updates its candidate entry; deleting it removes the entry.
+
+Only new tasks without an explicit host use the list. The client chooses the first candidate with task-file consent, available capacity, the requested execution tool and unchanged model/effort, and compatible known input limits. Automatic selection defaults to Codex; explicitly choose Claude and its model/effort when needed. Available connection-budget metadata is checked, but missing metadata does not establish a remaining balance. Models are never downgraded, and nodes using the same account are not counted as separate subscriptions.
+
+Pairing and candidate settings do not authorize transfer of task files or instructions. The file preview shows the candidates and their individual consent; separately sensitive material still needs destination-specific consent. Explicitly choose a known suitable host for environment-specific requirements. Selection does not scan or infer device environments.
+
+Passing checks does not guarantee admission. After selecting a host, the client submits once: refusal, timeout or disconnection never triggers another host submission. Keep the returned host, task ID and original error, and query that original task as directed. Follow-up, restoration, cancellation and collection stay on its original connection. If no candidate qualifies, the client reports each reason for your decision. The management page configures the rule; tasks still start in the original conversation.
+
 ## Different environments
 
 The host checks the tools and dependencies needed for the task inside its task sandbox at the start of the existing turn. There is no extra routine confirmation or global setting. Checks are specific to the task, not a full environment scan, and may also reveal gaps later during execution.

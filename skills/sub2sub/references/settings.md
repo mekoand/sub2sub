@@ -4,6 +4,8 @@ Use ordinary settings first. Keep the user's two roles in separate answers.
 
 ## 使用端
 
+- **Automatic host selection:** only enable `caller_settings(autoSelectHost=true, candidateHosts=[...])` when requested, using existing connection names in the user's order. It defaults off; false or an empty list requires an explicit host. Candidate settings never authorize file or prompt transfer. New tasks with no `peer` select once before submission; explicit `peer` wins. Pass the requested `harness` (automatic selection defaults to Codex) and preserve model/effort. For specific environment or destination requirements, use a known suitable explicit peer; do not infer an environment. No eligible candidate means report reasons and wait for a decision. Once selected and submitted, keep the same host/task ID for refusals, disconnections and every follow-up; no automatic resubmission to another host. Budget metadata is optional and missing data stays unverified.
+
 - `caller_settings`: pass `harness=codex|claude` to query or change that tool's default model/effort across all nodes. Changes affect new tasks. Use `start_task` / `continue_task` arguments only for an explicit task-specific choice.
 - `list_models` with `peer`: read that host's actual available and allowed model/effort combinations. On mismatch, present choices and wait for selection.
 - `list_peers`: live availability, busy, stopped or unreachable state with check times. `check=false` is local records only.
