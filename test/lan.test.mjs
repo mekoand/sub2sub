@@ -1574,3 +1574,187 @@ test('an active upload may take more than 60 seconds without restarting the task
   assert.equal(result.taskId, id);
   assert.equal(result.revision, 1);
 });
+
+
+test('full expiry requires explicit retention consent and freezes the accepted policy for each task', async t => {
+  const { root, owner, caller, source } = await setup(t);
+  assert.equal((await owner.tool('provider_settings')).advanced.cleanupAllOnExpiry, false);
+  await owner.tool('provider_settings', { cleanupAllOnExpiry: true, retentionDays: 2 });
+  const policy = { cleanupAllOnExpiry: true, retentionDays: 2 };
+  const pair = await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  assert.deepEqual(pair.retentionPolicy, policy);
+  const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  await assert.rejects(caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'first' }), /retention.*consent|consent.*retention/i);
+  assert.deepEqual((await owner.tool('list_shared_tasks')).tasks, []);
+  const peer = JSON.parse(await fs.readFile(path.join(root, 'caller.json'))).peers.owner;
+  await assert.rejects(connect(peer, { action: 'run', protocol: 2, taskId: randomUUID(), snapshot: { files: [] }, prompt: 'old client', model: 'gpt-5.6-luna', reasoningEffort: 'max' }), /retention.*consent|consent.*retention/i);
+  await caller.tool('authorize_peer', { peer: 'owner', allowTaskFiles: true, retentionPolicy: policy });
+  const task = await caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'first' });
+  assert.equal(task.cleanupAllOnExpiry, true);
+  assert.equal(task.retentionDays, 2);
+  assert.ok(task.expiresAt);
+  await owner.tool('provider_settings', { retentionDays: 1 });
+  await assert.rejects(caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'changed policy' }), /retention.*consent|consent.*retention/i);
+  await caller.tool('collect_result', { taskId: task.taskId });
+  const continued = await caller.tool('continue_task', { taskId: task.taskId, prompt: 'same task' });
+  assert.equal(continued.retentionDays, 2);
+  assert.equal(continued.cleanupAllOnExpiry, true);
+});
+
+
+test('consented expiry removes uncollected content and released native history, preserving local copies and unrelated history', async t => {
+  const { root, owner, caller, source, clockFile, initialTime } = await setup(t, { clock: true });
+  await owner.tool('provider_settings', { cleanupAllOnExpiry: true, retentionDays: 1 });
+  const paired = await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  await caller.tool('authorize_peer', { peer: 'owner', allowTaskFiles: true, retentionPolicy: paired.retentionPolicy });
+  const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  const uncollected = await caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'cleanup-child' });
+  const released = await caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'saved task' });
+  const saved = await caller.tool('collect_result', { taskId: released.taskId });
+  await caller.tool('finish_task', { taskId: released.taskId, cleanup: 'workcopy' });
+  await owner.tool('provider_settings', { cleanupAllOnExpiry: false });
+  await assert.rejects(caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'changed to ordinary' }), /retention.*consent/i);
+  await caller.tool('authorize_peer', { peer: 'owner', allowTaskFiles: true });
+  const ordinary = await caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'ordinary task' });
+  await fs.writeFile(clockFile, String(initialTime + 2 * 86400000));
+  const tasks = (await owner.tool('list_shared_tasks')).tasks;
+  for (const expired of [uncollected, released]) {
+    const status = await caller.tool('task_status', { taskId: expired.taskId });
+    assert.equal(status.status, 'expired');
+    assert.equal(status.cleanup.status, 'cleaned');
+    assert.equal(status.cleanup.nativeHistory, 'deleted');
+    assert.equal(status.inspection.workCopyExists, false);
+    assert.equal(status.response, undefined);
+    assert.equal(status.rounds, undefined);
+    assert.equal(tasks.find(task => task.taskId === expired.taskId).cleanup.status, 'cleaned');
+    await assert.rejects(caller.tool('continue_task', { taskId: expired.taskId, prompt: 'too late' }), /expired|cannot continue/i);
+    const directory = path.join(root, 'owner/sharing/tasks', paired.pairId, expired.taskId);
+    assert.deepEqual(await fs.readdir(directory), ['state.json']);
+    await assert.rejects(fs.stat(path.join(root, 'owner/sharing/tasks', paired.pairId, '.fake-codex', expired.threadId + '.json')), { code: 'ENOENT' });
+  }
+  await assert.rejects(fs.stat(path.join(root, 'owner/sharing/tasks', paired.pairId, '.fake-codex', 'child-' + uncollected.threadId + '.json')), { code: 'ENOENT' });
+  assert.equal((await caller.tool('task_status', { taskId: ordinary.taskId })).inspection.workCopyExists, true);
+  assert.equal(await fs.readFile(path.join(saved.workCopyDirectory, 'input.txt'), 'utf8'), '任务输入');
+  assert.equal(await fs.readFile(path.join(source, 'input.txt'), 'utf8'), '任务输入');
+});
+
+
+test('full expiry retries native deletion after restart and never interrupts active execution', async t => {
+  const { root, owner, caller, source, clockFile, initialTime, ownerOptions, processes } = await setup(t, { clock: true });
+  await owner.tool('provider_settings', { cleanupAllOnExpiry: true, retentionDays: 1 });
+  const pair = await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  await caller.tool('authorize_peer', { peer: 'owner', allowTaskFiles: true, retentionPolicy: pair.retentionPolicy });
+  const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  const failed = await caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'cleanup-delete-failure' });
+  const running = caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'hang' }).catch(error => error);
+  let active;
+  for (let n = 0; n < 100; n++) {
+    active = (await owner.tool('list_shared_tasks')).tasks.find(task => task.status === 'running');
+    if (active) break;
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+  assert.ok(active);
+  await fs.writeFile(clockFile, String(initialTime + 2 * 86400000));
+  const tasks = (await owner.tool('list_shared_tasks')).tasks;
+  const failure = tasks.find(task => task.taskId === failed.taskId);
+  assert.equal(failure.cleanup.status, 'failed');
+  assert.match(failure.cleanup.error, /native deletion failed/);
+  assert.equal(failure.inspection.workCopyExists, true);
+  assert.equal(tasks.find(task => task.taskId === active.taskId).status, 'running');
+  assert.match(tasks.find(task => task.taskId === active.taskId).cleanup.reason, /running/);
+  await owner.tool('cancel_shared_task', { pairId: pair.pairId, taskId: active.taskId }); await running;
+  const stopped = await caller.tool('task_status', { taskId: active.taskId });
+  assert.equal(Date.parse(stopped.expiresAt), initialTime + 3 * 86400000);
+  await owner.tool('exit_sharing');
+  await stopTestSharing(path.join(root, 'owner'));
+  await owner.close();
+  await assert.rejects(caller.tool('task_status', { taskId: failed.taskId }), /connection|sharing/i);
+  const reopened = await openMcp(path.join(root, 'owner.json'), ownerOptions); processes.push(reopened);
+  const retried = (await reopened.tool('list_shared_tasks')).tasks.find(task => task.taskId === failed.taskId);
+  assert.equal(retried.status, 'expired'); assert.equal(retried.cleanup.status, 'cleaned');
+  assert.equal(retried.inspection.workCopyExists, false);
+});
+
+test('a result already transferred can finish saving when full expiry runs before its acknowledgement', async t => {
+  const { root, owner, caller, source, clockFile, initialTime } = await setup(t, { clock: true });
+  await owner.tool('provider_settings', { cleanupAllOnExpiry: true, retentionDays: 1 });
+  const pair = await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  await caller.tool('authorize_peer', { peer: 'owner', allowTaskFiles: true, retentionPolicy: pair.retentionPolicy });
+  const task = await caller.tool('start_task', { peer: 'owner', snapshotId: (await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] })).snapshotId, prompt: 'save me' });
+  await interceptPeer(t, root, async input => {
+    if (input.action === 'result') {
+      await fs.writeFile(clockFile, String(initialTime + 2 * 86400000));
+      assert.equal((await owner.tool('list_shared_tasks')).tasks[0].status, 'expired');
+    }
+  });
+  const saved = await caller.tool('collect_result', { taskId: task.taskId });
+  assert.equal(saved.deliveryPending, false);
+  assert.equal(await fs.readFile(path.join(saved.workCopyDirectory, 'input.txt'), 'utf8'), '任务输入');
+  assert.equal((await caller.tool('task_status', { taskId: task.taskId })).status, 'expired');
+});
+
+test('full expiry reports both native cleanup and retry-state write failures', { skip: process.platform === 'win32' || process.getuid?.() === 0 }, async t => {
+  const { root, owner, caller, source, clockFile, initialTime } = await setup(t, { clock: true });
+  await owner.tool('provider_settings', { cleanupAllOnExpiry: true, retentionDays: 1 });
+  const pair = await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  await caller.tool('authorize_peer', { peer: 'owner', allowTaskFiles: true, retentionPolicy: pair.retentionPolicy });
+  const task = await caller.tool('start_task', { peer: 'owner', snapshotId: (await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] })).snapshotId, prompt: 'cleanup-delete-and-record-failure' });
+  const directory = path.join(root, 'owner/sharing/tasks', pair.pairId, task.taskId);
+  try {
+    await fs.writeFile(clockFile, String(initialTime + 2 * 86400000));
+    const failed = (await owner.tool('list_shared_tasks')).tasks[0];
+    assert.equal(failed.cleanup.status, 'failed');
+    assert.match(failed.cleanup.reason, /fixture native deletion failed/);
+    assert.match(failed.cleanup.reason, /EACCES|EPERM/);
+    assert.equal(failed.inspection.workCopyExists, true);
+  } finally { await fs.chmod(directory, 0o700); }
+  await fs.writeFile(clockFile, String(initialTime + 2 * 86400000 + 61000));
+  assert.equal((await owner.tool('list_shared_tasks')).tasks[0].status, 'expired');
+});
+
+
+test('full expiry waits for an in-flight result transfer under the existing task lock', async t => {
+  const { root, owner, caller, source, clockFile, initialTime } = await setup(t, { clock: true });
+  await owner.tool('provider_settings', { cleanupAllOnExpiry: true, retentionDays: 1 });
+  const pair = await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  await caller.tool('authorize_peer', { peer: 'owner', allowTaskFiles: true, retentionPolicy: pair.retentionPolicy });
+  const task = await caller.tool('start_task', { peer: 'owner', snapshotId: (await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] })).snapshotId, prompt: 'large result' });
+  await fs.writeFile(path.join(root, 'owner/sharing/tasks', pair.pairId, task.taskId, 'work/large.bin'), Buffer.alloc(16 * 1024 * 1024, 7));
+  const peer = JSON.parse(await fs.readFile(path.join(root, 'caller.json'))).peers.owner;
+  const response = await new Promise((resolve, reject) => {
+    const req = https.request({ hostname: peer.host, port: peer.port, path: '/rpc', method: 'POST', rejectUnauthorized: false, headers: { Authorization: `Bearer ${peer.token}`, 'content-type': STREAM_TYPE } }, res => { res.pause(); resolve(res); });
+    req.on('error', reject);
+    void writeMessage(req, { action: 'result', protocol: 3, taskId: task.taskId }).then(() => req.end(), reject);
+  });
+  t.after(() => response.destroy());
+  await fs.writeFile(clockFile, String(initialTime + 2 * 86400000));
+  const waiting = (await owner.tool('list_shared_tasks')).tasks[0];
+  assert.notEqual(waiting.status, 'expired');
+  assert.equal(waiting.inspection.workCopyExists, true);
+  assert.match(waiting.cleanup.reason, /running turn|lock|transfer/i);
+  await new Promise((resolve, reject) => { response.on('end', resolve); response.on('error', reject); response.resume(); });
+  await fs.writeFile(clockFile, String(initialTime + 2 * 86400000 + 61000));
+  assert.equal((await owner.tool('list_shared_tasks')).tasks[0].status, 'expired');
+});
+
+
+test('clearing records of a full-expiry task retains only the metadata needed to expire its history', async t => {
+  const { root, owner, caller, source, clockFile, initialTime } = await setup(t, { clock: true });
+  await owner.tool('provider_settings', { cleanupAllOnExpiry: true, retentionDays: 1 });
+  const pair = await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  await caller.tool('authorize_peer', { peer: 'owner', allowTaskFiles: true, retentionPolicy: pair.retentionPolicy });
+  const task = await caller.tool('start_task', { peer: 'owner', snapshotId: (await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] })).snapshotId, prompt: 'retain history until deadline' });
+  await caller.tool('collect_result', { taskId: task.taskId });
+  await caller.tool('finish_task', { taskId: task.taskId, cleanup: 'records' });
+  const directory = path.join(root, 'owner/sharing/tasks', pair.pairId, task.taskId);
+  assert.deepEqual(await fs.readdir(directory), ['state.json']);
+  const remaining = (await owner.tool('list_shared_tasks')).tasks.find(item => item.taskId === task.taskId);
+  assert.equal(remaining.rounds, undefined);
+  assert.equal(remaining.cleanup.nativeHistory, 'retained');
+  await fs.writeFile(clockFile, String(initialTime + 2 * 86400000));
+  const expired = await caller.tool('task_status', { taskId: task.taskId, details: true });
+  assert.equal(expired.status, 'expired');
+  assert.equal(expired.cleanup.nativeHistory, 'deleted');
+  await owner.tool('cleanup_shared_task', { pairId: pair.pairId, taskId: task.taskId, cleanup: 'records', discardUncollected: true });
+  await assert.rejects(fs.access(directory), { code: 'ENOENT' });
+});

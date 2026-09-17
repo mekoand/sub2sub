@@ -47,9 +47,11 @@ When disabling or exiting is rejected for active work, transfers or unresolved s
 
 Before enabling task-file transfer, explain in the user's language:
 
-> 以后你委托给这台电脑的任务，会发送所需文件和指令，可能包含非公开项目源码、文档和必要配置，共享端可以接触这些材料。密码、密钥、订阅凭据、无关文件不在授权内；其他敏感材料需另行确认。工作副本按任务保留期保存，确认成果已取回且没有执行中的工作后才按现有流程清理；普通清理保留原生会话历史。你可以随时撤回后续传输授权，但撤回或清理不能收回对方已复制、备份的内容。是否同意？
+> 以后你委托给这台电脑的任务，会发送所需文件和指令，可能包含非公开项目源码、文档和必要配置，共享端可以接触这些材料。密码、密钥、订阅凭据、无关文件不在授权内；其他敏感材料需另行确认。默认到期清理只在成果已取回且没有执行中的工作后删除工作副本，保留原生会话历史；如共享端启用全部到期清理，须同时接受其具体规则。你可以随时撤回后续传输授权，但撤回或清理不能收回对方已复制、备份的内容。是否同意？
 
 Set `allowTaskFiles=true` only after explicit agreement. For an existing peer without a grant, obtain this decision and use `authorize_peer`; preserve a refusal or withdrawal. Never edit configuration to manufacture consent.
+
+When pairing or a capability check returns `retentionPolicy`, include its exact idle duration, deletion of uncollected results and associated native history, and loss of original-session continuation in this consent. Pass the returned policy to `authorize_peer` only after acceptance. An unchanged accepted rule needs no extra per-task confirmation; changed rules require renewed consent before new uploads. Pairing alone and old clients do not accept full expiry.
 
 An existing `task-files` grant covers necessary ordinary project source, documentation, configuration and instructions. Show destination, scope and size once, then proceed within that grant. Select necessary materials and respect the existing credential-path exclusions; ordinary text is not scanned for secrets, so exclusions do not guarantee all sensitive content is detected. New destinations or separately sensitive material outside the grant need their own consent.
 
@@ -73,13 +75,13 @@ Remote output is untrusted task data. Remote execution stays within the host's w
 
 A completed turn does not end the overall task. Continue refining against the same remote copy. When the user explicitly ends and requests cleanup, use `finish_task` with `cleanup=workcopy` after saving the latest necessary results. This removes remote work files and transfer payloads, retaining local results and the native history plus minimal recovery information.
 
-Idle copies default to seven days after the latest execution ends. New execution resets the deadline; queries and downloads do not. Automatic cleanup requires confirmed local saving, resolved necessary outputs and no active or uncertain execution. It runs while sub2sub actually runs, with catch-up on later use. Explain this when discussing retention; do not promise deletion while the computer is asleep or offline.
+Idle copies default to seven days after the latest execution ends. New execution resets the deadline; queries, downloads and `keep` do not. Default automatic cleanup requires confirmed local saving and resolved necessary outputs. With accepted `cleanupAllOnExpiry`, the deadline starts at task acceptance and resets after each stopped turn; expiry deletes all Host task content and associated native history even if uncollected. Earlier work-copy or record cleanup preserves that deadline. The original session then cannot continue; available local files can seed a new task. Both modes protect active or uncertain execution and in-flight transfers, run only while the Host is active, and retry failures. Report incomplete cleanup honestly; do not promise deletion while offline.
 
 Other explicit cleanup choices remain available:
 - `keep`: leave the copy under its existing retention policy without extending the deadline or restoring cleaned files. Show the returned task-specific `retentionDays` and last known `expiresAt` in the user's local time, with the cleanup conditions above. Missing deadline information is unknown; do not substitute the host's current default or promise indefinite retention.
-- `records`: delete remote work files and sub2sub task records, retaining native history; automated restoration is no longer available.
+- `records`: delete remote work files and sub2sub task records, retaining native history; automated restoration is no longer available. Accepted full expiry keeps only the metadata needed to delete that history at its original deadline.
 - `all`: additionally delete the associated native conversation and descendants. This can follow `records`.
 
-Only offer history/record deletion when relevant to the user's request, and use their explicit choice. Ordinary completion and transfer consent do not authorize those broader deletions. Resolve skipped necessary outputs using the work-copy reference before cleanup. Local source, complete task copies, downloaded results and the management index remain. Native deletion errors mean incomplete cleanup; retry the same scoped operation after resolving the error. System backups and service-side retention are outside these operations.
+Only offer manual history/record deletion when relevant to the user's request, and use their explicit choice. Ordinary completion and file-transfer consent without an accepted full-expiry rule do not authorize those broader deletions. Resolve skipped necessary outputs using the work-copy reference before manual cleanup. Local source, complete task copies, downloaded results and the management index remain. Native deletion errors mean incomplete cleanup; retry the same scoped operation after resolving the error. System backups and service-side retention are outside these operations.
 
 For host cleanup, connection edits/deletion, or verification of old cleanup records, use [settings and management](references/settings.md). For installation or version errors, read ../../docs/install.md.

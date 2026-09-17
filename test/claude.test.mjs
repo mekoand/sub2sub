@@ -188,3 +188,30 @@ test('old Codex histories survive records cleanup and remain discoverable after 
   await manager.tool('revoke_pairing', { pairId: paired.pairId, cleanup: 'all' });
   await assert.rejects(fs.stat(native), { code: 'ENOENT' });
 });
+
+
+test('Claude task diagnostics stay with task data and accepted expiry deletes its native history', { skip: process.platform !== 'darwin' }, async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'sub2sub-claude-expiry-'));
+  const clockFile = path.join(root, 'clock'), initialTime = Date.now();
+  await fs.writeFile(clockFile, String(initialTime));
+  const file = path.join(root, 'config.json');
+  await fs.writeFile(file, JSON.stringify({ stateRoot: root, provider: { harness: 'claude', claudePath: fileURLToPath(new URL('./fixtures/fake-claude.mjs', import.meta.url)), cleanupAllOnExpiry: true, retentionDays: 1 }, caller: { harnesses: { claude: { model: 'sonnet', reasoningEffort: 'low' } } } }));
+  const manager = await openMcp(file, { args: ['--import', fileURLToPath(new URL('./fixtures/clock.mjs', import.meta.url)), fileURLToPath(new URL('../bin/mcp.mjs', import.meta.url))], env: { CLAUDE_CONFIG_DIR: path.join(root, 'claude-home'), SUB2SUB_TEST_CLOCK: clockFile } });
+  t.after(async () => { await manager.close(); await stopTestSharing(root); await fs.rm(root, { recursive: true, force: true }); });
+  const pair = await manager.tool('pair_peer', { invitation: (await manager.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'self', allowTaskFiles: true });
+  await manager.tool('authorize_peer', { peer: 'self', allowTaskFiles: true, retentionPolicy: pair.retentionPolicy });
+  await fs.writeFile(path.join(root, 'input.txt'), 'Synthetic task file');
+  const copy = await manager.tool('prepare_work_copy', { workspace: root, paths: ['input.txt'] });
+  await assert.rejects(manager.tool('start_task', { peer: 'self', snapshotId: copy.snapshotId, prompt: 'stderr-failure' }), /Synthetic task failure/);
+  const [task] = (await manager.tool('list_shared_tasks')).tasks;
+  const before = await manager.tool('task_status', { taskId: task.taskId });
+  assert.match(before.error, /SYNTHETIC_PRIVATE_TASK_DIAGNOSTIC/);
+  assert.doesNotMatch(await fs.readFile(path.join(root, 'sharing/node.log'), 'utf8'), /SYNTHETIC_PRIVATE_TASK_DIAGNOSTIC/);
+  await fs.writeFile(clockFile, String(initialTime + 2 * 86400000));
+  const [expired] = (await manager.tool('list_shared_tasks')).tasks;
+  assert.equal(expired.status, 'expired');
+  assert.equal(expired.cleanup.nativeHistory, 'deleted');
+  assert.equal((await manager.tool('task_status', { taskId: task.taskId })).error, undefined);
+  const project = path.join(root, 'claude-home/projects', path.join(await fs.realpath(root), 'sharing/tasks', pair.pairId, task.taskId, 'work').replace(/[^a-zA-Z0-9]/g, '-'));
+  await assert.rejects(fs.stat(path.join(project, before.threadId + '.jsonl')), { code: 'ENOENT' });
+});

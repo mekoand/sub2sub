@@ -114,6 +114,8 @@ Both nodes need chunked-transfer support. Older nodes retain their original limi
 
 Host retention supports 1–365 days, default 7. Accepted tasks retain their original setting. Status queries, downloads, and `keep` do not extend the deadline; completing another turn resets it.
 
+**Delete all task content and native history at expiry** (`cleanupAllOnExpiry`) is an opt-in host setting, off by default. With it enabled, a new task requires acceptance of the host's exact retention period through the existing task-file consent flow (`authorize_peer.retentionPolicy`). The same accepted rule is reused for later tasks; a changed rule requires renewed consent before uploading. An older client cannot silently accept this rule. Changing settings does not shorten old tasks' accepted retention.
+
 ## Delegated session visibility
 
 Host settings include **Keep delegated sessions in the task list** (`keepSessionVisible`), also configurable through conversation. This manages Codex sessions only; Claude reports unsupported and keeps its existing behavior.
@@ -155,7 +157,9 @@ Use Troubleshooting to return to the conversation and reuse existing status quer
 | `records` | Also remove sub2sub task records; no automatic restoration |
 | `all` | Also delete the associated native conversation and derived conversations |
 
-Automatic expiry only cleans the remote work copy. Necessary outputs must have been confirmed saved, with no active or unknown execution. Checks run while sharing is active, so offline devices do not promise exact deletion times.
+By default, automatic expiry only cleans the remote work copy after necessary outputs have been confirmed saved. For a task that accepted full expiry, the deadline starts at task acceptance and resets after every stopped turn. Once idle time expires, all host task content and associated native history, including identified descendants, are deleted even if results were not collected. This also applies to history retained after earlier work-copy or record cleanup; record cleanup keeps only the metadata needed for that accepted expiry. The original session cannot continue after expiry; available client files may be used to start a new task.
+
+Active or uncertain execution and in-flight result transfers are protected; cleanup never cancels a task to meet its deadline. Cleanup failures remain visible and the existing maintenance cycle retries them. Checks run only while the host process is running, so an offline host is not reported as already cleaned. Expired tasks retain only minimal ownership, deadline, synchronization-receipt and cleanup metadata without instructions, answers, file lists or token history; independent connection budget totals are not task content and are outside cleanup.
 
 Local source, complete copies, historical downloads, and indexes are outside remote cleanup. Shared native logs, system backups and service-side retention are also outside the plugin's deletion scope.
 

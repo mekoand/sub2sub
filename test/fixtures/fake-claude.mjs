@@ -28,6 +28,11 @@ lines.on('line', async line => {
     await fs.appendFile(path.join(project, session + '.jsonl'), JSON.stringify({ type: 'user', sessionId: session, cwd: process.cwd(), uuid: message.uuid, parentUuid: null, isSidechain: false, message: message.message, timestamp: new Date().toISOString() }) + '\n');
     send({ type: 'system', subtype: 'init', session_id: session, model: model === 'sonnet' ? 'claude-sonnet-5' : model, tools: ['Bash'], mcp_servers: [], plugins: [], skills: [], permissionMode: 'acceptEdits' });
     await fs.writeFile(path.join(process.cwd(), 'answer.txt'), message.message.content);
+    if (message.message.content === 'stderr-failure') {
+      process.stderr.write('SYNTHETIC_PRIVATE_TASK_DIAGNOSTIC');
+      send({ type: 'result', subtype: 'error_during_execution', is_error: true, errors: ['Synthetic task failure'], session_id: session, user_message_uuid: message.uuid });
+      return;
+    }
     if (message.message.content.startsWith('claude-usage-')) {
       const assistant = (id, input, read, write, parent = null, activeSession = session) => send({ type: 'assistant', session_id: activeSession, uuid: id + '-frame', parent_tool_use_id: parent,
         message: { id, model: 'claude-sonnet-5', role: 'assistant', content: [{ type: 'text', text: 'Synthetic progress' }], stop_reason: null,
