@@ -12,7 +12,7 @@
 Currently supports Codex and Claude Code, with support for more tools in development.
 
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.9.2-6366f1)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.9.3-6366f1)](CHANGELOG.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 **English** · [简体中文](README.zh-CN.md) · [Install](docs/install.en.md) · [Usage](docs/usage.en.md) · [Contribute](CONTRIBUTING.md) · [Security](SECURITY.md)
@@ -163,7 +163,7 @@ The managing app is where you use the plugin; the Host chooses its execution too
 
 WorkBuddy and other managing apps remain untested. [Versions and validation details](docs/validation.md)
 
-The current release is [v0.9.2](https://github.com/mekoand/sub2sub/releases/tag/v0.9.2). `main` can contain changes awaiting release, including the Host/Client terminology and environment guidance described here. Connection Token budgets, expiry-based full cleanup, and automatic Host selection are tracked in [#60](https://github.com/mekoand/sub2sub/issues/60), [#61](https://github.com/mekoand/sub2sub/issues/61), and [#62](https://github.com/mekoand/sub2sub/issues/62); they are not part of v0.9.2. Check [releases](https://github.com/mekoand/sub2sub/releases) before relying on a feature.
+[v0.9.3](https://github.com/mekoand/sub2sub/releases/tag/v0.9.3) includes connection Token budgets, optional full cleanup on expiry, and automatic Host selection. These features are off by default. Budgets settle after each turn and may overshoot; Host selection happens only before submission. `main` can contain changes awaiting release; check the [release notes](https://github.com/mekoand/sub2sub/releases) for the version you install.
 
 ## Development
 
