@@ -177,7 +177,7 @@ test('the execution deadline settles observed usage without refunding timed-out 
   assert.equal((await budget()).usedTokens, 180);
 });
 
-test('failed accounting is recovered before deleting the only remaining task usage record', async t => {
+test('execution and accounting failures retain both causes and recover usage before task deletion', async t => {
   const { root, owner, caller, pairId, budget, start } = await setup(t);
   await owner.tool('pairing_settings', { pairId, tokenLimit: 500 });
   const running = start('usage-wait').then(value => ({ value }), error => ({ error }));
@@ -194,8 +194,11 @@ test('failed accounting is recovered before deleting the only remaining task usa
   await fs.mkdir(lock);
   await fs.writeFile(path.join(lock, `${randomUUID()}.json`), JSON.stringify({ pid: process.pid }));
   try {
-    await caller.tool('cancel_task', { taskId: task.taskId });
-    assert.match((await running).error.message, /Another sub2sub process/);
+    const native = JSON.parse(await fs.readFile(path.join(root, 'owner/sharing/tasks', pairId, task.taskId, 'process.json')));
+    process.kill(native.pid, 'SIGKILL');
+    const failure = (await running).error;
+    assert.match(failure.message, /Codex app-server exited/);
+    assert.match(failure.message, /Another sub2sub process/);
   } finally { await fs.rm(lock, { recursive: true, force: true }); }
   await caller.tool('collect_result', { taskId: task.taskId });
   await caller.tool('finish_task', { taskId: task.taskId, cleanup: 'all' });
