@@ -62,11 +62,13 @@ The host checks the tools and dependencies needed for the task inside its task s
 | Situation | Handling |
 | --- | --- |
 | The environment is sufficient, or a missing tool is irrelevant to this task | Continue without interrupting the user |
-| Changes can be made, but some checks cannot run on the host | Return the changes and missing checks; the client's own agent completes verification in a suitable local work copy under local permissions and task authorization |
+| Changes can be made, but some checks cannot run on the host | Return the changes and missing checks; the client's own agent completes verification in a separate local verification copy under local permissions and task authorization |
 | A missing requirement blocks explicitly required host-side execution or verification, or prevents useful work | Explain the gap and wait for a choice: prepare the environment, choose another host, or change the scope |
 | The client also lacks the environment needed for verification | Report the remaining requirement and ask how to proceed |
 
 Local verification is allowed by default, but it cannot replace an explicit host-side requirement. It does not authorize system dependency installation, credential transfer or expanded permissions. Review returned changes and scripts before local execution; source files and existing edits stay protected. Report host checks and client checks separately, and claim full completion only after required checks pass.
+
+Before tests, builds, dependency preparation or other checks that may write files, copy the saved files into a separate verification directory. Keep the plugin-managed `workCopyDirectory`, `resultDirectory` and task index unchanged; they are used for later collection and restoration. Local edits or generated links there can contaminate results or block collection. Do not copy verification files back into those saved directories.
 
 If a local check finds a problem within the original task, continue that task with the necessary error details. Local edits are not automatically sent to its existing remote work copy. Simply opening a saved result does not rerun checks.
 
