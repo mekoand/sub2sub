@@ -41,6 +41,6 @@ for (const name of ['install.md', 'install.en.md', 'usage.md', 'usage.en.md', 'a
   await fs.copyFile(path.join(root, 'docs', name), path.join(target, 'docs', name));
 }
 await fs.mkdir(path.join(target, 'docs/development'));
-await fs.copyFile(path.join(root, 'docs/development/cross-network.md'), path.join(target, 'docs/development/cross-network.md'));
+for (const name of ['cross-network.md', 'transfer-performance.md']) await fs.copyFile(path.join(root, 'docs/development', name), path.join(target, 'docs/development', name));
 await fs.cp(path.join(root, 'docs/assets'), path.join(target, 'docs/assets'), { recursive: true, errorOnExist: true, force: false });
 process.stdout.write(JSON.stringify({ pluginDirectory: target, checkArguments: windowsNode ? [windowsNode, './scripts/setup-check.mjs'] : ['/bin/sh', path.join(target, 'bin/launch.sh'), '--check'], note: 'Package prepared. No Codex configuration, marketplace, credentials or task data were modified or included.' }) + '\n');

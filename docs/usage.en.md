@@ -122,6 +122,8 @@ Transfers strictly above 64 MiB of raw file content display a notice and continu
 
 Both nodes need chunked-transfer support. Older nodes retain their original limits, with an explanation before sending oversized inputs. An older local sharing process must also be restarted after active tasks finish to load the updated installation; upgrades do not restart active nodes automatically.
 
+Supported versions negotiate file compression automatically to reduce bytes sent between devices; older nodes use uncompressed transfers. No additional setting is needed. Compression uses CPU and does not guarantee faster transfers for already-compressed files or fast connections. Preparing and saving files still takes time; previews and limits count original file content. See [synthetic measurements and limitations](development/transfer-performance.md).
+
 Host retention supports 1–365 days, default 7. Accepted tasks retain their original setting. Status queries, downloads, and `keep` do not extend the deadline; completing another turn resets it.
 
 **Delete all task content and native history at expiry** (`cleanupAllOnExpiry`) is an opt-in host setting, off by default. With it enabled, a new task requires acceptance of the host's exact retention period through the existing task-file consent flow (`authorize_peer.retentionPolicy`). The same accepted rule is reused for later tasks; a changed rule requires renewed consent before uploading. An older client cannot silently accept this rule. Changing settings does not shorten old tasks' accepted retention.
