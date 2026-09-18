@@ -7,6 +7,7 @@ import { promisify } from 'node:util';
 import { Config, codexExecutable, executableOnPath } from '../lib/config.mjs';
 import { processLock } from '../lib/lock.mjs';
 import { Sharing } from '../lib/lan.mjs';
+import { maintainInstallation } from '../lib/installation.mjs';
 import { verifyTailcat } from '../lib/tailcat.mjs';
 
 const exec = promisify(execFile);
@@ -119,7 +120,7 @@ async function installClaude(payload, root, release, run, log, executable) {
   } finally { await unlock(); }
 }
 
-export async function install(payload, root, log = console.log, target = 'codex') {
+async function registerRelease(payload, root, log, target) {
   if (!['codex', 'claude'].includes(target)) throw new Error('Choose an installation target: codex or claude.');
   payload = path.resolve(payload); root = path.resolve(root);
   const release = await json(path.join(payload, 'release.json'));
@@ -128,7 +129,7 @@ export async function install(payload, root, log = console.log, target = 'codex'
   const configFile = process.env.SUB2SUB_CONFIG || path.join(os.homedir(), '.config/sub2sub/config.json');
   const store = new Config(configFile), config = await store.read();
   const sharing = await new Sharing(store, config.stateRoot || path.join(os.homedir(), '.local/state/sub2sub')).machineStatus();
-  if (sharing.ownerPid) log(`Existing sub2sub node: ${sharing.version || 'unknown version'}, PID ${sharing.ownerPid}, ${sharing.status}. It keeps running during installation. When idle, use exit_sharing then start_sharing from a NEW session to load the update.`);
+  if (sharing.ownerPid) log(`Existing sub2sub node: ${sharing.version || 'unknown version'}, PID ${sharing.ownerPid}, ${sharing.status}. Its running version will be checked after registration; active or uncertain work is preserved.`);
   else if (sharing.status !== 'stopped') log(`Existing node state: ${sharing.status}. ${sharing.reason || ''} Check sharing_status before starting it again.`);
   const executable = target === 'claude' ? process.env.SUB2SUB_CLAUDE || await executableOnPath('claude') : await findCodex(config);
   if (target === 'claude' && process.platform === 'win32' && /\.(cmd|bat)$/i.test(executable)) throw new Error('SUB2SUB_CLAUDE must point to native claude.exe, not a .cmd or .bat launcher.');
@@ -188,9 +189,22 @@ export async function install(payload, root, log = console.log, target = 'codex'
   } finally { await unlock(); }
 }
 
+export async function install(payload, root, log = console.log, target = 'codex') {
+  const installed = await registerRelease(payload, root, log, target);
+  const store = new Config(process.env.SUB2SUB_CONFIG || path.join(os.homedir(), '.config/sub2sub/config.json'));
+  const config = await store.read();
+  const sharing = new Sharing(store, config.stateRoot || path.join(os.homedir(), '.local/state/sub2sub'));
+  const maintenance = await maintainInstallation(sharing, installed.root, installed.version);
+  log(`Node update: ${maintenance.node.status}. ${maintenance.node.reason || ''}`);
+  log(`Old programs: removed ${maintenance.cleanup.removed.join(', ') || 'none'}; kept ${maintenance.cleanup.kept.length}; unresolved ${maintenance.cleanup.failed.length}.`);
+  for (const item of [...maintenance.cleanup.kept, ...maintenance.cleanup.failed]) log(`${item.version || 'Cleanup'}: ${item.reason}`);
+  return { ...installed, maintenance };
+}
+
 if (process.argv[1] && await fs.realpath(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     if (![4, 5].includes(process.argv.length)) throw new Error('Usage: node install.mjs <extracted-release> <installation-directory> [codex|claude]');
-    await install(process.argv[2], process.argv[3], console.log, process.argv[4]);
+    const result = await install(process.argv[2], process.argv[3], console.log, process.argv[4]);
+    console.log('sub2sub-install-result: ' + JSON.stringify(result));
   } catch (error) { console.error(`sub2sub install: ${error.message}`); process.exitCode = 1; }
 }

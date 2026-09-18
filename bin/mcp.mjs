@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { createInterface } from 'node:readline';
+import { cleanupPrograms } from '../lib/installation.mjs';
 import { Client } from '../lib/client.mjs';
 import { tools, validateToolInput } from '../lib/tools.mjs';
 import packageInfo from '../package.json' with { type: 'json' };
@@ -17,7 +18,7 @@ const shutdown = async () => {
   for (const controller of active.values()) controller.abort();
   lines.close();
   process.stdin.destroy();
-  try { await startup; await (await clientPromise)?.close(); }
+  try { await startup; const client = await clientPromise; await client?.programCleanup; await client?.close(); }
   catch (error) { process.stderr.write(`sub2sub shutdown failed: ${error.message}\n`); process.exitCode = 1; }
 };
 process.once('SIGTERM', shutdown);
@@ -38,6 +39,10 @@ lines.on('line', async line => {
         try { client = await loading; }
         catch (error) { if (clientPromise === loading) clientPromise = undefined; throw error; }
         if (shuttingDown) return;
+        client.programCleanup ||= cleanupPrograms(process.env.SUB2SUB_INSTALL_DIR, packageInfo.version, [client.store.file, client.stateRoot]).then(result => {
+          if (result) process.stderr.write(`sub2sub old program cleanup: ${JSON.stringify(result)}\n`);
+          return result;
+        });
         try { await client.web.start(); }
         catch (error) { client.web.error = error.message; throw error; }
       })().catch(error => { process.stderr.write(`sub2sub management unavailable: ${error.message}\n`); });
