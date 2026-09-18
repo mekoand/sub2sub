@@ -25,9 +25,9 @@ A **Host** shares AI capabilities and executes authorized tasks. A **Client** de
 
 Start with [installation](#install), then [connect two devices](#connect-your-work-nodes). For a first task, send a small non-sensitive text file and ask for a summary.
 
-![sub2sub local management with synthetic demo data](docs/assets/management-demo.png)
+![Multiple Clients share AI resources through authorized Hosts running Codex and Claude Code](docs/assets/resource-sharing.png)
 
-*The current management UI with synthetic device names and task records; no real accounts or task content are shown.*
+*Share AI resources across your own and teammates' devices. Each task runs on one authorized Host, then returns responses and files to the Client.*
 
 ## What you can do
 
@@ -144,6 +144,10 @@ Say this in your conversation:
 > Open sub2sub management.
 
 The local management page provides a compact view for nodes, tasks, and saved results, with pairing, settings, and on-demand Codex quota queries. Resource statistics over 7 or 30 days show where your tasks went, how many turns ran, and their measured execution time. Native model usage is available by turn, model and source, with partial-data notes and JSON export; no prices are calculated.
+
+![sub2sub local management with synthetic demo data](docs/assets/management-demo.png)
+
+*The current management UI with synthetic device names and task records; no real accounts or task content are shown.*
 
 Management is enabled by default and can be turned off at any time. It shares the plugin process, adds no background service, and does not open a browser automatically. Task instructions and follow-ups stay in your conversation. [Management and statistics](docs/usage.en.md#local-management-and-statistics)
 
