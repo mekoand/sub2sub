@@ -61,6 +61,12 @@ State the goal, input scope, output, and expected checks:
 
 The input preview identifies the destination, file count, and size. By default, it includes the current contents of Git-tracked files, including uncommitted edits. Select untracked files explicitly. Dependency folders and common credential paths are excluded; symbolic links and special files are not transferred as ordinary files.
 
+The client agent selects applicable root and nested `AGENTS.md` files and names their paths in the task prompt. Selecting only a subdirectory does not add ancestor rules; select untracked rules explicitly. Include required reference documents, templates or scripts within the existing authorization, preserving their layout. Host instructions require reading applicable rules before working; a transferred file does not prove model compliance.
+
+Whole skills, `.agents` and `.codex` are not synchronized. Put a needed method's essential steps and constraints in the prompt; keep steps requiring local accounts, browsers, MCP or apps on the client when the task permits it. Explain missing material or host capabilities, and ask for a decision only when they block useful work or a completion requirement.
+
+Conversation guidance calls for a brief submission acknowledgement, prompt updates for meaningful changes or decisions, and roughly one short update per minute during a long wait. It uses existing progress notifications rather than narrating each fragment or polling for commentary; actual timing depends on the managing app.
+
 A follow-up reuses the remote work copy and native conversation. Existing tasks keep their accepted model, effort, and retention; changing client defaults affects new tasks only. Explicitly request a model change for a retained task.
 
 A turn is ready for delivery after execution ends and its results are saved. Failed or interrupted tasks may expose recovery files; retrieving those files does not mean execution succeeded.
@@ -86,11 +92,11 @@ The host checks the tools and dependencies needed for the task inside its task s
 | A missing requirement blocks explicitly required host-side execution or verification, or prevents useful work | Explain the gap and wait for a choice: prepare the environment, choose another host, or change the scope |
 | The client also lacks the environment needed for verification | Report the remaining requirement and ask how to proceed |
 
-Local verification is allowed by default, but it cannot replace an explicit host-side requirement. It does not authorize system dependency installation, credential transfer or expanded permissions. Review returned changes and scripts before local execution; source files and existing edits stay protected. Report host checks and client checks separately, and claim full completion only after required checks pass.
+The host still runs relevant checks available there. The client reviews reported checks and repeats them only for a new change, failure or concrete risk. Local verification is allowed by default, but it cannot replace an explicit host-side requirement. It does not authorize system dependency installation, credential transfer or expanded permissions. Review returned changes and scripts before local execution; source files and existing edits stay protected. Report host checks and client checks separately, and claim full completion only after required checks pass.
 
 Before tests, builds, dependency preparation or other checks that may write files, copy the saved files into a separate verification directory. Keep the plugin-managed `workCopyDirectory`, `resultDirectory` and task index unchanged; they are used for later collection and restoration. Local edits or generated links there can contaminate results or block collection. Do not copy verification files back into those saved directories.
 
-If a local check finds a problem within the original task, continue that task with the necessary error details. Local edits are not automatically sent to its existing remote work copy. Simply opening a saved result does not rerun checks.
+If a local check fails, distinguish an environment gap from an implementation problem. Continue the original task with necessary error details, commands and conditions for a fix within its scope, without routine reconfirmation. Repeating an unchanged task does not resolve a known environment gap. Local edits are not automatically sent to its existing remote work copy. Simply opening a saved result does not rerun checks.
 
 ## Open results
 

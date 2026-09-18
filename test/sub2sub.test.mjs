@@ -292,6 +292,11 @@ test('round trip and follow-up preserve session; collect then finish removes onl
     assert.match(call.params.developerInstructions, /If a missing requirement blocks execution or verification that the task explicitly requires on the host/);
     assert.match(call.params.developerInstructions, /Never lower the task's completion criteria/);
     assert.doesNotMatch(call.params.developerInstructions, /checks delivery completeness only/);
+    assert.match(call.params.developerInstructions, /complete the useful work and available checks/);
+    assert.match(call.params.developerInstructions, /Before working on a path, read the supplied project rules/);
+    assert.match(call.params.developerInstructions, /root and relevant nested AGENTS\.md/);
+    assert.match(call.params.developerInstructions, /Preserve each rule's directory scope/);
+    assert.match(call.params.developerInstructions, /Receiving rule or skill text does not provide its tools/);
   }
   assert.equal(calls.filter(c => c.method === 'turn/start').length, 2);
   assert.equal(scope.filesystem[await fs.realpath(path.join(root, 'provider', first.taskId, 'work'))], 'write');
