@@ -1758,3 +1758,23 @@ test('clearing records of a full-expiry task retains only the metadata needed to
   await owner.tool('cleanup_shared_task', { pairId: pair.pairId, taskId: task.taskId, cleanup: 'records', discardUncollected: true });
   await assert.rejects(fs.access(directory), { code: 'ENOENT' });
 });
+
+test('task file updates restore separately without double-counting full input limits', async t => {
+  const { root, owner, caller, source } = await setup(t);
+  await owner.tool('provider_settings', { inputFiles: 2, inputBytes: 32 });
+  await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  const first = await caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'first' });
+  const saved = await caller.tool('collect_result', { taskId: first.taskId });
+  await caller.tool('finish_task', { taskId: first.taskId, cleanup: 'workcopy' });
+  const edit = path.join(root, 'edited'); await fs.cp(saved.workCopyDirectory, edit, { recursive: true });
+  await fs.writeFile(path.join(edit, 'input.txt'), 'new');
+  const update = await caller.tool('prepare_work_copy', { workspace: edit, paths: ['input.txt'] });
+  const requests = [];
+  await interceptPeer(t, root, input => { if (['restore', 'run'].includes(input.action)) requests.push({ action: input.action, restoreOnly: input.restoreOnly, snapshot: input.snapshot?.files.length, upload: input.upload?.files.length }); });
+  const next = await caller.tool('continue_task', { taskId: first.taskId, snapshotId: update.snapshotId, prompt: 'second' });
+  assert.equal(next.threadId, first.threadId); assert.equal(next.revision, 2);
+  assert.deepEqual(requests, [{ action: 'restore', restoreOnly: true, snapshot: 2, upload: undefined }, { action: 'run', restoreOnly: undefined, snapshot: undefined, upload: 1 }]);
+  const result = await caller.tool('collect_result', { taskId: first.taskId });
+  assert.equal(await fs.readFile(path.join(result.workCopyDirectory, 'input.txt'), 'utf8'), 'new');
+});
