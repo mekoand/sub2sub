@@ -12,7 +12,7 @@
 Currently supports Codex and Claude Code, with support for more tools in development.
 
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.9.3-6366f1)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.9.4--candidate-6366f1)](CHANGELOG.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 **English** · [简体中文](README.zh-CN.md) · [Install](docs/install.en.md) · [Usage](docs/usage.en.md) · [Contribute](CONTRIBUTING.md) · [Security](SECURITY.md)
@@ -91,7 +91,7 @@ In your restarted app, ask:
 
 Check the version loaded in the current conversation. A stopped sharing node is normal before you start receiving tasks. On first use, review the settings when prompted; this does not enable cross-network service or authorize file transfer.
 
-To update later, say “Upgrade sub2sub” in the app you installed it into. Pairings and saved results are preserved. Restart that app to load the update; an existing sharing node keeps running until you explicitly restart it while idle. [Install, update and troubleshooting](docs/install.en.md)
+To update later, say “Upgrade sub2sub” in the app you installed it into. Pairings and saved results are preserved. Restart that app to load the update. A compatible idle sharing node switches to the installed version and keeps its sharing or paused state. Busy nodes stay running; older nodes may require an explicit exit and restart. The update result explains the next step. [Install, update and troubleshooting](docs/install.en.md)
 
 ## Connect your work nodes
 
@@ -167,7 +167,7 @@ The managing app is where you use the plugin; the Host chooses its execution too
 
 WorkBuddy and other managing apps remain untested. [Versions and validation details](docs/validation.md)
 
-[v0.9.3](https://github.com/mekoand/sub2sub/releases/tag/v0.9.3) includes connection Token budgets, optional full cleanup on expiry, and automatic Host selection. These features are off by default. Budgets settle after each turn and may overshoot; Host selection happens only before submission. `main` can contain changes awaiting release; check the [release notes](https://github.com/mekoand/sub2sub/releases) for the version you install.
+[v0.9.4 is a candidate](https://github.com/mekoand/sub2sub/releases/tag/v0.9.4) for explicit task file updates, transfer improvements and upgrade maintenance. Use the pinned installers in its release notes to test it on both devices; the commands above and “Upgrade sub2sub” continue to select the latest stable release. Real two-device performance remains to be verified.
 
 ## Development
 

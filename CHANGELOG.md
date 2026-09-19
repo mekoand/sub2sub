@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.4 — Candidate
+
+- Upload explicitly selected file changes when continuing the same task. Reuse the last confirmed copy, preserve unselected files, and require explicit file deletions; collect and reconcile conflicting changes before continuing.
+- Reduce repeated directory operations for many small files and negotiate streaming gzip for file uploads, restoration and result transfer. Older nodes keep the existing protocol. Compression has CPU overhead; real two-device performance remains to be verified.
+- Switch compatible idle sharing nodes to the installed program while preserving sharing or paused state. Defer busy or older nodes that cannot confirm safe exit. Clean unused managed program versions while preserving registrations, active processes and user data.
+- Clarify project-rule transfer, available Host checks, local Client verification and concise progress updates. No dependency installer, skill synchronization or additional polling is added.
+- Fix transfer counts retained after a request disconnects during authentication, so idle nodes can exit and upgrade normally.
+
 ## 0.9.3 — 2026-09-18
 
 - Set an optional cumulative Token budget per connection. Settle native usage after each stopped turn and block new execution when exhausted; running turns can exceed the limit. Missing usage pauses new execution until the Host explicitly accepts the gap. Retain accounting after task cleanup.

@@ -12,7 +12,7 @@
 目前支持 Codex 和 Claude Code，更多工具支持正在开发中。
 
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.9.3-6366f1)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.9.4--candidate-6366f1)](CHANGELOG.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 [English](README.md) · **简体中文** · [安装](docs/install.md) · [使用手册](docs/usage.md) · [参与贡献](CONTRIBUTING.zh-CN.md) · [安全报告](SECURITY.md)
@@ -91,7 +91,7 @@ irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | ie
 
 确认当前对话加载的版本。尚未开始接收任务时，共享节点处于停止状态是正常的。首次使用按提示检查设置；这一步不会自动开启跨网服务，也不等于文件传输授权。
 
-以后在安装它的应用中说“升级 sub2sub”即可。配对和已保存成果会保留；重启应用后加载新版，运行中的共享节点则要等空闲后明确退出并重新开启。[安装、更新与故障排查](docs/install.md)
+以后在安装它的应用中说“升级 sub2sub”即可。配对和已保存成果会保留。重启应用后加载新版；支持切换的空闲共享节点会切换至已安装版本，保留接单或暂停状态。有任务的节点继续运行，旧节点可能需要明确退出后重新开启，升级结果会说明下一步。[安装、更新与故障排查](docs/install.md)
 
 ## 连接工作节点
 
@@ -167,7 +167,7 @@ irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | ie
 
 WorkBuddy 和其他管理应用尚未实测。[版本与验证详情](docs/validation.md)
 
-[v0.9.3](https://github.com/mekoand/sub2sub/releases/tag/v0.9.3) 包含连接 Token 预算、到期完整清理和自动选择 Host，均默认关闭。预算在每轮结束后结算，可能超出设定额度；Host 只在提交任务前选择。`main` 可能包含尚未发布的改动，请核对所安装版本的[发行说明](https://github.com/mekoand/sub2sub/releases)。
+[v0.9.4 是候选版](https://github.com/mekoand/sub2sub/releases/tag/v0.9.4)，包含明确选择的续作文件更新、传输优化和升级维护。测试时请在两端使用该发行说明里的固定版本安装入口；上面的命令和“升级 sub2sub”仍选择最新正式版。真实双机提速仍待验收。
 
 ## 开发
 
