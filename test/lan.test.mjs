@@ -1,4 +1,4 @@
-import { readRequest, writeMessage, releaseReceived, STREAM_TYPE } from '../lib/transfer.mjs';
+import { readRequest, writeMessage, releaseReceived, STREAM_TYPE, encodeBody } from '../lib/transfer.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -49,11 +49,18 @@ async function interceptPeer(t, root, intercept) {
   const server = https.createServer(identity, async (req, res) => {
     let received, result;
     try {
-      received = await readRequest(req);
+      received = await readRequest(req, { encoding: req.headers['content-encoding'] });
       const input = received.value;
       result = await connect(peer, input);
-      if (await intercept(input, result) === 'disconnect') { res.destroy(); return; }
-      if (received.streaming) { res.setHeader('content-type', STREAM_TYPE); await writeMessage(res, { result }); res.end(); }
+      const behavior = await intercept(input, result, req.headers);
+      if (behavior === 'disconnect') { res.destroy(); return; }
+      if (received.streaming) {
+        res.setHeader('content-type', STREAM_TYPE);
+        const gzip = behavior !== 'identity' && req.headers['accept-encoding'] === 'gzip';
+        if (gzip) res.setHeader('content-encoding', 'gzip');
+        const output = gzip ? encodeBody(res) : res;
+        await writeMessage(output, { result }); output.end();
+      }
       else res.end(JSON.stringify({ result }) + '\n');
     } catch (error) { res.end(JSON.stringify({ error: error.message }) + '\n'); }
     finally { await releaseReceived(received?.value); await releaseReceived(result); }
@@ -1757,4 +1764,85 @@ test('clearing records of a full-expiry task retains only the metadata needed to
   assert.equal(expired.cleanup.nativeHistory, 'deleted');
   await owner.tool('cleanup_shared_task', { pairId: pair.pairId, taskId: task.taskId, cleanup: 'records', discardUncollected: true });
   await assert.rejects(fs.access(directory), { code: 'ENOENT' });
+});
+
+for (const supported of [true, false]) test(`uploads negotiate gzip=${supported} and collection, deletion and restoration stay complete`, async t => {
+  const { root, owner, caller, source } = await setup(t);
+  await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  const uploads = [], downloads = [];
+  await interceptPeer(t, root, (input, result, headers) => {
+    if (input.action === 'models' && !supported) delete result.transferCompression;
+    if (input.snapshot || input.upload) uploads.push(headers['content-encoding']);
+    if (input.action === 'result') downloads.push(headers['accept-encoding']);
+    if (!supported) return 'identity';
+  });
+  const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  const task = await caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'sync-add' });
+  let result = await caller.tool('collect_result', { taskId: task.taskId });
+  assert.equal(await fs.readFile(path.join(result.workCopyDirectory, 'temporary.txt'), 'utf8'), 'new file');
+  await caller.tool('finish_task', { taskId: task.taskId, cleanup: 'workcopy' });
+  await caller.tool('continue_task', { taskId: task.taskId, prompt: 'sync-restore' });
+  result = await caller.tool('collect_result', { taskId: task.taskId });
+  assert.ok(result.removed.includes('temporary.txt'));
+  assert.equal(await fs.readFile(path.join(result.workCopyDirectory, 'input.txt'), 'utf8'), '任务输入');
+  const edited = path.join(root, 'delta-source'); await fs.cp(result.workCopyDirectory, edited, { recursive: true });
+  await fs.writeFile(path.join(edited, 'input.txt'), 'changed after collection');
+  const delta = await caller.tool('prepare_work_copy', { workspace: edited, paths: ['input.txt'] });
+  await caller.tool('continue_task', { taskId: task.taskId, snapshotId: delta.snapshotId, prompt: 'delta' });
+  result = await caller.tool('collect_result', { taskId: task.taskId });
+  assert.equal(await fs.readFile(path.join(result.workCopyDirectory, 'input.txt'), 'utf8'), 'changed after collection');
+  assert.deepEqual(uploads, Array(3).fill(supported ? 'gzip' : undefined));
+  assert.deepEqual(downloads, ['gzip', 'gzip', 'gzip']);
+  const config = JSON.parse(await fs.readFile(path.join(root, 'caller.json'), 'utf8'));
+  assert.equal(config.peers.owner.transferCompression, undefined, 'negotiation does not alter pairing state');
+});
+
+test('compressed connections reject corrupt replies, stalls and cancellation without replay', async t => {
+  const { lanRequest } = await import('../lib/lan.mjs');
+  const { gzipSync } = await import('node:zlib');
+  const keys = await selfsigned.generate([{ name: 'commonName', value: 'localhost' }], { days: 1, keySize: 2048 });
+  let mode, observed, requests = 0;
+  const server = https.createServer({ key: keys.private, cert: keys.cert }, (req, res) => {
+    requests++; req.resume();
+    assert.equal(req.headers['content-encoding'], 'gzip');
+    if (mode === 'corrupt' || mode === 'abort-reply') {
+      res.setHeader('content-type', STREAM_TYPE); res.setHeader('content-encoding', 'gzip');
+      const wire = gzipSync('["message"]\n["object"]\n["key","result"]\n["object"]\n["end"]\n["end"]\n["messageEnd"]\n');
+      if (mode === 'corrupt') res.end(wire.subarray(0, wire.length - 1));
+      else res.write(wire.subarray(0, 10));
+    }
+    observed.resolve();
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  t.after(async () => { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); });
+  const peer = { host: '127.0.0.1', port: server.address().port, fingerprint: new X509Certificate(keys.cert).fingerprint256.replaceAll(':', ''), transferCompression: 'gzip' };
+  for (mode of ['corrupt', 'stall', 'abort', 'abort-reply']) {
+    const controller = new AbortController(), before = requests;
+    observed = Promise.withResolvers();
+    const pending = lanRequest(peer, '/rpc', { action: 'run', protocol: 3, snapshot: { files: [] } }, undefined, controller.signal, { requestTimeout: 150 });
+    const rejected = assert.rejects(pending, mode === 'corrupt' ? /unexpected end/i : mode === 'stall' ? /stalled/ : /interrupted/);
+    if (mode.startsWith('abort')) { await observed.promise; await new Promise(resolve => setTimeout(resolve, 20)); controller.abort(); }
+    await rejected;
+    assert.equal(requests, before + 1);
+  }
+});
+
+test('task file updates restore separately without double-counting full input limits', async t => {
+  const { root, owner, caller, source } = await setup(t);
+  await owner.tool('provider_settings', { inputFiles: 2, inputBytes: 32 });
+  await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  const first = await caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'first' });
+  const saved = await caller.tool('collect_result', { taskId: first.taskId });
+  await caller.tool('finish_task', { taskId: first.taskId, cleanup: 'workcopy' });
+  const edit = path.join(root, 'edited'); await fs.cp(saved.workCopyDirectory, edit, { recursive: true });
+  await fs.writeFile(path.join(edit, 'input.txt'), 'new');
+  const update = await caller.tool('prepare_work_copy', { workspace: edit, paths: ['input.txt'] });
+  const requests = [];
+  await interceptPeer(t, root, (input, result, headers) => { if (['restore', 'run'].includes(input.action)) requests.push({ encoding: headers['content-encoding'], action: input.action, restoreOnly: input.restoreOnly, snapshot: input.snapshot?.files.length, upload: input.upload?.files.length }); });
+  const next = await caller.tool('continue_task', { taskId: first.taskId, snapshotId: update.snapshotId, prompt: 'second' });
+  assert.equal(next.threadId, first.threadId); assert.equal(next.revision, 2);
+  assert.deepEqual(requests, [{ encoding: 'gzip', action: 'restore', restoreOnly: true, snapshot: 2, upload: undefined }, { encoding: 'gzip', action: 'run', restoreOnly: undefined, snapshot: undefined, upload: 1 }]);
+  const result = await caller.tool('collect_result', { taskId: first.taskId });
+  assert.equal(await fs.readFile(path.join(result.workCopyDirectory, 'input.txt'), 'utf8'), 'new');
 });

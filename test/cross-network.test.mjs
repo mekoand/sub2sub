@@ -65,6 +65,12 @@ test('explicitly enabled devices pair and continue one task through the transpor
   const next = await caller.call('continue_task', { taskId: first.taskId, prompt: 'write more' });
   assert.equal(next.threadId, first.threadId);
   assert.equal((await caller.call('collect_result', { taskId: first.taskId })).status, 'completed');
+  await fs.writeFile(path.join(source, 'input.txt'), 'client update through relay');
+  const update = await caller.call('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  const updated = await caller.call('continue_task', { taskId: first.taskId, snapshotId: update.snapshotId, prompt: 'use client changes' });
+  assert.equal(updated.threadId, first.threadId);
+  const saved = await caller.call('collect_result', { taskId: first.taskId });
+  assert.equal(await fs.readFile(path.join(saved.workCopyDirectory, 'input.txt'), 'utf8'), 'client update through relay');
   await owner.call('exit_sharing', {});
   await owner.call('start_sharing', {});
   // Private sharing starts independently; the cross-network helper may still be starting.

@@ -36,7 +36,7 @@ async function setup(t, names = ['first', 'second']) {
     const server = https.createServer(identity, async (req, res) => {
       let received, result;
       try {
-        received = await readRequest(req);
+        received = await readRequest(req, { encoding: req.headers['content-encoding'] });
         const input = received.value;
         requests[name].push({ action: input.action, taskId: input.taskId });
         const intercept = await intercepts[name]?.(input);

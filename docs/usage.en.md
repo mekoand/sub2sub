@@ -98,6 +98,12 @@ Before tests, builds, dependency preparation or other checks that may write file
 
 If a local check fails, distinguish an environment gap from an implementation problem. Continue the original task with necessary error details, commands and conditions for a fix within its scope, without routine reconfirmation. Repeating an unchanged task does not resolve a known environment gap. Local edits are not automatically sent to its existing remote work copy. Simply opening a saved result does not rerun checks.
 
+To send local edits back, first collect and confirm the latest result, edit a separate copy, select files with `prepare_work_copy`, then pass its `snapshotId` to `continue_task` for the same task. Only changed selected files are sent. List individual existing files explicitly in `deletePaths` to delete them; unselected paths stay unchanged. Deletion-only updates are allowed. Without these arguments, continuation keeps its existing behavior.
+
+Unconfirmed results, a modified saved baseline or newer host changes stop the upload. Collect the latest result and reconcile changes in a separate copy before explicitly uploading; there is no automatic merge or resubmission. Replacing a file with a directory requires explicitly deleting the original file. Replacing a directory with a file requires arranging that layout in the task and collecting it first. Older hosts need an upgrade for file updates.
+
+A cleared work copy is restored in full before applying changes and executing; expired deleted tasks are not revived. Incremental uploads save network traffic but still scan and hash files. The host stages a complete copy before replacing its work directory, which can require extra disk space; filesystem cloning is not always available. A failed update does not execute partially updated files. After interrupted-update recovery, collect results before explicitly continuing.
+
 ## Open results
 
 | Field | Content |
@@ -127,6 +133,8 @@ Input and result transfers default to unlimited bytes and file counts. The manag
 Transfers strictly above 64 MiB of raw file content display a notice and continue without another confirmation. Non-local networks may be slower. Input limits count the complete work copy; result limits count this transfer's changes. Restoration checks the full input again. Unlimited does not promise bandwidth or disk capacity; actual failures remain errors.
 
 Both nodes need chunked-transfer support. Older nodes retain their original limits, with an explanation before sending oversized inputs. An older local sharing process must also be restarted after active tasks finish to load the updated installation; upgrades do not restart active nodes automatically.
+
+Supported versions negotiate file compression automatically to reduce bytes sent between devices; older nodes use uncompressed transfers. No additional setting is needed. Compression uses CPU and does not guarantee faster transfers for already-compressed files or fast connections. Preparing and saving files still takes time; previews and limits count original file content. See [synthetic measurements and limitations](development/transfer-performance.md).
 
 Host retention supports 1–365 days, default 7. Accepted tasks retain their original setting. Status queries, downloads, and `keep` do not extend the deadline; completing another turn resets it.
 
