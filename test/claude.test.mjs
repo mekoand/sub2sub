@@ -60,6 +60,11 @@ test('provider switches tools independently, offers per-tool defaults, and refus
   assert.match(instructions, /If a missing requirement blocks execution or verification that the task explicitly requires on the host/);
   assert.match(instructions, /Never lower the task's completion criteria/);
   assert.doesNotMatch(instructions, /checks delivery completeness only/);
+  assert.match(instructions, /complete the useful work and available checks/);
+  assert.match(instructions, /Before working on a path, read the supplied project rules/);
+  assert.match(instructions, /root and relevant nested AGENTS\.md/);
+  assert.match(instructions, /Preserve each rule's directory scope/);
+  assert.match(instructions, /Receiving rule or skill text does not provide its tools/);
   await caller.tool('collect_result', { taskId: task.taskId });
   const background = await caller.tool('continue_task', { taskId: task.taskId, prompt: 'background-complete' });
   assert.equal(background.status, 'completed');
