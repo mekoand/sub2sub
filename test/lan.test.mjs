@@ -1772,7 +1772,7 @@ for (const supported of [true, false]) test(`uploads negotiate gzip=${supported}
   const uploads = [], downloads = [];
   await interceptPeer(t, root, (input, result, headers) => {
     if (input.action === 'models' && !supported) delete result.transferCompression;
-    if (input.snapshot) uploads.push(headers['content-encoding']);
+    if (input.snapshot || input.upload) uploads.push(headers['content-encoding']);
     if (input.action === 'result') downloads.push(headers['accept-encoding']);
     if (!supported) return 'identity';
   });
@@ -1785,8 +1785,14 @@ for (const supported of [true, false]) test(`uploads negotiate gzip=${supported}
   result = await caller.tool('collect_result', { taskId: task.taskId });
   assert.ok(result.removed.includes('temporary.txt'));
   assert.equal(await fs.readFile(path.join(result.workCopyDirectory, 'input.txt'), 'utf8'), '任务输入');
-  assert.deepEqual(uploads, [supported ? 'gzip' : undefined, supported ? 'gzip' : undefined]);
-  assert.deepEqual(downloads, ['gzip', 'gzip']);
+  const edited = path.join(root, 'delta-source'); await fs.cp(result.workCopyDirectory, edited, { recursive: true });
+  await fs.writeFile(path.join(edited, 'input.txt'), 'changed after collection');
+  const delta = await caller.tool('prepare_work_copy', { workspace: edited, paths: ['input.txt'] });
+  await caller.tool('continue_task', { taskId: task.taskId, snapshotId: delta.snapshotId, prompt: 'delta' });
+  result = await caller.tool('collect_result', { taskId: task.taskId });
+  assert.equal(await fs.readFile(path.join(result.workCopyDirectory, 'input.txt'), 'utf8'), 'changed after collection');
+  assert.deepEqual(uploads, Array(3).fill(supported ? 'gzip' : undefined));
+  assert.deepEqual(downloads, ['gzip', 'gzip', 'gzip']);
   const config = JSON.parse(await fs.readFile(path.join(root, 'caller.json'), 'utf8'));
   assert.equal(config.peers.owner.transferCompression, undefined, 'negotiation does not alter pairing state');
 });
@@ -1819,4 +1825,46 @@ test('compressed connections reject corrupt replies, stalls and cancellation wit
     await rejected;
     assert.equal(requests, before + 1);
   }
+});
+
+test('task file updates restore separately without double-counting full input limits', async t => {
+  const { root, owner, caller, source } = await setup(t);
+  await owner.tool('provider_settings', { inputFiles: 2, inputBytes: 32 });
+  await caller.tool('pair_peer', { invitation: (await owner.tool('create_pairing', { address: '127.0.0.1', port: 0 })).invitation, peer: 'owner', allowTaskFiles: true });
+  const copy = await caller.tool('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  const first = await caller.tool('start_task', { peer: 'owner', snapshotId: copy.snapshotId, prompt: 'first' });
+  const saved = await caller.tool('collect_result', { taskId: first.taskId });
+  await caller.tool('finish_task', { taskId: first.taskId, cleanup: 'workcopy' });
+  const edit = path.join(root, 'edited'); await fs.cp(saved.workCopyDirectory, edit, { recursive: true });
+  await fs.writeFile(path.join(edit, 'input.txt'), 'new');
+  const update = await caller.tool('prepare_work_copy', { workspace: edit, paths: ['input.txt'] });
+  const requests = [];
+  await interceptPeer(t, root, (input, result, headers) => { if (['restore', 'run'].includes(input.action)) requests.push({ encoding: headers['content-encoding'], action: input.action, restoreOnly: input.restoreOnly, snapshot: input.snapshot?.files.length, upload: input.upload?.files.length }); });
+  const next = await caller.tool('continue_task', { taskId: first.taskId, snapshotId: update.snapshotId, prompt: 'second' });
+  assert.equal(next.threadId, first.threadId); assert.equal(next.revision, 2);
+  assert.deepEqual(requests, [{ encoding: 'gzip', action: 'restore', restoreOnly: true, snapshot: 2, upload: undefined }, { encoding: 'gzip', action: 'run', restoreOnly: undefined, snapshot: undefined, upload: 1 }]);
+  const result = await caller.tool('collect_result', { taskId: first.taskId });
+  assert.equal(await fs.readFile(path.join(result.workCopyDirectory, 'input.txt'), 'utf8'), 'new');
+});
+
+for (const route of ['/rpc', '/local']) test(`disconnection during ${route} authentication does not retain an active transfer`, async t => {
+  const { Readable, Writable } = await import('node:stream');
+  const { once } = await import('node:events');
+  const { createHash } = await import('node:crypto');
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'sub2sub-disconnect-test-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const entered = Promise.withResolvers(), ready = Promise.withResolvers();
+  const token = 'a'.repeat(43);
+  const sharing = new Sharing({ read: async () => { entered.resolve(); return ready.promise; } }, root, { independent: true });
+  sharing.lastSweep = Date.now(); sharing.localToken = token;
+  const req = Readable.from([Buffer.from(JSON.stringify({ action: 'status' }))]);
+  Object.assign(req, { method: 'POST', url: route, headers: { authorization: `Bearer ${token}` }, setTimeout() {} });
+  const res = new Writable({ write(chunk, encoding, done) { done(); } });
+  const pending = sharing.handle(req, res);
+  await entered.promise;
+  const closed = once(res, 'close'); res.destroy(); await closed;
+  ready.resolve({ provider: { pairings: { synthetic: { tokenHash: createHash('sha256').update(token).digest('hex') } } } });
+  await pending;
+  assert.equal(sharing.incomingRequests, 0);
+  await sharing.manage('exit');
 });

@@ -77,6 +77,7 @@ fs.writeFileSync(path.join(root, 'plugins/sub2sub/scripts/install.mjs'), \`impor
 if (process.argv[3] !== process.env.SUB2SUB_INSTALL_DIR || process.argv[4] !== 'codex') throw Error('Wrong installation');
 const data = JSON.parse(fs.readFileSync(process.env.SUB2SUB_TEST_CATALOG));
 data.installed[0].version = '0.9.3+codex.456';
+if (process.env.SUB2SUB_TEST_POST_INSTALL_FAILURE) { data.installed[0].enabled = false; console.log('sub2sub-install-result: '+JSON.stringify({maintenance:{node:{status:'switched'}}})); }
 fs.writeFileSync(process.env.SUB2SUB_TEST_CATALOG, JSON.stringify(data));
 \`);
 `, { mode: 0o755 });
@@ -91,6 +92,16 @@ fs.writeFileSync(process.env.SUB2SUB_TEST_CATALOG, JSON.stringify(data));
   assert.match(result.nextStep, /window.*conversation.*not sufficient/i);
   assert.equal(await fs.readFile(process.env.SUB2SUB_CONFIG, 'utf8'), config);
   assert.equal(await fs.readFile(path.join(client.stateRoot, 'results/keep.txt'), 'utf8'), 'saved result');
+  const before = JSON.parse(await fs.readFile(process.env.SUB2SUB_TEST_CATALOG));
+  before.installed[0].version = '0.5.2+codex.123';
+  await fs.writeFile(process.env.SUB2SUB_TEST_CATALOG, JSON.stringify(before));
+  process.env.SUB2SUB_TEST_POST_INSTALL_FAILURE = '1';
+  await assert.rejects(client.call('update_plugin', { action: 'install' }), error => {
+    assert.match(error.message, /node may already have switched/);
+    assert.match(error.message, /"status":"switched"/);
+    assert.doesNotMatch(error.message, /node still use|were not stopped/);
+    return true;
+  });
 });
 
 test('uncertain sharing, unknown host/root and source/newer versions never install', async t => {
