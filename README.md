@@ -12,7 +12,7 @@
 Currently supports Codex and Claude Code, with support for more tools in development.
 
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.9.4--candidate-6366f1)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.9.4-6366f1)](CHANGELOG.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 **English** · [简体中文](README.zh-CN.md) · [Install](docs/install.en.md) · [Usage](docs/usage.en.md) · [Contribute](CONTRIBUTING.md) · [Security](SECURITY.md)
@@ -167,7 +167,7 @@ The managing app is where you use the plugin; the Host chooses its execution too
 
 WorkBuddy and other managing apps remain untested. [Versions and validation details](docs/validation.md)
 
-[v0.9.4 is a candidate](https://github.com/mekoand/sub2sub/releases/tag/v0.9.4) for explicit task file updates, transfer improvements and upgrade maintenance. Use the pinned installers in its release notes to test it on both devices; the commands above and “Upgrade sub2sub” continue to select the latest stable release. Real two-device performance remains to be verified.
+[v0.9.4](https://github.com/mekoand/sub2sub/releases/tag/v0.9.4) adds explicit task file updates, transfer improvements and upgrade maintenance. Real Codex tasks between two Apple Silicon Macs over a LAN passed same-session continuation, incremental upload and a 50.66 MB, 5,002-file synthetic transfer with complete result collection. This does not establish a speedup for every project or network; see the release notes for measurements and validation limits.
 
 ## Development
 

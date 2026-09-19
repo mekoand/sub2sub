@@ -12,7 +12,7 @@
 目前支持 Codex 和 Claude Code，更多工具支持正在开发中。
 
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.9.4--candidate-6366f1)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.9.4-6366f1)](CHANGELOG.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 [English](README.md) · **简体中文** · [安装](docs/install.md) · [使用手册](docs/usage.md) · [参与贡献](CONTRIBUTING.zh-CN.md) · [安全报告](SECURITY.md)
@@ -167,7 +167,7 @@ irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | ie
 
 WorkBuddy 和其他管理应用尚未实测。[版本与验证详情](docs/validation.md)
 
-[v0.9.4 是候选版](https://github.com/mekoand/sub2sub/releases/tag/v0.9.4)，包含明确选择的续作文件更新、传输优化和升级维护。测试时请在两端使用该发行说明里的固定版本安装入口；上面的命令和“升级 sub2sub”仍选择最新正式版。真实双机提速仍待验收。
+[v0.9.4](https://github.com/mekoand/sub2sub/releases/tag/v0.9.4) 包含明确选择的续作文件更新、传输优化和升级维护。两台 Apple Silicon Mac 已通过局域网真实 Codex 任务、原会话续作、增量上传及 50.66 MB、5,002 个合成文件传输验收，成果完整取回。这不代表所有项目或网络均有同等提速；测量结果和验证范围见发行说明。
 
 ## 开发
 

@@ -1,12 +1,13 @@
 # Changelog
 
-## 0.9.4 — Candidate
+## 0.9.4 — 2026-09-19
 
 - Upload explicitly selected file changes when continuing the same task. Reuse the last confirmed copy, preserve unselected files, and require explicit file deletions; collect and reconcile conflicting changes before continuing.
-- Reduce repeated directory operations for many small files and negotiate streaming gzip for file uploads, restoration and result transfer. Older nodes keep the existing protocol. Compression has CPU overhead; real two-device performance remains to be verified.
+- Reduce repeated directory operations for many small files and negotiate streaming gzip for file uploads, restoration and result transfer. Older nodes keep the existing protocol. Compression has CPU overhead; performance depends on file content and network conditions.
 - Switch compatible idle sharing nodes to the installed program while preserving sharing or paused state. Defer busy or older nodes that cannot confirm safe exit. Clean unused managed program versions while preserving registrations, active processes and user data.
 - Clarify project-rule transfer, available Host checks, local Client verification and concise progress updates. No dependency installer, skill synchronization or additional polling is added.
 - Fix transfer counts retained after a request disconnects during authentication, so idle nodes can exit and upgrade normally.
+- Validate real Codex tasks between two Apple Silicon Macs over a LAN: original-session continuation, selected-file updates and complete collection of a 50.66 MB synthetic transfer containing 5,002 files. The original slow-project comparison and cross-network performance were not measured in this acceptance.
 
 ## 0.9.3 — 2026-09-18
 
