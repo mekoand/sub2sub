@@ -170,3 +170,34 @@ test('failed scans remove only their own frozen files', async t => {
   for (let i = 0; i < 2; i++) await assert.rejects(collectChanges(work, [], { storage, maxBytes: 1 }), /limit/);
   assert.deepEqual(await fs.readdir(storage), ['pending-owned']);
 });
+
+test('gzip preserves raw file limits, rejects a damaged trailer and flushes progress promptly', async () => {
+  const { PassThrough, Readable } = await import('node:stream');
+  const { constants } = await import('node:zlib');
+  const { writeMessage, readRequest, readMessages, releaseReceived, encodeBody, decodeBody } = await import('../lib/transfer.mjs');
+  const io = new PassThrough(), encoder = encodeBody(io), chunks = [];
+  const collecting = (async () => { for await (const chunk of io) chunks.push(chunk); })();
+  await writeMessage(encoder, { files: [{ path: 'input.txt', content: Buffer.alloc(1024 * 1024, 42).toString('base64'), executable: false }] });
+  encoder.end(); await collecting;
+  const wire = Buffer.concat(chunks);
+  assert.ok(wire.length < 20000);
+  const read = (bytes, options = {}) => readRequest(Readable.from([bytes]), { encoding: 'gzip', streaming: true, ...options });
+  const received = await read(wire);
+  try { assert.equal((await fs.stat(received.value.files[0].source)).size, 1024 * 1024); }
+  finally { await releaseReceived(received.value); }
+  await assert.rejects(read(wire, { maxBytes: 20000 }), /limit/);
+  await assert.rejects(read(wire.subarray(0, wire.length - 1)), /unexpected end/i);
+  const corrupt = Buffer.from(wire); corrupt[corrupt.length - 8] ^= 1;
+  await assert.rejects(read(corrupt), /incorrect data check/i);
+  await assert.rejects(readRequest(Readable.from([wire]), { encoding: 'br' }), /Unsupported/);
+
+  const progressWire = new PassThrough(), progressEncoder = encodeBody(progressWire);
+  const messages = readMessages(decodeBody(progressWire, 'gzip'));
+  const next = messages.next();
+  await writeMessage(progressEncoder, { progress: 'still working' });
+  progressEncoder.flush(constants.Z_SYNC_FLUSH);
+  const first = await Promise.race([next, new Promise((_, reject) => { const timer = setTimeout(() => reject(new Error('Progress buffered until completion')), 1000); timer.unref(); })]);
+  assert.equal(first.value.progress, 'still working');
+  progressEncoder.end();
+  assert.equal((await messages.next()).done, true);
+});
