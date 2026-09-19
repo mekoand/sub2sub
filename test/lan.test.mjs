@@ -1758,3 +1758,25 @@ test('clearing records of a full-expiry task retains only the metadata needed to
   await owner.tool('cleanup_shared_task', { pairId: pair.pairId, taskId: task.taskId, cleanup: 'records', discardUncollected: true });
   await assert.rejects(fs.access(directory), { code: 'ENOENT' });
 });
+
+for (const route of ['/rpc', '/local']) test(`disconnection during ${route} authentication does not retain an active transfer`, async t => {
+  const { Readable, Writable } = await import('node:stream');
+  const { once } = await import('node:events');
+  const { createHash } = await import('node:crypto');
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'sub2sub-disconnect-test-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const entered = Promise.withResolvers(), ready = Promise.withResolvers();
+  const token = 'synthetic-token';
+  const sharing = new Sharing({ read: async () => { entered.resolve(); return ready.promise; } }, root, { independent: true });
+  sharing.lastSweep = Date.now(); sharing.localToken = token;
+  const req = Readable.from([Buffer.from(JSON.stringify({ action: 'status' }))]);
+  Object.assign(req, { method: 'POST', url: route, headers: { authorization: `Bearer ${token}` }, setTimeout() {} });
+  const res = new Writable({ write(chunk, encoding, done) { done(); } });
+  const pending = sharing.handle(req, res);
+  await entered.promise;
+  const closed = once(res, 'close'); res.destroy(); await closed;
+  ready.resolve({ provider: { pairings: { synthetic: { tokenHash: createHash('sha256').update(token).digest('hex') } } } });
+  await pending;
+  assert.equal(sharing.incomingRequests, 0);
+  await sharing.manage('exit');
+});
