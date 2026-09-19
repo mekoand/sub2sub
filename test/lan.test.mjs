@@ -1766,7 +1766,7 @@ for (const route of ['/rpc', '/local']) test(`disconnection during ${route} auth
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'sub2sub-disconnect-test-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const entered = Promise.withResolvers(), ready = Promise.withResolvers();
-  const token = 'synthetic-token';
+  const token = 'a'.repeat(43);
   const sharing = new Sharing({ read: async () => { entered.resolve(); return ready.promise; } }, root, { independent: true });
   sharing.lastSweep = Date.now(); sharing.localToken = token;
   const req = Readable.from([Buffer.from(JSON.stringify({ action: 'status' }))]);
