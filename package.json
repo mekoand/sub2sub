@@ -2,7 +2,7 @@
   "name": "sub2sub",
   "version": "0.9.4",
   "private": true,
-  "description": "A safer, lighter, smoother way to share AI resources and work together.",
+  "description": "Share Codex and Claude Code subscriptions across devices through a task proxy.",
   "license": "MIT",
   "author": "mekoand",
   "repository": {

@@ -7,9 +7,9 @@
   </picture>
 </h1>
 
-**更安全、更轻量、更流畅的 AI 资源共享与团队协作方式。**
+**无需交换账号，任务级跨设备共享 Codex、Claude Code 订阅。**
 
-目前支持 Codex 和 Claude Code，更多工具支持正在开发中。
+更多工具支持正在开发中。
 
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-0.9.4-6366f1)](CHANGELOG.md)
@@ -19,37 +19,34 @@
 
 </div>
 
-sub2sub 连接你自己的设备和队友授权的设备，让你在熟悉的 AI 工具中共享资源、协作完成任务。发送选定的文件，取回答复与成果，再在原对话中继续修改。账号凭据由各自保管，共享范围由共享端掌握。
+sub2sub 通过任务代理共享已有 AI 订阅，提高个人与团队的资源利用率。
 
-**共享端 Host** 开放 AI 能力、执行授权任务；**使用端 Client** 发起任务、接收成果。同一台设备可以兼任两种角色。私网内可直接连接；跨网络连接需要双方主动开启服务。
+在当前对话中委托任务，由自己或队友授权的设备执行，答复与成果返回原对话，并可继续追加修改。各方自主决定共享对象、工具和模型。
 
-先[安装插件](#安装)，再[连接两台设备](#连接工作节点)。第一次使用时，可以只发送一份不含敏感信息的短文本，要求整理为摘要。
+![sub2sub 通过任务代理共享 Codex 和 Claude Code 订阅：委托任务给已授权设备，执行后返回成果](docs/assets/resource-sharing.zh-CN.png)
 
-![多台使用端 Client 连接获授权的共享端 Host，共享 Codex 和 Claude Code 的 AI 能力](docs/assets/resource-sharing.png)
-
-*在自己的多台设备与队友设备之间共享 AI 资源。每项任务交给一个获授权的 Host 执行，再将答复与文件传回 Client。*
+先[安装插件](#安装)，再[连接两台设备](#连接工作节点)，即可[尝试第一个任务](#先试一个小任务)。
 
 ## 它能帮你做什么
 
-- **选择任务交给谁。** 从已配对节点中选择执行工具和可用模型，也可以按需查询 Codex 节点的剩余额度。可主动开启[按顺序自动选择共享端](docs/usage.md#自动选择共享端)，仅在新任务提交前选择；提交后不自动换端。
-- **文件和答复一起取回。** 本地获得包含输入与最新修改的完整工作副本，源项目由你决定何时采用修改；保存的成果离线也能看。
-- **在原任务中追加修改。** 继续说“把手机排版也调整一下”，共享端沿用原来的工作文件和会话。
-- **会话展示可选。** 新建 Codex 委托默认在每轮结束后归档，续作时恢复；共享端可设置保留在客户端任务列表中。只影响新任务，工作副本清理规则不变。详见[会话展示](docs/usage.md#委托会话展示)。
-- **共享由共享端控制。** 共享端决定授权连接、执行工具与开放模型，可以随时停止接收新任务。每个节点默认最多同时执行 4 项任务，可调整上限；名额满时不排队，调低上限不会中断已有任务。
+- **选择共享资源。** 从已连接设备中选择工具与模型，查询 Codex 剩余额度。[自动选择共享端](docs/usage.md#自动选择共享端)可按候选顺序为新任务选择设备，已提交任务沿用原设备。
+- **控制共享范围。** 设置授权对象、开放模型、并发上限、授权期限和可选 Token 预算，随时停止接收新任务。[共享规则](docs/usage.md#按连接设置共享规则)
+- **取回成果，继续修改。** 选定文件交给共享端处理，取回完整工作副本，在原任务中追加需求；何时采用修改由你决定。
+- **查看资源用量。** 查看任务分布、执行时间、实际模型与 Token 用量，支持导出。[管理与统计](docs/usage.md#本机管理页与统计)
 
-适合资料整理、离线页面、代码修改这类输入与产物明确的工作。任务在独立副本中执行，当前不启用任务联网、MCP、应用或浏览器集成；共享端会检查任务所需环境；默认允许使用端补充本地验证，明确要求在共享端运行的任务仍遵从原要求。必需检查通过后才能算完整完成。[执行范围与限制](docs/usage.md#派发和追加需求)
+适合资料整理、离线页面和代码修改。任务在独立工作副本中执行，当前不启用任务联网、MCP、应用或浏览器集成。[执行范围与环境要求](docs/usage.md#派发和追加需求) · [会话展示](docs/usage.md#委托会话展示)
 
 ## 安装
 
-发起任务和接收任务的电脑都需要安装。按你准备用 sub2sub 的应用选择命令，并先登录该应用；接收任务的设备可以另外选择执行工具。安装包自带 Node 和证书生成能力，无需运行 npm。
+两端电脑都需要安装。选择使用 sub2sub 的应用，并先登录该应用；共享端可单独选择执行工具。安装包自带 Node，无需运行 npm。
 
 ### 让 AI 帮你安装
 
-把下面这段话发给你正在使用的 Codex 或 Claude Code：
+发给当前使用的 Codex 或 Claude Code：
 
-> 请按照 https://github.com/mekoand/sub2sub 的安装说明，为我当前使用的应用安装 sub2sub 最新正式版。请核对并报告安装版本，确认是最新正式版且已启用，再告诉我如何重启，以及第一次怎样使用。
+> 请按 https://github.com/mekoand/sub2sub 的说明，为我当前应用安装 sub2sub 最新正式版，确认版本和启用状态，并说明重启和首次使用步骤。
 
-助手会根据当前宿主和系统选择安装方法；无法执行安装时，可让它给出对应命令。安装后仍需按提示重启应用。你也可以按下方步骤手动安装。
+也可按下方命令手动安装。
 
 ### Codex
 
@@ -65,7 +62,7 @@ sub2sub 连接你自己的设备和队友授权的设备，让你在熟悉的 AI
 irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | iex
 ```
 
-看到 `Installed sub2sub` 后，**完整退出并重新打开 Codex 桌面应用**；CLI 用户退出并重启 Codex。仅关闭窗口或新建对话可能仍加载旧插件。
+安装完成后，**完整退出并重新打开 Codex 桌面应用**；CLI 用户退出并重启 Codex。
 
 ### Claude Code
 
@@ -81,7 +78,7 @@ irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | ie
 & ([scriptblock]::Create((irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1))) -Target claude
 ```
 
-安装后启动**新的 Claude Code 会话**。只发起任务的设备无需安装 Codex。接收方使用 Claude 执行目前需要 macOS；Windows 上的 Claude Code 可以发起委托。[版本要求与自定义路径](docs/install.md#claude-code)
+安装后启动**新的 Claude Code 会话**。仅发起任务时无需安装 Codex。Claude Code 共享端目前需要 macOS；Windows 可作为使用端。[版本要求与自定义路径](docs/install.md#claude-code)
 
 ### 确认已加载
 
@@ -89,85 +86,85 @@ irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | ie
 
 > 查询 sub2sub 状态和版本，不修改设置。
 
-确认当前对话加载的版本。尚未开始接收任务时，共享节点处于停止状态是正常的。首次使用按提示检查设置；这一步不会自动开启跨网服务，也不等于文件传输授权。
+确认加载版本，并按提示检查首次使用设置。接收任务前开启共享。
 
-以后在安装它的应用中说“升级 sub2sub”即可。配对和已保存成果会保留。重启应用后加载新版；支持切换的空闲共享节点会切换至已安装版本，保留接单或暂停状态。有任务的节点继续运行，旧节点可能需要明确退出后重新开启，升级结果会说明下一步。[安装、更新与故障排查](docs/install.md)
+以后在原应用中说“升级 sub2sub”，按升级结果提示重启应用或共享节点。配对与已保存成果保留。[安装、更新与故障排查](docs/install.md)
 
 ## 连接工作节点
 
-设备处于不同网络时，先分别在双方设备上要求**开启跨网络连接服务**，该服务默认关闭。设备在私网内已可互通时，保持关闭即可。[跨网设置与旧连接迁移](docs/install.md#跨网络连接)
+**共享端 Host** 接收并执行任务；**使用端 Client** 委托任务、接收成果。一台设备可兼任两者。
 
-在准备**接收任务**的电脑上：
+私网内可直接配对；不同网络先按[跨网络使用](#跨网络使用)开启服务。
+
+在共享端说：
 
 > 生成 sub2sub 邀请码。
 
-在准备**发起任务**的电脑上粘贴邀请码：
+把邀请码私下发给使用端，在使用端对话中粘贴并说：
 
 > 连接这个 sub2sub 邀请码，把它叫作「办公室 Mac」。
 
-按提示确认文件传输范围，并给连接取一个容易识别的名字。开启共享后节点独立运行，可以关闭管理对话；执行期间保持接收方电脑唤醒并联网。
+按提示确认文件传输范围。开启共享后，保持共享端电脑唤醒并联网；管理对话可以关闭。
 
 ## 先试一个小任务
 
-在当前工作目录中选一个不含敏感内容的短文本文件，例如 `notes.txt`，然后说：
+选一份示例文本 `notes.txt`，在当前对话中说：
 
 > 用 sub2sub 只把 notes.txt 交给「办公室 Mac」，整理成 summary.md，返回这个文件和简短答复。
 
-任务完成后，打开本地 `summary.md` 链接。答复和文件都保存到本机才算这次委托完成；连接成功本身不代表任务完成。源文件保持不变。
+完成后，通过本地链接打开 `summary.md`。答复与文件保存到本机，源文件保持不变。
 
-需要修改时，在原对话继续说：
+继续修改：
 
 > 继续这个任务，把 summary.md 再精简一点，并保存最新成果到本地。
 
-接收方沿用同一任务和工作文件。已经保存的成果在对方离线后仍可打开。[委托、成果与清理](docs/usage.md)
+共享端沿用同一任务和工作文件，已保存的成果可离线查看。[委托、成果与清理](docs/usage.md)
 
-## 示例：从 Codex 委托给 Claude
+## 示例：共享队友的 Claude Code 订阅
 
-队友在 Mac 上登录了 Claude Code，并通过 sub2sub 授权你使用。你在自己的 Codex 对话中完成配对，把连接命名为「办公室 Mac」，随后把文档整理任务交过去：
+队友在 Mac 上登录 Claude Code 并授权共享。你在 Codex 中连接该设备，命名为「办公室 Mac」，然后委托任务：
 
 > 用 sub2sub 把 docs 目录交给「办公室 Mac」，做成带搜索的离线帮助站点，检查链接并返回完整文件。
 
-成果会保存到本地。打开看看，发现手机上的排版还可以再改，继续说：
+查看本地成果后，继续说：
 
 > 继续这个任务，按主题分组页面，并调整手机上的排版。
 
-共享端沿用同一任务的工作文件和 Claude 会话，只回传变化的文件；你在本地得到完整副本。确认成果后：
+共享端沿用原工作文件和 Claude 会话，你在本地获得更新后的完整副本。确认成果后：
 
 > 保存最新成果，结束任务并清理远端工作副本。
 
-源项目由你决定何时采用这些修改。节点离线后，已经保存的文件仍可打开。[使用、设置与清理](docs/usage.md)
+按需要将修改应用到源项目。[成果使用与清理](docs/usage.md#打开和使用成果)
 
-## 一个轻巧的管理页
+## 管理页与统计
 
 在对话里说：
 
 > 打开 sub2sub 管理页。
 
-简洁的本机管理页，集中查看节点、任务和已保存成果，也能配对、调整设置、按需查询 Codex 额度。近 7 天或 30 天的资源统计，帮你看看任务交给了谁、跑了几轮、用了多少执行时间。还可按轮次、实际模型和来源查看原生用量，保留缺失项说明并导出 JSON，不计算价格。
+管理连接、共享规则、任务与本地成果，查询 Codex 额度。资源统计提供近 7 天或 30 天的任务分布、轮次和执行时间；模型与 Token 用量可按来源查看并导出 JSON，缺失数据会标注。
 
-![sub2sub 本机管理页，使用合成示例数据](docs/assets/management-demo.png)
+![sub2sub 本机管理页，使用示例设备与任务数据](docs/assets/management-demo.png)
 
-*当前管理页使用合成设备名和任务记录展示，不包含真实账号或任务内容。*
-
-管理页默认开启，可以随时关闭；它复用插件进程，不增加后台服务，也不会自动打开浏览器。任务指令和追问继续留在原对话里。[管理页与统计说明](docs/usage.md#本机管理页与统计)
+管理页默认开启，可在设置中关闭。任务指令和追问留在原对话中。[管理页与统计说明](docs/usage.md#本机管理页与统计)
 
 ## 跨网络使用
 
-跨网络连接服务默认关闭。双方主动开启后，照常交换一个邀请码即可，用户无需为每项任务选择连接方式。系统优先尝试私网直连，必要时通过内置 Tailcat 连接，可使用公共中继。旧连接保持原方式，用户可以主动迁移。[开启与迁移说明](docs/install.md#跨网络连接)
+双方开启跨网络连接服务后，照常交换邀请码。服务默认关闭，连接优先使用私网直连，必要时通过内置 Tailcat 使用公共中继。已有连接可主动迁移。[开启与迁移说明](docs/install.md#跨网络连接)
 
 ## 兼容性
 
-管理插件的应用是使用插件的入口；Host 的执行工具单独选择。
+使用端应用与共享端执行工具可以分别选择。
 
-| 系统 | 管理应用 / Client 使用端 | Host 执行工具 | 验证与限制 |
+| 系统 | 使用端应用 | 共享端执行工具 | 验证情况 |
 | --- | --- | --- | --- |
-| macOS（Apple Silicon / Intel 安装包） | Codex Desktop、Codex CLI、Claude Code | Codex 或 Claude Code | Apple Silicon 已验证真实任务和 Mac 间传输；Intel 安装尚未完成同等实机验证。 |
-| Windows x64 | 提供 Codex 和 Claude Code 安装入口 | Codex；暂不支持 Claude 执行 | 已验证原生安装、平台测试及 Mac 到 Windows 的 Codex 任务；Windows Client 的同等端到端验证尚不完整。 |
-| Linux | 仅源码开发；暂无正式安装器或发行包 | 不声明为已支持的 Host 平台 | Linux 源码 CI 通过，不等于完成发行或实机支持。 |
+| macOS（Apple Silicon / Intel） | Codex Desktop、Codex CLI、Claude Code | Codex、Claude Code | Apple Silicon 已验证真实任务和 Mac 间传输；Intel 实机验证待补充。 |
+| Windows x64 | Codex、Claude Code | Codex | 已验证安装、平台测试及 Mac 到 Windows 的 Codex 任务；Windows 使用端完整流程待补充验证。 |
+| Linux | 仅源码开发，暂无发行包 | 暂未支持 | 已通过源码 CI。 |
 
-WorkBuddy 和其他管理应用尚未实测。[版本与验证详情](docs/validation.md)
+WorkBuddy 和其他应用尚未实测。[版本与验证详情](docs/validation.md)
 
-[v0.9.4](https://github.com/mekoand/sub2sub/releases/tag/v0.9.4) 包含明确选择的续作文件更新、传输优化和升级维护。两台 Apple Silicon Mac 已通过局域网真实 Codex 任务、原会话续作、增量上传及 50.66 MB、5,002 个合成文件传输验收，成果完整取回。这不代表所有项目或网络均有同等提速；测量结果和验证范围见发行说明。
+[v0.9.4](https://github.com/mekoand/sub2sub/releases/tag/v0.9.4) 更新了续作文件传输、传输性能和升级维护；具体变更与实测范围见发行说明。
 
 ## 开发
 
@@ -179,12 +176,10 @@ npm test
 
 [开发与打包](docs/development.md) · [架构](docs/architecture.md) · [贡献指南](CONTRIBUTING.zh-CN.md) · [版本记录](CHANGELOG.md)
 
-遇到问题，直接在原对话里说“帮我排查 sub2sub 的这个问题”。需要反馈时，再说“把这个问题提交到 GitHub”：助手会整理公开草稿并查重，使用宿主已有能力提交；没有提交能力时，把草稿交给你。[故障排查](docs/troubleshooting.md) · [Issues](https://github.com/mekoand/sub2sub/issues)
-
 ## 参与贡献与反馈
 
-欢迎改进文档和翻译、复现缺陷、提交小修复，或提出工具适配方案。请先阅读[贡献指南](CONTRIBUTING.zh-CN.md)（[English](CONTRIBUTING.md)）。缺陷、建议和后续规划统一在 [Issues](https://github.com/mekoand/sub2sub/issues) 跟踪；安全漏洞使用[私密报告入口](SECURITY.md)。更新见[版本记录](CHANGELOG.md)，授权见 [MIT 许可证](LICENSE)。
+欢迎改进文档、翻译、复现缺陷、提交修复或工具适配方案。先阅读[贡献指南](CONTRIBUTING.zh-CN.md)（[English](CONTRIBUTING.md)）；问题与建议提交到 [Issues](https://github.com/mekoand/sub2sub/issues)，安全漏洞通过[私密入口](SECURITY.md)报告。
 
-sub2sub 是社区维护项目，请尊重参与者，并根据事实讨论。使用者应遵守所用 AI 服务的条款。本项目不是 OpenAI 或 Anthropic 的官方产品，也不代表上游官方背书。
+遇到问题，可在原对话中说“帮我排查 sub2sub 的这个问题”；需要提交反馈时，说“把这个问题提交到 GitHub”。助手会整理草稿并查重，通过可用工具提交，或将草稿交给你。[故障排查](docs/troubleshooting.md)
 
 [MIT](LICENSE) © 2026 mekoand
