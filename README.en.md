@@ -7,9 +7,9 @@
   </picture>
 </h1>
 
-**A safer, lighter, smoother way to share AI resources and work together.**
+**Share Codex and Claude Code subscriptions across devices, task by task, without sharing account credentials.**
 
-Currently supports Codex and Claude Code, with support for more tools in development.
+Support for more tools is in development.
 
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-0.9.4-6366f1)](CHANGELOG.md)
@@ -19,37 +19,34 @@ Currently supports Codex and Claude Code, with support for more tools in develop
 
 </div>
 
-sub2sub connects your devices and those your teammates authorize you to use, so you can share AI resources and collaborate through familiar AI tools. Send selected files, bring responses and results back, and continue the same task in your conversation. Account credentials stay with their owners, and hosts control what they share.
+sub2sub is a task proxy for sharing existing AI subscriptions across your devices and team.
 
-A **Host** shares AI capabilities and executes authorized tasks. A **Client** delegates tasks and receives results. One device can serve both roles. Connect directly on a private network, or enable cross-network service on both devices.
+Delegate from your current conversation. An authorized device runs the task and returns responses and files; follow up in the same conversation. Each owner controls who can connect and which tools and models they share.
 
-Start with [installation](#install), then [connect two devices](#connect-your-work-nodes). For a first task, send a small non-sensitive text file and ask for a summary.
+![sub2sub shares Codex and Claude Code subscriptions through a task proxy: delegate to an authorized device and receive the results](docs/assets/resource-sharing.png)
 
-![Multiple Clients share AI resources through authorized Hosts running Codex and Claude Code](docs/assets/resource-sharing.png)
-
-*Share AI resources across your own and teammates' devices. Each task runs on one authorized Host, then returns responses and files to the Client.*
+[Install the plugin](#install), [connect two devices](#connect-your-work-nodes), and [try your first task](#try-one-small-task).
 
 ## What you can do
 
-- **Choose where each task runs.** Select an execution tool and available model from your paired nodes, with on-demand queries for a Codex node's remaining quota. Optionally enable [ordered host selection](docs/usage.en.md#automatic-host-selection) before new task submission; submitted tasks never reroute automatically.
-- **Bring back files and responses together.** Receive a complete local work copy with the inputs and latest changes. Decide when to apply them to your source project, and open saved results offline.
-- **Request revisions on the same task.** “Improve the mobile layout too” continues with the host's existing working files and session.
-- **Choose session visibility.** New Codex tasks archive after each turn and restore on continuation by default. Hosts can keep them in the native task list; existing tasks and file retention stay unchanged. [Details](docs/usage.en.md#delegated-session-visibility).
-- **Keep sharing under the host's control.** Hosts choose authorized connections, an execution tool, and offered models. They can stop accepting new tasks at any time. Each node runs up to four tasks concurrently by default; the host can adjust the limit. Full nodes reject new work without a queue, and lowering the limit lets existing tasks finish.
+- **Choose shared resources.** Select tools and models from connected devices and query remaining Codex quota. Optional [automatic host selection](docs/usage.en.md#automatic-host-selection) follows your candidate order for new tasks; submitted tasks stay on their original device.
+- **Set sharing rules.** Choose authorized clients, models, concurrency limits, access expiry and optional Token budgets. Stop accepting new tasks at any time. [Sharing rules](docs/usage.en.md#sharing-rules-per-connection)
+- **Collect results and request revisions.** Send selected files, receive a complete work copy, and continue the same task. Decide when to apply changes to your project.
+- **Review resource usage.** See task distribution, execution time, models and Token usage, with export support. [Management and statistics](docs/usage.en.md#local-management-and-statistics)
 
-Good fits include organizing documents, building offline pages, and making code changes with clear inputs and outputs. Tasks run in separate work copies with task network access, MCP, app, and browser integrations disabled. The host checks the environment needed for the task. By default, checks unavailable there can be completed on the client; an explicit requirement to run on the host still applies. Required checks must pass before claiming completion. [Execution scope and limits](docs/usage.en.md#delegate-and-follow-up)
+Suitable tasks include organizing documents, building offline pages and editing code. Tasks run in separate work copies with task network access, MCP, app and browser integrations disabled. [Execution scope and environment requirements](docs/usage.en.md#delegate-and-follow-up) · [Session visibility](docs/usage.en.md#delegated-session-visibility)
 
 ## Install
 
-Install on both the computer sending tasks and the computer receiving them. Choose the app where you will use sub2sub below; the receiving device can choose its execution tool separately. Sign in to that app first. Packages include Node and certificate generation; no npm setup is needed.
+Install on both devices. Choose the app where you will use sub2sub and sign in first; the Host can choose its execution tool separately. Packages include Node, with no npm setup needed.
 
 ### Ask your AI to install it
 
-Send this to the Codex or Claude Code app you are using:
+Send this to your Codex or Claude Code conversation:
 
-> Follow the installation instructions at https://github.com/mekoand/sub2sub to install the latest stable sub2sub release for the app I am using. Check and report the installed version, confirm it is the latest stable release and enabled, then tell me how to restart and get started.
+> Follow https://github.com/mekoand/sub2sub to install the latest stable sub2sub release for my current app. Confirm the version and enabled status, then explain how to restart and get started.
 
-The assistant chooses the installation method for your host and system. If it cannot run the installer, ask for the matching command. Restart the app as instructed after installation. You can also install manually below.
+Or install manually below.
 
 ### Codex
 
@@ -65,7 +62,7 @@ The assistant chooses the installation method for your host and system. If it ca
 irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | iex
 ```
 
-After `Installed sub2sub` appears, **fully quit and reopen Codex Desktop**, or exit and restart the Codex CLI. Closing only a window or starting another conversation may keep the old plugin loaded.
+After installation, **fully quit and reopen Codex Desktop**, or exit and restart Codex CLI.
 
 ### Claude Code
 
@@ -81,93 +78,93 @@ After `Installed sub2sub` appears, **fully quit and reopen Codex Desktop**, or e
 & ([scriptblock]::Create((irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1))) -Target claude
 ```
 
-After installation, start a **new Claude Code session**. Client-only devices do not need Codex. Claude execution on receiving devices requires macOS; Windows can send tasks from Claude Code. [Requirements and custom paths](docs/install.en.md#claude-code)
+Start a **new Claude Code session** after installation. Devices that only send tasks do not need Codex. Claude Code Hosts currently require macOS; Windows can act as a Client. [Requirements and custom paths](docs/install.en.md#claude-code)
 
 ### Confirm that it loaded
 
-In your restarted app, ask:
+After restarting, ask:
 
 > Show sub2sub status and version without changing settings.
 
-Check the version loaded in the current conversation. A stopped sharing node is normal before you start receiving tasks. On first use, review the settings when prompted; this does not enable cross-network service or authorize file transfer.
+Confirm the loaded version and review the first-use settings. Enable sharing when you are ready to receive tasks.
 
-To update later, say “Upgrade sub2sub” in the app you installed it into. Pairings and saved results are preserved. Restart that app to load the update. A compatible idle sharing node switches to the installed version and keeps its sharing or paused state. Busy nodes stay running; older nodes may require an explicit exit and restart. The update result explains the next step. [Install, update and troubleshooting](docs/install.en.md)
+To update, say “Upgrade sub2sub” in the same app and follow its restart instructions for the app or sharing node. Pairings and saved results are preserved. [Install, update and troubleshooting](docs/install.en.md)
 
 ## Connect your work nodes
 
-For devices on different networks, first ask to **enable cross-network connection service on each device**. It is off by default. For devices already reachable on a private network, leave it off. [Cross-network setup and existing connections](docs/install.en.md#cross-network-connections)
+A **Host** receives and runs tasks; a **Client** delegates tasks and receives results. One device can serve both roles.
 
-On the computer that will **receive tasks**:
+Pair directly on a private network. For different networks, first enable [cross-network service](#across-networks).
+
+On the Host:
 
 > Generate a sub2sub invitation.
 
-On the computer that will **send tasks**, paste that invitation:
+Send the invitation privately to the Client. Paste it into the Client's conversation and ask:
 
 > Connect this sub2sub invitation and name it office-mac.
 
-Confirm the file-transfer scope when prompted. Give each connection a recognizable name. Sharing runs independently after startup: keep the receiving computer awake and connected; its management conversation can close.
+Confirm the file-transfer scope when prompted. Keep the Host awake and connected while sharing; its management conversation can close.
 
 ## Try one small task
 
-Choose a short, non-sensitive text file such as `notes.txt` in your current workspace, then ask:
+Choose a sample text file, `notes.txt`, and ask:
 
 > Use sub2sub to send only notes.txt to office-mac. Summarize it in summary.md and return that file and a short answer.
 
-After the task completes, open the local `summary.md` link. Success means the answer and file have been saved on your computer; a connected node alone does not mean a task has completed. Your source file remains unchanged.
+Open the local `summary.md` link when it finishes. Responses and files are saved on your device; the source file stays unchanged.
 
-To revise the result in the same conversation:
+To revise it:
 
 > Continue that task. Make summary.md shorter and save the updated result locally.
 
-The receiving device reuses the original task and working files. You can open saved results even when it goes offline. [Delegation, results and cleanup](docs/usage.en.md)
+The Host reuses the task and working files. Saved results remain available offline. [Delegation, results and cleanup](docs/usage.en.md)
 
-## Example: delegate from Codex to Claude
+## Example: share a teammate's Claude Code subscription
 
-A teammate is signed in to Claude Code on their Mac and authorizes you to use it through sub2sub. In your own Codex conversation, pair with that device, name the connection `office-mac`, and delegate the documentation task:
+Your teammate signs in to Claude Code on a Mac and authorizes sharing. Connect to it from Codex, name it `office-mac`, and delegate:
 
 > Use sub2sub to send the docs directory to office-mac. Build an offline help site with search, check the links, and return the complete files.
 
-The result is saved locally. Take a look, spot a mobile layout that could use some work, and continue:
+Review the local result, then follow up:
 
 > Continue that task. Group the pages by topic and improve the mobile layout.
 
-The host reuses the task's working files and Claude session. Only changed files are transferred back, and you receive a complete local copy. Once the result is ready:
+The Host reuses the working files and Claude session; you receive an updated complete copy. Once satisfied:
 
 > Save the latest results, finish the task, and clean up its remote work copy.
 
-Your source project stays unchanged until you choose to apply the result. Saved files remain available when the node goes offline. [Usage, settings, and cleanup](docs/usage.en.md)
+Apply changes to your project when ready. [Using results and cleanup](docs/usage.en.md#open-results)
 
-## A compact view of tasks and results
+## Management and statistics
 
-Say this in your conversation:
+Ask in your conversation:
 
 > Open sub2sub management.
 
-The local management page provides a compact view for nodes, tasks, and saved results, with pairing, settings, and on-demand Codex quota queries. Resource statistics over 7 or 30 days show where your tasks went, how many turns ran, and their measured execution time. Native model usage is available by turn, model and source, with partial-data notes and JSON export; no prices are calculated.
+Manage connections, sharing rules, tasks and local results, and query Codex quota. Statistics cover task distribution, turns and execution time over 7 or 30 days. View model and Token usage by source, with missing data marked, and export it as JSON.
 
-![sub2sub local management with synthetic demo data](docs/assets/management-demo.png)
+![sub2sub local management with sample devices and task data](docs/assets/management-demo.png)
 
-*The current management UI with synthetic device names and task records; no real accounts or task content are shown.*
-
-Management is enabled by default and can be turned off at any time. It shares the plugin process, adds no background service, and does not open a browser automatically. Task instructions and follow-ups stay in your conversation. [Management and statistics](docs/usage.en.md#local-management-and-statistics)
+Management is enabled by default and can be turned off in settings. Task instructions and follow-ups stay in your conversation. [Management and statistics](docs/usage.en.md#local-management-and-statistics)
 
 ## Across networks
 
-Cross-network service is off by default. Enable it on both devices, then exchange one invitation as usual. Private connections are tried first; the bundled Tailcat transport can use public relays when needed. Users do not select routes per task. Existing connections keep their current route until explicitly migrated. [Setup and migration](docs/install.en.md#cross-network-connections).
+Enable cross-network service on both devices, then exchange an invitation as usual. It is off by default. Connections prefer private routes; the bundled Tailcat transport can use public relays when needed. Existing connections can be migrated explicitly. [Setup and migration](docs/install.en.md#cross-network-connections)
 
 ## Compatibility
 
-The managing app is where you use the plugin; the Host chooses its execution tool separately.
+Choose the Client app and Host execution tool independently.
 
-| System | Managing apps / Client | Host execution | Validation and limits |
+| System | Client apps | Host execution | Validation |
 | --- | --- | --- | --- |
-| macOS (Apple Silicon / Intel packages) | Codex Desktop, Codex CLI, Claude Code | Codex or Claude Code | Real tasks and Mac-to-Mac transfers validated on Apple Silicon; Intel installation has not had equivalent device testing. |
-| Windows x64 | Codex and Claude Code installation targets | Codex; Claude execution unavailable | Native installation, platform tests, and Mac-to-Windows Codex tasks validated; equivalent Windows Client end-to-end testing remains incomplete. |
-| Linux | Source development only; no release installer/package | Not advertised as a supported Host platform | Linux source CI passes; this does not establish distribution or real-device support. |
+| macOS (Apple Silicon / Intel) | Codex Desktop, Codex CLI, Claude Code | Codex, Claude Code | Real tasks and Mac-to-Mac transfers tested on Apple Silicon; Intel device testing remains pending. |
+| Windows x64 | Codex, Claude Code | Codex | Installation, platform tests and Mac-to-Windows Codex tasks tested; full Windows Client validation remains pending. |
+| Linux | Source development only; no release package | Not yet supported | Source CI passes. |
 
-WorkBuddy and other managing apps remain untested. [Versions and validation details](docs/validation.md)
+WorkBuddy and other apps remain untested. [Versions and validation details](docs/validation.md)
 
-[v0.9.4](https://github.com/mekoand/sub2sub/releases/tag/v0.9.4) adds explicit task file updates, transfer improvements and upgrade maintenance. Real Codex tasks between two Apple Silicon Macs over a LAN passed same-session continuation, incremental upload and a 50.66 MB, 5,002-file synthetic transfer with complete result collection. This does not establish a speedup for every project or network; see the release notes for measurements and validation limits.
+[v0.9.4](https://github.com/mekoand/sub2sub/releases/tag/v0.9.4) updates task file transfers, transfer performance and upgrade maintenance. See the release notes for changes and validation scope.
 
 ## Development
 
@@ -179,12 +176,10 @@ npm test
 
 [Development and packaging](docs/development.md) · [Architecture](docs/architecture.md) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
-If something gets stuck, ask “Help diagnose this sub2sub problem” in the original conversation. When you want to report it, say “Submit this issue to GitHub”. The assistant prepares a public-safe draft, checks for duplicates, and uses the host's existing submission tools. If those are unavailable, it gives you the draft. [Troubleshooting](docs/troubleshooting.en.md) · [Issues](https://github.com/mekoand/sub2sub/issues)
-
 ## Contribute and give feedback
 
-Documentation, translations, bug reproductions, focused fixes, and tool-adapter proposals are welcome. Start with the [contribution guide](CONTRIBUTING.md) ([中文](CONTRIBUTING.zh-CN.md)). Use [Issues](https://github.com/mekoand/sub2sub/issues) for bugs, proposals, and planned work; report vulnerabilities through the [private security channel](SECURITY.md). See the [changelog](CHANGELOG.md) for updates and the [MIT License](LICENSE) for licensing.
+Contribute documentation, translations, bug reproductions, fixes or tool adapters. Start with the [contribution guide](CONTRIBUTING.md) ([中文](CONTRIBUTING.zh-CN.md)). Use [Issues](https://github.com/mekoand/sub2sub/issues) for bugs and suggestions, and the [private security channel](SECURITY.md) for vulnerabilities.
 
-sub2sub is community-maintained. Please keep discussion respectful and evidence-based. You are responsible for following the terms of the AI services you use. This project is not an official OpenAI or Anthropic product and does not imply their endorsement.
+For help, ask “Help diagnose this sub2sub problem” in your conversation. To report it, say “Submit this issue to GitHub”. The assistant drafts the report, checks for duplicates, and submits it with available tools or gives you the draft. [Troubleshooting](docs/troubleshooting.en.md)
 
 [MIT](LICENSE) © 2026 mekoand
