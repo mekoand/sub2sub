@@ -93,26 +93,51 @@ test('missing, busy and legacy nodes are not launched or stopped by installation
   }
 });
 
-test('node exit retains its runtime record until the listener lock is released', async t => {
-  const { root, store } = await fixture(t);
+test('node exit waits for the listener lock after removing its runtime record', async t => {
+  const { root, store, manager } = await fixture(t);
   const sharing = new Sharing(store, path.join(root, 'data'));
   await sharing.manage('start', { address: '127.0.0.1', port: 0 });
   const runtime = path.join(sharing.root, 'runtime.json');
+  const listener = path.join(sharing.root, 'listener');
   let beginRelease, finishRelease;
   const releasing = new Promise(resolve => { beginRelease = resolve; });
   const gate = new Promise(resolve => { finishRelease = resolve; });
+  let beginCandidate, finishCandidate;
+  const removingCandidate = new Promise(resolve => { beginCandidate = resolve; });
+  const candidateGate = new Promise(resolve => { finishCandidate = resolve; });
   const release = sharing.release;
   sharing.release = async () => { beginRelease(); await gate; await release(); };
-  const closing = sharing.close();
+  const rm = fs.rm.bind(fs);
+  const removal = t.mock.method(fs, 'rm', (file, ...options) => {
+    if (typeof file === 'string' && file.startsWith(`${listener}.candidate-`)) {
+      beginCandidate(file);
+      return candidateGate.then(() => rm(file, ...options));
+    }
+    return rm(file, ...options);
+  });
+  const exiting = manager.manage('exit');
+  let finished = false;
+  void exiting.then(() => { finished = true; }, () => { finished = true; });
   try {
-    await Promise.race([releasing, closing.then(() => { throw new Error('Node closed before releasing the listener lock.'); })]);
-    await fs.access(runtime);
+    await Promise.race([releasing, exiting.then(() => { throw new Error('Node exited before releasing the listener lock.'); })]);
+    await assert.rejects(fs.access(runtime), { code: 'ENOENT' });
+    await fs.access(listener);
+    await new Promise(resolve => setTimeout(resolve, 100));
+    assert.equal(finished, false);
+    finishRelease();
+    const candidate = await Promise.race([removingCandidate, exiting.then(() => { throw new Error('Node exited before removing the released lock.'); })]);
+    await fs.access(candidate);
+    await assert.rejects(fs.access(listener), { code: 'ENOENT' });
+    await new Promise(resolve => setTimeout(resolve, 100));
+    assert.equal(finished, false);
   } finally {
     finishRelease();
-    await closing;
+    finishCandidate();
+    try { await exiting; }
+    finally { removal.mock.restore(); await sharing.close(); }
   }
   await assert.rejects(fs.access(runtime), { code: 'ENOENT' });
-  await assert.rejects(fs.access(path.join(sharing.root, 'listener')), { code: 'ENOENT' });
+  await assert.rejects(fs.access(listener), { code: 'ENOENT' });
 });
 
 for (const mode of ['sharing', 'paused', 'networkOnly']) test(`upgrade preserves ${mode}, packaged runtime, identity and task files`, { skip: process.platform === 'win32' }, async t => {
