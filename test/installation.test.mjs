@@ -93,6 +93,28 @@ test('missing, busy and legacy nodes are not launched or stopped by installation
   }
 });
 
+test('node exit retains its runtime record until the listener lock is released', async t => {
+  const { root, store } = await fixture(t);
+  const sharing = new Sharing(store, path.join(root, 'data'));
+  await sharing.manage('start', { address: '127.0.0.1', port: 0 });
+  const runtime = path.join(sharing.root, 'runtime.json');
+  let beginRelease, finishRelease;
+  const releasing = new Promise(resolve => { beginRelease = resolve; });
+  const gate = new Promise(resolve => { finishRelease = resolve; });
+  const release = sharing.release;
+  sharing.release = async () => { beginRelease(); await gate; await release(); };
+  const closing = sharing.close();
+  try {
+    await Promise.race([releasing, closing.then(() => { throw new Error('Node closed before releasing the listener lock.'); })]);
+    await fs.access(runtime);
+  } finally {
+    finishRelease();
+    await closing;
+  }
+  await assert.rejects(fs.access(runtime), { code: 'ENOENT' });
+  await assert.rejects(fs.access(path.join(sharing.root, 'listener')), { code: 'ENOENT' });
+});
+
 for (const mode of ['sharing', 'paused', 'networkOnly']) test(`upgrade preserves ${mode}, packaged runtime, identity and task files`, { skip: process.platform === 'win32' }, async t => {
   const { program, manager, store } = await fixture(t);
   const directory = path.join(program, 'versions', version), plugin = path.join(directory, 'plugins/sub2sub');
@@ -115,7 +137,7 @@ for (const mode of ['sharing', 'paused', 'networkOnly']) test(`upgrade preserves
   assert.deepEqual(await fs.readFile(store.file), config);
   assert.equal(await fs.readFile(path.join(manager.root, 'saved-fixture.txt'), 'utf8'), 'untouched');
   assert.equal((await maintainInstallation(manager, program, version)).node.status, 'current');
-  await manager.manage('start');
+  await manager.manage('start', { address: '127.0.0.1', port: 0 });
   assert.equal((await manager.machineStatus()).status, 'sharing');
 });
 

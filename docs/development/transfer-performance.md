@@ -56,6 +56,6 @@ node scripts/benchmark-transfer.mjs packed gzip 4
 
 可选样本为 `source`、`packed`、`mixed`、`large`；编码为 `identity`、`gzip`；最后一项为模拟 MiB/s，省略或 0 表示不限速。脚本只生成并删除自己的临时文件，输出阶段耗时、字节和资源观测，不执行模型。
 
-自动回归另行覆盖真实本地 HTTPS、模拟 Tailcat 转发、新旧端协商、进度 flush、损坏压缩流、取消、停滞、大文件、成果删除和恢复。真实双机慢速场景尚未验证，#73 保持开放。
+自动回归另行覆盖真实本地 HTTPS、模拟 Tailcat 转发、新旧端协商、进度 flush、损坏压缩流、取消、停滞、大文件、成果删除和恢复。真实双机慢速场景和旧版同条件对照尚未完成；#73 已关闭，不能把本地合成测量当作该场景的提速证据。
 
 实现使用 [Node.js HTTP 压缩接口](https://nodejs.org/api/zlib.html#compressing-http-requests-and-responses) 和 [flush](https://nodejs.org/api/zlib.html#zlibflushkind-callback)。
