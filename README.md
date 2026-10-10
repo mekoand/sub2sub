@@ -10,7 +10,7 @@
 **Share Codex and Claude Code subscriptions across devices, task by task, without sharing account credentials.**
 
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.9.4-6366f1)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.9.5-6366f1)](CHANGELOG.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 **English** · [简体中文](README.zh-CN.md) · [Install](docs/install.en.md) · [Usage](docs/usage.en.md) · [Contribute](CONTRIBUTING.md) · [Security](SECURITY.md)
@@ -162,7 +162,7 @@ Choose the Client app and Host execution tool independently.
 
 WorkBuddy and other apps remain untested. [Versions and validation details](docs/validation.md)
 
-[v0.9.4](https://github.com/mekoand/sub2sub/releases/tag/v0.9.4) updates task file transfers, transfer performance and upgrade maintenance. See the release notes for changes and validation scope.
+[v0.9.5](https://github.com/mekoand/sub2sub/releases/tag/v0.9.5) simplifies first-use settings and model selection, adds local task names, and makes saved answers and files easier to find. See the release notes for changes and validation scope.
 
 ## Development
 

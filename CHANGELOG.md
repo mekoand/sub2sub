@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.5 — 2026-10-10
+
+- Review first-use settings in one role-specific card, with advanced options collapsed and cross-network access off by default. Saving resumes the original operation; cancelling preserves its form inputs without submitting it.
+- Choose models and reasoning levels from the Host's current catalog and reuse saved choices for each execution tool.
+- Derive recognizable task names locally from the first nonempty prompt line, without extra model calls. Continuations retain the same name.
+- Prioritize saved answers and files in task details, label changes as part of the current collection, and offer full-answer downloading and explicit continuation or application prompts.
+- Include an optional first-task sample in both plugin layouts and explain a complete delegation, collection and continuation example in the homepage and Help. Preserve failure causes and suggest concrete recovery actions without automatically rerunning tasks.
+
 ## 0.9.4 — 2026-09-19
 
 - Upload explicitly selected file changes when continuing the same task. Reuse the last confirmed copy, preserve unselected files, and require explicit file deletions; collect and reconcile conflicting changes before continuing.
