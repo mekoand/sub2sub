@@ -9,8 +9,6 @@
 
 **Share Codex and Claude Code subscriptions across devices, task by task, without sharing account credentials.**
 
-Support for more tools is in development.
-
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-0.9.4-6366f1)](CHANGELOG.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
