@@ -167,6 +167,7 @@ fs.writeFileSync(file, JSON.stringify(data)); console.log(JSON.stringify(args[1]
   assert.equal(mcp.mcpServers.sub2sub.env.SUB2SUB_CLAUDE, executable);
   await fs.access(path.join(adapter, 'skills/sub2sub/references/work-copy.md'));
   await fs.access(path.join(adapter, 'docs/install.md'));
+  assert.match(await fs.readFile(path.join(adapter, 'examples/first-task/notes.txt'), 'utf8'), /Team notes/);
   await fs.access(path.join(adapter, 'README.md'));
   await fs.access(path.join(adapter, 'README.zh-CN.md'));
   await fs.access(path.join(adapter, 'CONTRIBUTING.md'));

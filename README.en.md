@@ -9,8 +9,6 @@
 
 **Share Codex and Claude Code subscriptions across devices, task by task, without sharing account credentials.**
 
-Support for more tools is in development.
-
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-0.9.4-6366f1)](CHANGELOG.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
@@ -19,9 +17,9 @@ Support for more tools is in development.
 
 </div>
 
-sub2sub is a task proxy for sharing existing AI subscriptions across your devices and team.
+Delegate a task from your current conversation to an authorized computer running Codex or Claude Code, then receive its answer and files locally. Subscription sign-in stays on the Host.
 
-Delegate from your current conversation. An authorized device runs the task and returns responses and files; follow up in the same conversation. Each owner controls who can connect and which tools and models they share.
+**A complete example:** a teammate creates an invitation; you connect and approve the task-file scope. You send selected project files with a bug-fix request. Their computer makes the change and runs available checks in a separate work copy. You collect the answer and files, apply the changes when ready, and request another revision in the same task.
 
 ![sub2sub shares Codex and Claude Code subscriptions through a task proxy: delegate to an authorized device and receive the results](docs/assets/resource-sharing.png)
 
@@ -86,7 +84,7 @@ After restarting, ask:
 
 > Show sub2sub status and version without changing settings.
 
-Confirm the loaded version and review the first-use settings. Enable sharing when you are ready to receive tasks.
+Confirm the loaded version, then review one card with the settings for your current intent. Device name, the Host tool and the cross-network switch are up front; advanced settings can be expanded. Confirmation continues your original action. Choose a connected Host’s actual model once, then reuse it for new tasks.
 
 To update, say “Upgrade sub2sub” in the same app and follow its restart instructions for the app or sharing node. Pairings and saved results are preserved. [Install, update and troubleshooting](docs/install.en.md)
 
@@ -108,9 +106,9 @@ Confirm the file-transfer scope when prompted. Keep the Host awake and connected
 
 ## Try one small task
 
-Choose a sample text file, `notes.txt`, and ask:
+The plugin includes a small sample file. After connecting and choosing a model, ask:
 
-> Use sub2sub to send only notes.txt to office-mac. Summarize it in summary.md and return that file and a short answer.
+> Use sub2sub’s bundled examples/first-task/notes.txt; send only this file to office-mac. Summarize it in summary.md and return that file and a short answer.
 
 Open the local `summary.md` link when it finishes. Responses and files are saved on your device; the source file stays unchanged.
 

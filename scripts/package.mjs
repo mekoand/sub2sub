@@ -22,6 +22,7 @@ for (const name of ['.codex-plugin', '.mcp.json', 'package.json', 'package-lock.
     filter: source => !(path.dirname(source) === path.join(root, 'bin') && ['sub2sub-tailcat', 'sub2sub-tailcat.exe', 'tailcat.json'].includes(path.basename(source))) && !(path.dirname(source) === path.join(root, 'node_modules', '@anthropic-ai') && path.basename(source).startsWith('claude-agent-sdk-'))
   });
 }
+await fs.cp(path.join(root, 'examples', 'first-task'), path.join(target, 'examples', 'first-task'), { recursive: true, errorOnExist: true, force: false });
 if (tailcat) {
   await fs.copyFile(path.join(tailcatDirectory, tailcat.file), path.join(target, 'bin', tailcat.file));
   await fs.chmod(path.join(target, 'bin', tailcat.file), 0o755);

@@ -87,13 +87,14 @@ test('saved artifacts work with an offline peer, stay inert, and cannot traverse
   const content = '<script>window.PWNED = true</script>中文成果';
   await fs.writeFile(path.join(generation, 'files', 'report.html'), content);
   await fs.writeFile(path.join(results, 'response.md'), 'Saved answer');
-  await fs.writeFile(path.join(results, 'changes.json'), JSON.stringify({ skipped: ['.cache/required.txt'], error: 'Stopped at deadline', stopReason: 'time_limit', status: 'interrupted', revision: 2 }));
+  await fs.writeFile(path.join(results, 'changes.json'), JSON.stringify({ changed: [{ path: 'report.html' }], skipped: ['.cache/required.txt'], error: 'Stopped at deadline', stopReason: 'time_limit', status: 'interrupted', revision: 2 }));
   const record = { peer: 'offline', resultDirectory: results, workCopyRoot: generation, workCopyPaths: ['report.html', 'linked'], savedAt: new Date().toISOString(), deliveryPending: true };
   const index = path.join(stateRoot, 'tasks', `${id}.json`); await fs.writeFile(index, JSON.stringify(record));
   await fs.symlink(path.join(results, 'response.md'), path.join(generation, 'files', 'linked'));
   const { origin, headers } = endpoint(await client.call('web_management', {}));
   const detail = await (await fetch(`${origin}/api/task?id=${id}`, { headers })).json();
   assert.equal(detail.deliveryPending, true);
+  assert.deepEqual(detail.delivery.changed, ['report.html']);
   assert.deepEqual(detail.delivery.skipped, ['.cache/required.txt']);
   assert.equal(detail.delivery.stopReason, 'time_limit');
   assert.equal(detail.delivery.error, 'Stopped at deadline');

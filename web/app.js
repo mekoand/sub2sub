@@ -27,7 +27,7 @@ const minutes = ms => `${(ms / 60000).toLocaleString(language,{maximumFractionDi
 const say = text => { clearTimeout(noticeTimer); notice.textContent=text; noticeTimer=setTimeout(()=>{notice.textContent='';},7000); };
 async function perform(action, button) {
   if (button) button.disabled=true;
-  try { await action(); } catch(error) { say(error.message); }
+  try { await action(); } catch(error) { say(errorText(error)); }
   finally { if(button) button.disabled=false; }
 }
 async function api(route, options = {}) {
@@ -38,7 +38,10 @@ async function api(route, options = {}) {
 }
 async function call(name,input={}) {
   const result=await api('/api/call',{method:'POST',body:JSON.stringify({name,input})});
-  if(result.status==='onboarding_required') { showOnboarding(result.onboarding); throw new Error(t('先确认首次使用设置，再重试此操作。','Review first-use settings, then retry this action.')); }
+  if(result.status==='onboarding_required') {
+    if(!await showOnboarding(result.onboarding,true)) throw new Error(t('首次引导已取消，原操作未执行。','First-use review cancelled; the original action was not performed.'));
+    return call(name,input);
+  }
   return result;
 }
 function showDialog(title, content) {
@@ -59,7 +62,7 @@ function check(title,name,checked=false) { return el('label',{class:'check'},el(
 function form(fields,submit,buttonText=t('保存','Save')) {
   const error=el('p',{class:'error',role:'alert'}), button=el('button',{type:'submit',class:'button primary'},buttonText);
   const node=el('form',{},fields,error,button);
-  node.addEventListener('submit',event=>{event.preventDefault();perform(async()=>{error.textContent='';try{await submit(new FormData(node));}catch(e){error.textContent=e.message;}},button);});
+  node.addEventListener('submit',event=>{event.preventDefault();perform(async()=>{error.textContent='';try{await submit(new FormData(node));}catch(e){error.textContent=errorText(e);}},button);});
   return node;
 }
 function confirmation(title,description,action) {
@@ -82,6 +85,52 @@ async function queryModels(peer) {
   const result=await call('list_models',peer?{peer}:{});
   showDialog(t('可用模型','Available models'),el('div',{},(result.models || []).map(model=>el('div',{class:'setting'},el('h3',{},model.displayName || model.model),el('p',{},model.model),el('p',{class:'sub'},(model.reasoningEfforts || []).join(' · ')))),el('p',{class:'sub'},time(result.checkedAt))));
 }
+function modelPicker(execution) {
+  let models=[];
+  const model=select(execution.model?[[execution.model,execution.model]]:[['',t('先读取节点模型','Read node models first')]],execution.model,()=>efforts(),{name:'model'});
+  const effort=select(execution.reasoningEffort?[[execution.reasoningEffort,execution.reasoningEffort]]:[['',t('未设置','Unset')]],execution.reasoningEffort,undefined,{name:'reasoningEffort'});
+  const node=el('div',{class:'fields'},el('label',{class:'field'},t('模型','Model'),model),el('label',{class:'field'},t('思考强度','Reasoning effort'),effort));
+  function efforts() {
+    const choices=models.find(item=>item.model===model.value)?.reasoningEfforts || [];
+    const selected=choices.includes(execution.reasoningEffort)?execution.reasoningEffort:choices[0];
+    effort.replaceChildren(...choices.map(value=>el('option',{value,...(value===selected?{selected:''}:{})},value)));
+  }
+  return {node,load(catalog,defaults){
+    execution=defaults;models=catalog.models;
+    model.replaceChildren(el('option',{value:''},t('选择模型','Choose a model')),...models.map(item=>el('option',{value:item.model,...(item.model===defaults.model?{selected:''}:{})},item.displayName || item.model)));
+    efforts();
+  }};
+}
+async function chooseModels(peer) {
+  const content=el('div',{},el('p',{class:'info'},t('设备已连接，正在读取实际可用模型…','Device connected. Reading its actual models…')));
+  showDialog(t('选择任务模型','Choose a task model'),content);
+  try {
+    const catalog=await call('list_models',{peer});
+    const saved=await call('caller_settings',{harness:catalog.harness});
+    if(saved.executionConfigured && catalog.models.some(model=>model.model===saved.execution.model && model.reasoningEfforts.includes(saved.execution.reasoningEffort))) {
+      dialog.close();say(t('设备已连接，保存的模型可用。可在原对话中开始任务。','Device connected; your saved model is available. Start a task in your conversation.'));return;
+    }
+    const picker=modelPicker(saved.execution);picker.load(catalog,saved.execution);
+    for(const input of picker.node.querySelectorAll('select'))input.required=true;
+    content.replaceChildren(el('p',{class:'info'},t('选择一次并保存，之后新任务复用。已有任务沿用各自设置。','Save a choice for new tasks. Existing tasks keep their own settings.')),form([picker.node],async values=>{
+      await call('caller_settings',{harness:catalog.harness,model:values.get('model'),reasoningEffort:values.get('reasoningEffort')});
+      dialog.close();say(t('模型已保存。在原对话中委托任务，或从使用帮助复制示例。','Model saved. Delegate in your conversation or copy a sample from Help.'));
+    }),el('p',{class:'sub'},catalog.harness+' · '+time(catalog.checkedAt)));
+  } catch(error) {
+    content.replaceChildren(el('p',{class:'info'},t('设备已连接；模型尚未确认。修复下方原因后重新读取，无需重新配对。','Device is connected; model availability is unconfirmed. Resolve the reason below, then read again without pairing again.')),el('p',{class:'error'},errorText(error)),btn(t('重新读取模型','Read models again'),()=>chooseModels(peer)));
+  }
+}
+function errorText(error) {
+  const hints=[
+    [/invitation.*expired|invalid.*invitation/i,t('请在共享端生成新邀请，保留当前输入并再次连接。','Generate a new invitation on the host, then connect again.')],
+    [/cross.network connection is off(?:\.| on the host\.)|^Enable cross.network connections/i,t('请在两台设备各自开启跨网络连接，或恢复私网直连。','Enable cross-network connections on both devices, or restore the private-network connection.')],
+    [/not available or allowed|choose a model|model capabilities/i,t('读取目标设备的模型列表，重新选择可用模型与思考强度。','Read the destination’s models and choose an available model and effort.')],
+    [/collecting or saving results failed|saving stage results failed/i,t('解决原因后对原任务再次取回成果，不重新执行委托。','Resolve the reason, then collect the original task again without rerunning it.')],
+    [/ECONNREFUSED|unreachable|unable to connect|fetch failed/i,t('确认共享端唤醒、联网并开启共享，再查询原连接或任务状态。','Check that the host is awake, online and sharing, then check the original connection or task.')]
+  ];
+  const hint=hints.find(([pattern])=>pattern.test(error.message));
+  return error.message+(hint?'\n'+hint[1]:'');
+}
 function delivery(task) {
   if(task.localFilesCleaned)return t('本地文件已清理','Local files cleared');
   if(state.role==='provider')return task.saveConfirmed && task.savedRevision===task.revision ? t('使用端已保存','Saved by client') : t('等待使用端保存','Awaiting client save');
@@ -92,7 +141,7 @@ function delivery(task) {
 }
 function taskSummary(task) {
   const short=task.taskId.slice(0,12);
-  const node=el('div',{class:'task'},el('span',{class:'time'},time(task.endedAt || task.createdAt)),el('div',{},btn(short,()=>openTask(task),'link mono'),el('p',{class:'sub'},`${task.peerDisplayName || task.peer || task.pairId?.slice(0,8) || ''} · ${task.harness || 'Codex'}`),el('p',{class:'mobile-delivery'},delivery(task))),stat(task.cleanupStatus || task.status || 'unknown'),el('span',{class:'desktop-delivery sub'},delivery(task)),btn('↗',()=>openTask(task),'arrow'));
+  const node=el('div',{class:'task'},el('span',{class:'time'},time(task.endedAt || task.createdAt)),el('div',{},btn(task.title || short,()=>openTask(task),'link task-title'),el('p',{class:'sub'},`${task.peerDisplayName || task.peer || task.pairId?.slice(0,8) || ''} · ${task.harness || 'Codex'}`),el('p',{class:'mobile-delivery'},delivery(task))),stat(task.cleanupStatus || task.status || 'unknown'),el('span',{class:'desktop-delivery sub'},delivery(task)),btn('↗',()=>openTask(task),'arrow'));
   node.querySelector('.arrow').setAttribute('aria-label',`${t('查看任务','View task')} ${task.taskId}`);
   const wrap=el('div',{},node);
   if(state.selected?.task.taskId===task.taskId)wrap.append(taskDetail(state.selected));
@@ -129,11 +178,15 @@ function taskDetail(selected) {
     btn(t('取消本轮','Cancel turn'),()=>confirmation(t('取消本轮','Cancel turn'),t('请求停止当前轮次，之后查询状态确认是否已停止。已有成果保留。','Request interruption, then check whether the turn stopped. Existing results are retained.'),()=>taskAction('cancel_task',{taskId:task.taskId}))),
     btn(t('清理','Clean up'),()=>cleanupTask(task))
   ]:[btn(t('取消本轮','Cancel turn'),()=>confirmation(t('取消本轮','Cancel turn'),t('停止这项任务的当前轮次，保留已有成果。','Request interruption of this task; retain its results.'),()=>taskAction('cancel_shared_task',{pairId:task.pairId,taskId:task.taskId}))),btn(t('清理','Clean up'),()=>cleanupTask(task))];
-  return el('section',{class:'detail'},el('div',{class:'sectionhead'},el('h2',{},t('任务详情','Task details')),btn('×',()=>{state.selected=null;render();},'close')),el('dl',{},rows.flatMap(([a,b])=>[el('dt',{},a),el('dd',{},b)])),current.error?el('p',{class:'error'},current.error):null,current.cleanup?.error||current.cleanup?.reason?el('p',{class:'error'},current.cleanup.error||current.cleanup.reason):null,current.sessionVisibility?.error?el('p',{class:'error'},current.sessionVisibility.error):null,saved?.delivery?el('div',{class:'info'},el('p',{},`${t('本次保存','Saved delivery')} · ${labelStatus(saved.delivery.status)} · ${t('第','Revision')} ${saved.delivery.revision} ${t('轮','')}`),saved.delivery.stopReason==='time_limit'?el('p',{},t('达到执行时限，仅保存阶段成果。','Execution reached its deadline; stage results only.')):null,saved.delivery.error?el('p',{class:'error'},saved.delivery.error):null,saved.delivery.skipped.length?el('div',{},el('p',{},t('以下路径未包含在成果中。必要文件需补齐后再清理。','These paths are missing from the delivery. Recover necessary files before cleanup.')),el('ul',{},saved.delivery.skipped.map(name=>el('li',{},name)))):null):null,el('div',{class:'actions'},controls),el('details',{},el('summary',{},t('轮次用量','Turn usage')),usageDetails((current.rounds || task.rounds || []).flatMap(round=>(round.usage?.models?.length?round.usage.models:[round.usage || {}]).map(model=>({taskId:task.taskId,revision:round.revision,startedAt:round.startedAt,endedAt:round.endedAt,resource:task.peer || task.pairId,harness:task.harness,requestedModel:round.usage?.requestedModel,actualModel:model.actualModel,source:round.usage?.source,usageStatus:round.usage?.status,reason:round.usage?.reason,tokens:model.tokens,observedAt:round.usage?.observedAt,syncStatus:state.role==='provider'?'local':task.deliveryPending && round.revision>(task.savedRevision ?? 0)?'pending':'received',savedAt:task.savedAt}))))),saved?.workCopyDirectory?el('p',{class:'file-path'},saved.workCopyDirectory):null,
-    saved?.files.map(name=>el('div',{class:'file'},el('span',{class:'filename small'},name),btn(t('预览','Preview'),async()=>{selected.file={name,...await api(`/api/file?id=${encodeURIComponent(task.taskId)}&path=${encodeURIComponent(name)}`)};render();}),btn(t('下载','Download'),()=>download(task,name)))),
-    saved?.responseFile?el('div',{class:'file'},el('span',{class:'filename small'},t('共享端答复','Host answer')),btn(t('下载','Download'),()=>download(task,'response.md',true))):null,
-    answer?el('pre',{class:'answer'},answer.text,answer.truncated?`\n${t('内容已截断，可下载完整文件。','Truncated; download the full file.')}`:''):null,
+  const fileRows=names=>names.map(name=>el('div',{class:'file'},el('span',{class:'filename small'},name),btn(t('预览','Preview'),async()=>{selected.file={name,...await api('/api/file?id='+encodeURIComponent(task.taskId)+'&path='+encodeURIComponent(name))};render();}),btn(t('下载','Download'),()=>download(task,name))));
+  return el('section',{class:'detail'},el('div',{class:'sectionhead'},el('h2',{},task.title || t('任务详情','Task details')),btn('×',()=>{state.selected=null;render();},'close')),el('p',{class:'sub'},labelStatus(current.status || current.cleanupStatus || 'unknown')+' · '+delivery(task)),current.error?el('p',{class:'error'},current.error):null,current.cleanup?.error||current.cleanup?.reason?el('p',{class:'error'},current.cleanup.error||current.cleanup.reason):null,current.sessionVisibility?.error?el('p',{class:'error'},current.sessionVisibility.error):null,saved?.delivery?el('div',{class:'info'},el('p',{},`${t('本次保存','Saved delivery')} · ${labelStatus(saved.delivery.status)} · ${t('第','Revision')} ${saved.delivery.revision} ${t('轮','')}`),saved.delivery.stopReason==='time_limit'?el('p',{},t('达到执行时限，仅保存阶段成果。','Execution reached its deadline; stage results only.')):null,saved.delivery.error?el('p',{class:'error'},saved.delivery.error):null,saved.delivery.skipped.length?el('div',{},el('p',{},t('以下路径未包含在成果中。必要文件需补齐后再清理。','These paths are missing from the delivery. Recover necessary files before cleanup.')),el('ul',{},saved.delivery.skipped.map(name=>el('li',{},name)))):null):null,
+    saved?.responseFile?el('div',{class:'file'},el('span',{class:'filename small'},t('共享端答复与检查说明','Host answer and checks')),btn(t('下载','Download'),()=>download(task,'response.md',true))):null,
+    answer?el('pre',{class:'answer'},answer.text,answer.truncated?'\n'+t('内容已截断，可下载完整文件。','Truncated; download the full file.'):''):null,
+    saved?.delivery?.changed.length?el('section',{},el('h3',{},t('本次取回的新增和改动文件','New and changed files in this collection')),fileRows(saved.delivery.changed)):null,
+    saved?.files.length?el('details',{},el('summary',{},t('完整工作副本','Complete work copy')+' · '+saved.files.length),saved.workCopyDirectory?el('p',{class:'file-path'},saved.workCopyDirectory):null,fileRows(saved.files)):null,
+    state.role==='caller'?el('details',{},el('summary',{},t('继续修改或采用成果','Continue or apply results')),example('继续 sub2sub 任务 '+task.taskId+'，按我的新要求修改，并取回最新成果。','Continue sub2sub task '+task.taskId+' with my new requirements and collect the updated results.'),example('查看 sub2sub 任务 '+task.taskId+' 已保存的成果，将修改应用到当前项目，保留无关改动。','Review saved results for sub2sub task '+task.taskId+' and apply the changes to my current project, preserving unrelated edits.')):null,
     file?el('div',{},el('h3',{},file.name),el('pre',{class:'answer'},file.text,file.truncated?`\n${t('内容已截断。','Truncated.')}`:'')):null,
+    el('details',{},el('summary',{},t('任务状态与详情','Task state and details')),el('dl',{},rows.flatMap(([a,b])=>[el('dt',{},a),el('dd',{},b)]))),el('div',{class:'actions'},controls),el('details',{},el('summary',{},t('轮次用量','Turn usage')),usageDetails((current.rounds || task.rounds || []).flatMap(round=>(round.usage?.models?.length?round.usage.models:[round.usage || {}]).map(model=>({taskId:task.taskId,revision:round.revision,startedAt:round.startedAt,endedAt:round.endedAt,resource:task.peer || task.pairId,harness:task.harness,requestedModel:round.usage?.requestedModel,actualModel:model.actualModel,source:round.usage?.source,usageStatus:round.usage?.status,reason:round.usage?.reason,tokens:model.tokens,observedAt:round.usage?.observedAt,syncStatus:state.role==='provider'?'local':task.deliveryPending && round.revision>(task.savedRevision ?? 0)?'pending':'received',savedAt:task.savedAt}))))),
     el('p',{class:'sub'},t('已保存成果可离线查看。任务指令和追问继续在原对话中进行。','Saved results work offline. Continue task instructions and follow-ups in the original conversation.')));
 }
 function cleanupTask(task) {
@@ -204,8 +257,8 @@ async function showConsent(peer, knownPolicy) {
     await call('authorize_peer',{peer:peer.name,allowTaskFiles,...(allowTaskFiles&&policy?{retentionPolicy:policy}:{})});dialog.close();await refresh();
   })));
 }
-function pair() {showDialog(t('连接节点','Connect a node'),form([field(t('连接别名，可留空','Connection alias, optional'),'peer'),field(t('私密邀请码','Private invitation'),'invitation','','textarea'),el('p',{class:'info'},consentText()),check(t('允许发送任务所需文件和指令','Allow task-file transfer'),'allow')],async values=>{const paired=await call('pair_peer',{...(values.get('peer')?{peer:values.get('peer')}:{}),invitation:values.get('invitation'),allowTaskFiles:values.has('allow')});dialog.close();await refresh();if(paired.retentionPolicy)await showConsent({name:paired.peer,transferAuthorization:paired.transferAuthorization},paired.retentionPolicy);},t('连接','Connect')));}
-function invite() {showDialog(t('生成邀请并共享','Create invitation and share'),el('div',{},el('p',{class:'info'},t('这会开启本机共享，允许已授权使用端使用当前执行工具。','This starts local sharing with the selected execution tool for authorized clients.')),form([field(t('监听地址，多网卡时填写','Listen address; specify when multiple interfaces exist'),'address'),field(t('端口，可留空','Port, optional'),'port','','number')],async values=>{const input={};if(values.get('address'))input.address=values.get('address');if(values.get('port'))input.port=Number(values.get('port'));const result=await call('create_pairing',input);showDialog(t('私密邀请','Private invitation'),el('div',{},el('p',{class:'info'},t('仅私下发给预期使用端，一次有效，十分钟后到期。','Share privately with the intended client. One use; expires in ten minutes.')),el('textarea',{readonly:'',class:'answer'},result.invitation)));await refresh();},t('生成邀请','Generate'))));}
+function pair() {showDialog(t('连接节点','Connect a node'),form([field(t('连接别名，可留空','Connection alias, optional'),'peer'),field(t('私密邀请码','Private invitation'),'invitation','','textarea'),el('p',{class:'info'},consentText()),check(t('允许发送任务所需文件和指令','Allow task-file transfer'),'allow')],async values=>{const paired=await call('pair_peer',{...(values.get('peer')?{peer:values.get('peer')}:{}),invitation:values.get('invitation'),allowTaskFiles:values.has('allow')});dialog.close();await refresh();if(paired.retentionPolicy)await showConsent({name:paired.peer,transferAuthorization:paired.transferAuthorization},paired.retentionPolicy);else await chooseModels(paired.peer);},t('连接','Connect')));}
+function invite() {showDialog(t('生成邀请并共享','Create invitation and share'),el('div',{},el('p',{class:'info'},t('这会开启本机共享，允许已授权使用端使用当前执行工具。','This starts local sharing with the selected execution tool for authorized clients.')),form([el('p',{class:'sub'},t('自动选择私网地址，使用默认端口。多网卡或自定义端口时展开填写。','Uses an automatic private address and default port. Expand for multiple interfaces or a custom port.')),el('details',{},el('summary',{},t('地址与端口','Address and port')),field(t('监听地址，多网卡时填写','Listen address; specify when multiple interfaces exist'),'address'),field(t('端口，可留空','Port, optional'),'port','','number'))],async values=>{const input={};if(values.get('address'))input.address=values.get('address');if(values.get('port'))input.port=Number(values.get('port'));const result=await call('create_pairing',input);showDialog(t('私密邀请','Private invitation'),el('div',{},el('p',{class:'info'},t('仅私下发给预期使用端，一次有效，十分钟后到期。','Share privately with the intended client. One use; expires in ten minutes.')),el('textarea',{readonly:'',class:'answer'},result.invitation)));await refresh();},t('生成邀请','Generate'))));}
 const tokenNames=()=>({inputTokens:t('输入','Input'),cachedInputTokens:t('缓存读取','Cache read'),cacheWriteInputTokens:t('缓存写入','Cache write'),outputTokens:t('输出','Output'),reasoningOutputTokens:t('推理输出','Reasoning output'),totalTokens:t('原生总计','Native total')});
 const usageStatus=value=>({observed:t('已记录','Recorded'),incomplete:t('部分记录','Partial'),unavailable:t('未采集','Unavailable')}[value] || t('未知','Unknown'));
 function tokenText(tokens={},coverage,rounds) {
@@ -226,6 +279,14 @@ function usageView(statistics) {
   if(!groups.length&&!records.length&&!statistics.usagePendingTasks)return null;
   return el('section',{class:'section'},el('div',{class:'sectionhead'},el('h2',{},t('模型用量','Model usage')),btn(t('导出明细 JSON','Export details JSON'),()=>exportUsage(statistics),'link')),el('p',{class:'sub'},t('— 表示未知','— means unknown')),statistics.usagePendingTasks?el('p',{class:'info'},`${statistics.usagePendingTasks} ${t('项任务有尚未同步的当前轮次或成果；这里可能只有旧轮次记录。','tasks have a pending current turn or delivery; these records may contain only older turns.')}`):null,groups.length?groups.map(group=>el('div',{class:'setting'},el('h3',{},`${group.actualModel || t('实际模型未知','Actual model unknown')} · ${group.resource || t('未知资源','Unknown resource')}`),el('p',{class:'sub'},`${group.harness} · ${group.source || t('无来源','No source')} · ${group.rounds} ${t('轮','turns')}`),el('p',{},tokenText(group.tokens,group.knownFields,group.rounds)),el('p',{class:'sub'},`${group.incompleteRounds} ${t('轮部分记录','partial turns')} · ${group.unavailableRounds} ${t('轮未采集','unavailable turns')} · ${group.pendingRounds} ${t('轮待同步','pending turns')}`))):el('p',{class:'empty'},t('所选时间内暂无用量记录。','No usage records in this period.')),el('details',{},el('summary',{},t('统计口径','About these numbers')),el('p',{class:'sub'},t('仅统计保留记录中的原生数据；— 表示未知，不是零。双方视图对应同一份消耗，不能相加。','Native data from retained records only; — means unknown, not zero. Client and host views describe the same consumption; do not add them together.')),el('p',{class:'sub'},t('Codex 缓存读取包含在输入中、推理包含在输出中；Claude 缓存字段独立。直接展示原生总计，不将分类再相加。Codex 统计主任务，Claude 使用原生分模型结果；两者均不保证涵盖所有辅助调用。','Codex cache reads are included in input and reasoning in output; Claude cache fields are separate. Native totals are shown without adding categories again. Codex records the main thread; Claude uses native per-model results. Neither source guarantees coverage of every auxiliary call.'))),records.length?el('details',{},el('summary',{},t('查看逐轮明细','View turn details')),usageDetails(records)):null);
 }
+function delegationCase() {
+  return el('div',{class:'intro'},el('h3',{},t('把一个完整任务交给另一台电脑','Delegate a complete task to another computer')),
+    el('p',{},t('例如：我在本机对话中，把 notes.txt 交给队友电脑上的 Codex 或 Claude，整理成 summary.md。','For example: in my conversation, I send notes.txt to Codex or Claude on a teammate’s computer to create summary.md.')),
+    el('ol',{class:'case-steps'},
+      el('li',{},t('对方生成邀请；我连接并确认任务文件范围。','They create an invitation; I connect and approve the task-file scope.')),
+      el('li',{},t('对方在独立副本中完成任务和可用检查，订阅登录留在对方电脑。','They work and run available checks in a separate copy; their subscription sign-in stays on their computer.')),
+      el('li',{},t('答复和文件取回本机；我打开成果，并在同一任务继续修改。','I collect and open the answer and files locally, then continue the same task.'))));
+}
 function resources() {
   const {peers,sharing,statistics}=state.data;
   const shown=state.role==='caller'?peers:[{name:state.data.device,...sharing}];
@@ -236,7 +297,7 @@ function resources() {
     return el('div',{class:'resource'},el('div',{},el('div',{class:'resource-title'},el('strong',{},peer.displayName || peer.name),stat(peer.status)),el('p',{class:'sub'},[peer.harness || t('执行工具尚未查询','Execution tool unchecked'),Number.isInteger(peer.occupiedSlots)&&Number.isInteger(peer.maxConcurrent)?`${t('并发','Concurrency')} ${peer.occupiedSlots} / ${peer.maxConcurrent}`:null,peer.checkedAt?`${t('上次检查','Last checked')} ${time(peer.checkedAt)}`:null].filter(Boolean).join(' · ')),budgetView(peer.connection?.budget),peer.connection?.expiresAt?el('p',{class:'sub'},`${t('授权到期','Access expires')} ${time(peer.connection.expiresAt)}`):null,peer.reason?el('p',{class:'error'},peer.reason):null,el('div',{class:'actions'},btn(t('模型','Models'),()=>queryModels(provider?undefined:peer.name),'link'),btn(t('额度','Quota'),()=>queryQuota(provider?undefined:peer.name),'link'),!provider?btn(t('管理','Manage'),()=>connection(peer),'link'):null)),quotaView(key),el('div',{class:'counts'},el('div',{},`${total.tasks} ${t('项任务','tasks')} · ${total.rounds} ${t('轮','turns')}`),el('p',{class:'sub'},`${t('执行','Execution')} ${groups.some(g=>g.timedRounds)?minutes(total.elapsedMs):'—'}`),el('p',{class:'sub'},groups.map(g=>`${g.harness}: ${Object.entries(g.outcomes).map(([status,count])=>`${labelStatus(status)} ${count}`).join(' · ')}`).join(' / '))));
   });
   const total=statistics.totals;
-  return el('section',{class:'section'},el('div',{class:'sectionhead'},el('div',{class:'tabs',role:'tablist','aria-label':t('资源角色','Resource role')},['caller','provider'].map(role=>el('button',{type:'button',role:'tab','aria-selected':state.role===role,onclick:()=>perform(async()=>{state.role=role;state.selected=null;await refresh();})},role==='caller'?t('我使用的','Resources I use'):t('我共享的','Resources I share')))),select([['7',t('近 7 天','Last 7 days')],['30',t('近 30 天','Last 30 days')]],state.days,event=>perform(async()=>{state.days=Number(event.target.value);await refresh();}),{class:'period','aria-label':t('统计时间','Statistics period')})),rows.length?el('div',{},rows):el('div',{class:'empty'},el('p',{},t('还没有连接的设备','No connected devices')),el('p',{},t('在另一台电脑生成邀请码，然后在这里连接。','Generate an invitation on the other computer, then connect here.')),btn(t('查看使用方法','Getting started'),help,'link')),total.tasks?el('div',{class:'totals'},el('span',{},`${total.tasks} ${t('项任务','tasks')}`),el('span',{},`${total.rounds} ${t('个轮次','turns')}`),el('span',{},`${t('实际执行','Execution time')} ${total.timedRounds?minutes(total.elapsedMs):'—'}`)):null,statistics.resources.length?el('details',{},el('summary',{},t('统计明细','Statistics details')),statistics.resources.map(g=>el('p',{class:'sub'},`${g.resource || t('未知资源','Unknown resource')} · ${g.harness} · ${g.tasks} ${t('项任务','tasks')} · ${g.rounds} ${t('轮','turns')} · ${g.timedRounds?minutes(g.elapsedMs):'—'} · ${Object.entries(g.outcomes).map(([status,count])=>`${labelStatus(status)} ${count}`).join(' / ')}`))):null,statistics.unmeasuredTasks?el('p',{class:'sub'},`${statistics.unmeasuredTasks} ${t('项记录缺少完整计量，未计为完整历史。','records have incomplete measurements; totals are not complete history.')}`):null,
+  return el('section',{class:'section'},el('div',{class:'sectionhead'},el('div',{class:'tabs',role:'tablist','aria-label':t('资源角色','Resource role')},['caller','provider'].map(role=>el('button',{type:'button',role:'tab','aria-selected':state.role===role,onclick:()=>perform(async()=>{state.role=role;state.selected=null;await refresh();})},role==='caller'?t('我使用的','Resources I use'):t('我共享的','Resources I share')))),select([['7',t('近 7 天','Last 7 days')],['30',t('近 30 天','Last 30 days')]],state.days,event=>perform(async()=>{state.days=Number(event.target.value);await refresh();}),{class:'period','aria-label':t('统计时间','Statistics period')})),rows.length?el('div',{},rows):el('div',{class:'empty'},delegationCase(),el('div',{class:'actions'},btn(t('连接另一台电脑','Connect another computer'),pair),btn(t('共享这台电脑','Share this computer'),invite),btn(t('查看使用方法','Getting started'),help,'link'))),total.tasks?el('div',{class:'totals'},el('span',{},`${total.tasks} ${t('项任务','tasks')}`),el('span',{},`${total.rounds} ${t('个轮次','turns')}`),el('span',{},`${t('实际执行','Execution time')} ${total.timedRounds?minutes(total.elapsedMs):'—'}`)):null,statistics.resources.length?el('details',{},el('summary',{},t('统计明细','Statistics details')),statistics.resources.map(g=>el('p',{class:'sub'},`${g.resource || t('未知资源','Unknown resource')} · ${g.harness} · ${g.tasks} ${t('项任务','tasks')} · ${g.rounds} ${t('轮','turns')} · ${g.timedRounds?minutes(g.elapsedMs):'—'} · ${Object.entries(g.outcomes).map(([status,count])=>`${labelStatus(status)} ${count}`).join(' / ')}`))):null,statistics.unmeasuredTasks?el('p',{class:'sub'},`${statistics.unmeasuredTasks} ${t('项记录缺少完整计量，未计为完整历史。','records have incomplete measurements; totals are not complete history.')}`):null,
     el('div',{class:'actions'},state.role==='caller'?btn(t('连接节点','Connect a node'),pair,'link'):btn(t('生成邀请','Create invitation'),invite,'link'),state.role==='provider'?btn(t('停止接单','Stop accepting work'),()=>confirmation(t('停止接单','Stop accepting work'),t('现有任务继续运行，成果仍可取回。','Existing work continues and results remain accessible.'),()=>call('stop_sharing')),'link'):null,state.role==='provider'?btn(t('退出节点','Exit node'),()=>confirmation(t('退出独立节点','Exit independent node'),t('节点退出后远端访问停止。活动轮次必须先结束或取消。','Remote access ends when the node exits. Active turns must finish or be cancelled first.'),()=>call('exit_sharing')),'link'):null),
     state.role==='provider'&&peers.length?el('details',{},el('summary',{},t('已授权使用端','Authorized clients')),peers.map(peer=>el('div',{class:'file'},el('div',{class:'filename'},peer.name,el('p',{class:'sub'},`${t('并发上限','Concurrency limit')}: ${peer.maxConcurrent??t('沿用节点限制','Node limit')} · ${peer.expiresAt?`${peer.authorizationStatus==='expired'?t('已到期','Expired'):t('到期','Expires')} ${time(peer.expiresAt)}`:t('不过期','No expiry')}`),budgetView(peer.budget)),btn(t('规则','Rules'),()=>pairingSettings(peer)),btn(t('撤销授权','Revoke'),()=>confirmation(t('撤销授权','Revoke client'),`${peer.name}\n${t('会中断此使用端的活动任务并撤销后续访问，保留任务记录与成果。','Interrupts this client’s active tasks and revokes future access. Retains task records and results.')}`,()=>call('revoke_pairing',{pairId:peer.pairId,cleanup:'keep'})))))):null);
 }
@@ -273,11 +334,31 @@ async function settings() {
   const [caller,provider,guide]=await Promise.all([call('caller_settings',{harness:'codex'}),call('provider_settings'),call('onboarding')]);
   const mount=document.getElementById('settings');if(!mount)return;
   let callerExecution=caller.execution;
-  const callerForm=form([field(t('执行工具','Execution tool'),'harness','codex','select',[['codex','Codex'],['claude','Claude Code']]),field(t('默认模型','Default model'),'model',caller.execution.model || ''),field(t('思考强度','Reasoning effort'),'reasoningEffort',caller.execution.reasoningEffort || '','select',[['',t('未设置','Unset')],...['none','minimal','low','medium','high','xhigh','max','ultra'].map(v=>[v,v])]),advancedFields(caller.advanced)],async values=>{
-    const input={harness:values.get('harness'),...limits(values)};for(const key of ['model','reasoningEffort']){if(!values.get(key)&&callerExecution[key])throw new Error(t('已有默认值不能清空，请填写模型并选择思考强度。','Existing defaults cannot be cleared; enter a model and choose a reasoning effort.'));if(values.get(key))input[key]=values.get(key);}
+  const picker=modelPicker(callerExecution);
+  const source=field(t('读取哪个节点的模型','Read models from'),'modelPeer','','select',[['',t('选择已连接的设备','Choose a connected device')],...guide.connections.map(peer=>[peer.name,peer.displayName || peer.name])]);
+  const modelNote=el('p',{class:'sub'},t('保存的默认值尚未核对。读取节点后，只显示它实际支持的模型与思考强度。','Saved defaults are unverified. Read a node to see its actual models and effort levels.'));
+  const callerForm=form([field(t('执行工具','Execution tool'),'harness','codex','select',[['codex','Codex'],['claude','Claude Code']]),source,btn(t('读取可用模型','Read available models'),async()=>{
+    const peer=callerForm.elements.modelPeer.value;
+    if(!peer)throw new Error(t('先选择已连接的设备。','Choose a connected device first.'));
+    const catalog=await call('list_models',{peer});
+    const defaults=await call('caller_settings',{harness:catalog.harness});
+    callerExecution=defaults.execution;callerForm.elements.harness.value=catalog.harness;picker.load(catalog,callerExecution);
+    modelNote.textContent=catalog.harness+' · '+time(catalog.checkedAt);
+  }),modelNote,picker.node,advancedFields(caller.advanced)],async values=>{
+    const input={harness:values.get('harness'),...limits(values)};
+    for(const key of ['model','reasoningEffort']){
+      if(!values.get(key)&&callerExecution[key])throw new Error(t('请先读取节点模型，再选择模型与思考强度。','Read the node models, then choose a model and effort.'));
+      if(values.get(key))input[key]=values.get(key);
+    }
     callerExecution=(await call('caller_settings',input)).execution;say(t('使用端设置已保存','Client settings saved'));
   });
-  callerForm.elements.harness.addEventListener('change',event=>perform(async()=>{const harness=event.target.value;const result=await call('caller_settings',{harness});if(callerForm.elements.harness.value!==harness)return;callerExecution=result.execution;callerForm.elements.model.value=result.execution.model || '';callerForm.elements.reasoningEffort.value=result.execution.reasoningEffort || '';}));
+  callerForm.elements.harness.addEventListener('change',event=>perform(async()=>{
+    const harness=event.target.value,result=await call('caller_settings',{harness});
+    if(callerForm.elements.harness.value!==harness)return;
+    callerExecution=result.execution;
+    picker.load({models:[]},callerExecution);
+    modelNote.textContent=t('请读取使用该工具的节点模型。','Read models from a node using this tool.');
+  }));
   mount.replaceChildren(el('section',{class:'setting'},el('div',{class:'sectionhead'},el('h2',{},t('网页管理','Web management')),btn(t('关闭','Disable'),()=>confirmation(t('关闭网页管理','Disable web management'),t('只停止本机管理入口，独立共享继续。之后在原对话中说“打开管理页”即可重新启用。','Stops this local management entry; independent sharing continues. Ask to open management in the original conversation to enable it again.'),async()=>{await call('web_management',{enabled:false});state.stopped=true;clearTimeout(poll);app.replaceChildren(el('main',{},el('h1',{},t('网页管理已关闭','Web management disabled')),el('p',{class:'info'},t('可在原对话中重新打开。独立共享不受影响。','Reopen it from the original conversation. Independent sharing is unaffected.'))));}))),el('p',{},t('仅本机访问，随当前宿主退出而关闭。','Local access only; closes when its managing app exits.'))),
     el('section',{class:'setting'},el('h2',{},t('使用端默认值','Client defaults')),el('p',{},t('只影响新任务，模型需由目标节点提供。','New tasks only; the destination must offer the selected model.')),callerForm),
     el('section',{class:'setting'},el('h2',{},t('自动选择共享端','Automatic host selection')),el('p',{},t('默认关闭。未指定共享端的新任务，按候选顺序选一个符合要求的设备；提交后失败也不会自动换端重发。','Off by default. New tasks without an explicit host use the first eligible candidate. Submission failures never trigger a retry on another host.')),el('p',{class:'sub'},t('候选列表不代替文件授权。不推测设备环境；有特定环境要求时，请明确指定合适的共享端。','Candidate lists do not authorize file transfer. Environments are not inferred; explicitly choose a suitable host for environment-specific requirements.')),el('p',{class:'info'},guide.connections.map(peer=>`${peer.name} · ${peer.transferAuthorization.scope==='task-files'?t('已授权任务文件','Task files authorized'):t('未授权任务文件','Task files not authorized')}`).join('\n') || t('暂无连接','No connections')),form([check(t('启用自动选择','Enable automatic selection'),'autoSelectHost',caller.autoSelectHost),field(t('候选连接名称，每行一个，按优先顺序填写','Candidate connection names, one per line in priority order'),'candidateHosts',caller.candidateHosts.join('\n'),'textarea')],async values=>{
@@ -286,7 +367,7 @@ async function settings() {
     el('section',{class:'setting'},el('h2',{},t('我共享的','Resources I share')),form([check(t('保留委托会话在任务列表中','Keep delegated sessions in the task list'),'keepSessionVisible',provider.keepSessionVisible),el('p',{class:'sub'},t('仅支持 Codex。默认关闭：执行期间可能出现，每轮结束后归档，续作前恢复。开启后保留在普通列表，仅用于查看。只影响新建任务，不改变文件保留期；Claude 保持原行为。','Codex only. Off by default: sessions may appear while running, archive after each turn, and restore before continuing. On keeps sessions in the regular list for viewing. New tasks only; file retention is unchanged. Claude is unaffected.')),field(t('节点并发上限','Concurrent task limit'),'maxConcurrent',provider.maxConcurrent,'number'),el('p',{class:'sub'},t('满额不排队；调低上限不打断已有任务。','No queue when full; lowering the limit does not interrupt active tasks.')),field(t('执行工具','Execution tool'),'harness',provider.harness,'select',[['codex','Codex'],['claude','Claude Code']]),check(t('开放全部可用模型，包含以后新增的模型','Offer all available models, including future additions'),'all',provider.allowedModels==='all'),field(t('指定模型，每行一个；开放全部时忽略','Specific models, one per line; ignored when all are offered'),'models',Array.isArray(provider.allowedModels)?provider.allowedModels.join('\n'):'','textarea'),advancedFields(provider.advanced,true)],async values=>{
       const input={harness:values.get('harness'),...limits(values)};if(values.has('all'))input.allModels=true;else input.allowedModels=String(values.get('models')).split('\n').map(v=>v.trim()).filter(Boolean);
       input.cleanupAllOnExpiry=values.has('cleanupAllOnExpiry');input.maxConcurrent=Number(values.get('maxConcurrent'));input.keepSessionVisible=values.has('keepSessionVisible');await call('provider_settings',input);guide.settings.provider.keepSessionVisible=input.keepSessionVisible;guide.settings.provider.allowedModels[input.harness]=input.allModels?'all':input.allowedModels;state.quotas.delete('$local');say(input.harness==='claude'?t('设置已保存；Claude 暂不支持会话展示管理，保持原行为。','Settings saved; Claude session visibility is unsupported and unchanged.'):t('共享端设置已保存，仅影响新建任务','Host settings saved for new tasks'));
-    })),el('section',{class:'setting'},el('h2',{},t('首次使用设置','First-use settings')),btn(t('查看并确认','Review settings'),async()=>showOnboarding(await call('onboarding')))));
+    })),el('section',{class:'setting'},el('h2',{},t('首次使用设置','First-use settings')),btn(t('查看并确认','Review settings'),async()=>showOnboarding(await call('onboarding',{role:state.role})))));
   mount.prepend(el('section',{class:'setting'},el('h2',{},t('设备名称','Device name')),el('p',{},t('sub2sub 显示名；对端下次连接时更新，手动别名不变。','sub2sub display name; updates on next contact. Explicit aliases stay unchanged.')),form([field(t('本机显示名','Device display name'),'name',guide.settings.deviceName)],async values=>{const saved=await call('device_settings',{name:values.get('name')});if(state.data)state.data.device=saved.deviceName;await settings();say(t('设备名称已保存','Device name saved'));})));
   mount.append(el('section',{class:'setting'},el('h2',{},t('跨网络连接','Cross-network connections')),el('p',{},t('默认关闭，双方开启后可连接异地设备。优先私网直连；公共发现与中继可能影响隐私、速度和可用性。关闭前完成或明确取消跨网任务及传输。文件授权与任务联网权限不变。','Off by default; enable on both devices for cross-network access. Private connections come first. Public discovery and relays may affect privacy, speed and availability. Finish or explicitly cancel cross-network tasks and transfers before disabling. File consent and task network permissions are unchanged.')),form([check(t('开启跨网络连接服务','Enable cross-network service'),'crossNetwork',guide.settings.crossNetwork.enabled)],async values=>{try{await call('device_settings',{crossNetwork:values.has('crossNetwork')});}catch(error){const actual=await call('device_settings',{});mount.querySelector('[name=crossNetwork]').checked=actual.crossNetwork.enabled;throw error;}await settings();say(t('跨网络连接设置已保存','Cross-network setting saved'));})));
   mount.append(el('section',{class:'setting'},el('h2',{},t('本地空间','Local storage')),el('p',{},t('手动清理前会预览范围。','Preview the scope before manual cleanup.')),btn(t('查看空间占用','Inspect storage'),storage)));
@@ -297,29 +378,52 @@ async function settings() {
   });
 
 }
-function showOnboarding(data) {
-  const s=data.settings;
-  const limitValue=(v,unit)=>v==null?t('不限量','Unlimited'):`${(unit==='MiB'?v/1048576:v).toLocaleString(language)} ${unit}`;
-  const limitText=v=>`${t('输入','Input')}: ${limitValue(v.inputBytes,'MiB')} / ${limitValue(v.inputFiles,t('个文件','files'))}\n${t('返回','Result')}: ${limitValue(v.resultBytes,'MiB')} / ${limitValue(v.resultFiles,t('个文件','files'))}`;
-  const rows=[
-    [t('设备','Device'),s.deviceName],
-    [t('跨网络连接','Cross-network connections'),s.crossNetwork.enabled?t('已开启；双方均需主动开启','On; both devices must opt in'):t('已关闭；默认关闭，确认设置不会开启','Off by default; confirming settings leaves it off')],
-    [t('使用端默认值','Client defaults'),Object.entries(s.caller.execution).map(([tool,v])=>`${tool}: ${v.model ?? t('未设置','Unset')} / ${v.reasoningEffort ?? t('未设置','Unset')}`).join('\n')],
-    [t('自动选择共享端','Automatic host selection'),`${s.caller.autoSelectHost?t('开启','On'):t('关闭','Off')} · ${s.caller.candidateHosts.join(' → ') || t('无候选，手动指定','No candidates; choose manually')}`],
+function showOnboarding(data,resume=false) {
+  const s=data.settings, role=data.role || state.role;
+  const previous=resume && dialog.open?[...dialog.childNodes]:[];
+  const limitText=value=>Object.entries(value).map(([key,v])=>key+': '+(v ?? t('不限量','Unlimited'))).join(' · ');
+  const advanced=[
+    [t('使用端默认模型','Client model defaults'),Object.entries(s.caller.execution).map(([tool,v])=>tool+': '+(v.model || t('未设置','Unset'))+' / '+(v.reasoningEffort || t('未设置','Unset'))).join('\n')],
+    [t('自动选择共享端','Automatic host selection'),s.caller.autoSelectHost?s.caller.candidateHosts.join(' → '):t('关闭','Off')],
     [t('使用端传输上限','Client transfer limits'),limitText(s.caller.limits)],
-    [t('共享端','Host'),`${s.provider.harness}\n${Object.entries(s.provider.allowedModels).map(([tool,v])=>`${tool}: ${v==='all'?t('全部可用模型','All available models'):v.join(', ')}`).join('\n')}`],
-    [t('保留 Codex 委托会话','Keep delegated Codex sessions'),s.provider.keepSessionVisible?t('开启；只影响新任务','On; new tasks only'):t('关闭；每轮结束后归档','Off; archive after each turn')],
-    [t('节点并发上限','Concurrent task limit'),String(s.provider.maxConcurrent)],
-    [t('共享端传输上限与保留期限','Host limits and retention'),`${limitText(s.provider.limits)}\n${s.provider.retentionDays} ${t('天','days')}`],
-    [t('到期清理全部任务内容','Delete all task content on expiry'),s.provider.cleanupAllOnExpiry?t('开启；新任务须接受未领取成果及原生历史到期删除','On; new tasks must accept expiry of uncollected results and native history'):t('关闭；仅清理已保存任务的工作副本','Off; only saved-task work copies are cleaned')],
-    [t('配置与数据位置','Configuration and data'),`${s.advanced.configPath}\n${s.advanced.stateRoot}`],
-    [t('执行工具位置','Execution tool paths'),Object.entries(s.advanced.executionPaths).map(([tool,v])=>`${tool}: ${v}`).join('\n')],
-    [t('最大可设传输上限','Maximum configurable transfer limits'),`${limitValue(s.advanced.supportedLimits.bytes,'MiB')} / ${limitValue(s.advanced.supportedLimits.files,t('个文件','files'))}`],
-    [t('连接及文件授权','Connections and file consent'),data.connections.map(peer=>`${peer.displayName || peer.name} · ${peer.host || peer.taskRoot || peer.transport}${peer.port?':'+peer.port:''} · ${peer.transferAuthorization.scope==='task-files'?t('允许任务文件','Task files allowed'):t('未授权','Not authorized')} · ${t('连接尚未检查','Connection unchecked')}`).join('\n') || t('暂无连接','No connections')],
-    [t('已授权使用端','Authorized clients'),data.pairings.map(peer=>`${peer.name} · ${peer.pairId}`).join('\n') || t('暂无使用端','No clients')],
-    [t('本机共享与监听地址','Sharing and listen address'),`${labelStatus(data.sharing.status)} · ${s.provider.network.address==='auto-select'?t('自动选择地址','Automatic address'):s.provider.network.address}:${s.provider.network.port}`]
+    [t('共享端开放模型','Host models'),Object.entries(s.provider.allowedModels).map(([tool,v])=>tool+': '+(v==='all'?t('全部可用模型','All available models'):v.join(', '))).join('\n')],
+    [t('共享端配置','Host settings'),t('并发','Concurrency')+' '+s.provider.maxConcurrent+' · '+t('保留天数','Retention days')+' '+s.provider.retentionDays+'\n'+limitText(s.provider.limits)],
+    [t('会话展示','Session visibility'),s.provider.keepSessionVisible?t('保留 Codex 会话','Keep Codex sessions'):t('每轮结束后归档 Codex 会话','Archive Codex sessions after each turn')],
+    [t('到期清理','Expiry cleanup'),s.provider.cleanupAllOnExpiry?t('未领取成果和原生历史也会到期删除，连接时需另行接受。','Uncollected results and native history expire too; acceptance is required when connecting.'):t('成果已保存且无活动执行时清理工作副本。','Clean work copies only after saving results and stopping execution.')],
+    [t('配置与数据位置','Configuration and data'),s.advanced.configPath+'\n'+s.advanced.stateRoot],
+    [t('执行工具位置','Execution tool paths'),Object.entries(s.advanced.executionPaths).map(([tool,v])=>tool+': '+v).join('\n')],
+    [t('共享与监听地址','Sharing and listen address'),labelStatus(data.sharing.status)+' · '+s.provider.network.address+':'+s.provider.network.port],
+    [t('已有连接','Connections'),data.connections.map(peer=>(peer.displayName || peer.name)+' · '+(peer.transferAuthorization.scope==='task-files'?t('已授权任务文件','Task files authorized'):t('未授权任务文件','Task files not authorized'))).join('\n') || t('暂无连接','No connections')],
+    [t('已授权使用端','Authorized clients'),data.pairings.map(peer=>peer.name).join('\n') || t('暂无使用端','No clients')]
   ];
-  showDialog(t('确认首次使用设置','Review first-use settings'),el('div',{},data.confirmationRequired?el('div',{class:'intro'},el('h3',{},t('先了解怎么用','How it works')),el('p',{},t('接收任务的电脑生成邀请；发起任务的电脑连接并确认文件授权。随后在原对话中委托任务、打开本地成果、继续修改。','The receiving computer creates an invitation. Connect and approve file transfer on the sending computer, then delegate, open local results and request revisions in your conversation.'))):null,el('p',{class:'info'},t('模型可用性尚未查询；“全部模型”包含以后新增的可用模型。默认到期清理要求成果已保存；主动开启全部清理后，接受规则的新任务未领取也会删除。两者均不打断执行中的任务。设置确认不代表文件传输授权。','Model availability is unverified; all models includes future available models. Default expiry cleanup requires saved results. With full cleanup enabled, accepted new tasks expire even if uncollected. Neither interrupts active work. Settings confirmation does not authorize file transfer.')),el('dl',{},rows.flatMap(([a,b])=>[el('dt',{},a),el('dd',{class:'info'},b)])),btn(t('确认这些设置','Confirm these settings'),async()=>{await call('onboarding',{action:'confirm'});dialog.close();say(t('设置已确认，可继续原操作。','Settings confirmed; continue your previous action.'));},'button primary')));
+  return new Promise(resolve=>{
+    const finish=accepted=>{
+      dialog.removeEventListener('close',cancel);
+      dialog.close();
+      if(previous.length){dialog.replaceChildren(...previous);dialog.showModal();}
+      resolve(accepted);
+    };
+    const cancel=()=>finish(false);
+    const content=form([
+      el('p',{class:'info'},role==='provider'?t('这台电脑接收并执行授权任务。确认后继续生成邀请或开启共享。','This computer executes authorized tasks. Continue creating an invitation or sharing after confirmation.'):t('这台电脑委托任务并接收成果。确认后继续连接或原任务。','This computer delegates tasks and receives results. Continue connecting or your original task after confirmation.')),
+      field(t('设备名称','Device name'),'name',s.deviceName),
+      role==='provider'?field(t('接收任务时使用的工具','Tool for incoming tasks'),'harness',s.provider.harness,'select',[['codex','Codex'],['claude','Claude Code']]):el('p',{class:'sub'},t('连接后选择节点实际提供的模型，保存一次供新任务使用。','Choose from the connected node’s actual models, then save a default for new tasks.')),
+      check(t('允许跨网络连接','Allow cross-network connections'),'crossNetwork',s.crossNetwork.enabled),
+      el('p',{class:'sub'},t('默认关闭。异地连接需双方各自开启；优先直连，必要时使用公共发现与中继。设置确认不代替文件授权。','Off by default. Enable on both devices for cross-network access; direct connections come first, with public discovery and relays when needed. Settings approval does not grant file consent.')),
+      el('details',{},el('summary',{},t('高级设置与当前状态','Advanced settings and current state')),el('dl',{},advanced.flatMap(([a,b])=>[el('dt',{},a),el('dd',{},b)])))
+    ],async values=>{
+      const device={};
+      if(values.get('name')!==s.deviceName)device.name=values.get('name');
+      if(values.has('crossNetwork')!==s.crossNetwork.enabled)device.crossNetwork=values.has('crossNetwork');
+      if(Object.keys(device).length)await call('device_settings',device);
+      if(role==='provider' && values.get('harness')!==s.provider.harness)await call('provider_settings',{harness:values.get('harness')});
+      await call('onboarding',{action:'confirm'});
+      finish(true);
+      if(!resume)await refresh();
+    },resume?t('确认并继续','Confirm and continue'):t('保存并确认','Save and confirm'));
+    showDialog(t('首次使用设置','First-use settings'),content);
+    dialog.addEventListener('close',cancel,{once:true});
+  });
 }
 function example(zh,en) {
   const text=t(zh,en);
@@ -327,13 +431,13 @@ function example(zh,en) {
 }
 function help() {
   state.page='help';render();
-  document.getElementById('help').append(
+  document.getElementById('help').append(delegationCase(),
     el('section',{},el('h2',{},t('从这里开始','Getting started')),el('p',{},t('两台电脑都安装 sub2sub。任务指令和追问留在 Codex / Claude Code 对话中。','Install sub2sub on both computers. Give task instructions and follow-ups in your Codex / Claude Code conversation.')),
       el('p',{},t('不同网络的设备，先在双方开启跨网络连接服务；默认关闭。','For devices on different networks, first enable cross-network service on both; it is off by default.')),
       el('ol',{class:'steps'},
         el('li',{},el('h3',{},t('接收方生成邀请','Create an invitation on the receiver')),example('生成 sub2sub 邀请码。','Generate a sub2sub invitation.'),el('p',{},t('这会开启接收方共享，保持该电脑唤醒并联网。','This starts sharing on the receiver. Keep it awake and connected.'))),
         el('li',{},el('h3',{},t('发起方连接','Connect from the sender')),example('连接这个 sub2sub 邀请码，叫作「工作电脑」。','Connect this sub2sub invitation and name it work-computer.'),el('p',{},t('按提示确认文件传输范围。','Review the requested file-transfer scope.'))),
-        el('li',{},el('h3',{},t('委托并打开本地成果','Delegate and open the local results')),example('用 sub2sub 只把 notes.txt 交给「工作电脑」，整理为 summary.md 并取回成果。','Use sub2sub to send only notes.txt to work-computer, summarize it in summary.md and collect the results.'),el('p',{},t('先准备一个不含敏感内容的短文本文件；答复和文件保存到本机后再查看。','Prepare a short, non-sensitive text file first. Open the answer and files once saved locally.'))),
+        el('li',{},el('h3',{},t('委托并打开本地成果','Delegate and open the local results')),example('用 sub2sub 自带的 examples/first-task/notes.txt，只把这个文件交给「工作电脑」，整理为 summary.md 并取回成果。','Use sub2sub’s bundled examples/first-task/notes.txt. Send only that file to work-computer, create summary.md and collect the results.'),el('p',{},t('示例文件随插件提供，无需自己准备。选择模型后在原对话发出示例指令；这会执行一次真实任务并使用共享端额度。','The plugin includes the sample file. Choose a model and send the example in your conversation; this runs a real task using the host’s allowance.'))),
         el('li',{},el('h3',{},t('在原任务上继续','Continue the same task')),example('继续这个任务，把总结再精简一点，并保存最新成果。','Continue that task. Shorten the summary and save the updated results.')))),
     el('section',{},el('h2',{},t('遇到问题','Troubleshooting')),example('帮我排查 sub2sub 的这个问题，先查询状态，不重新执行任务。','Help diagnose this sub2sub problem. Check its status without rerunning the task.'),el('p',{},t('需要反馈时，在原对话说“把这个问题提交到 GitHub”，先核对公开草稿。','To report it, ask in your conversation to submit the issue to GitHub, then review the public draft.')),
       el('a',{href:'https://github.com/mekoand/sub2sub/issues',target:'_blank',rel:'noopener noreferrer'},t('查看问题记录 ↗','Browse issues ↗'))),
@@ -349,6 +453,7 @@ function render() {
   else if(state.data)main.append(...[resources(),el('section',{class:'section'},el('div',{class:'sectionhead'},el('h2',{},t('最近任务','Recent tasks'))),state.data.tasks.length?state.data.tasks.map(taskSummary):el('p',{class:'empty'},t('还没有任务记录。','No task records yet.'))),usageView(state.data.statistics)].filter(Boolean));
   else main.append(el('p',{class:'empty'},t('正在读取本机记录…','Reading local records…')));
   main.append(el('footer',{},btn(t('使用帮助','Help'),help,'link'),el('a',{href:'https://github.com/mekoand/sub2sub',target:'_blank',rel:'noopener noreferrer',class:'link'},'GitHub · Star ↗')));
+  if(state.data)main.append(el('p',{class:'sub'},t('当前会话版本','Loaded session version')+' '+state.data.version+(state.data.sharing.version?' · '+t('共享节点版本','Sharing node version')+' '+state.data.sharing.version:'')));
   app.replaceChildren(head,main);
 }
 async function refresh(check=false) {
