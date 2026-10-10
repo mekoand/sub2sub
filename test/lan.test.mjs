@@ -1632,6 +1632,7 @@ test('consented expiry removes uncollected content and released native history, 
     assert.equal(status.cleanup.nativeHistory, 'deleted');
     assert.equal(status.inspection.workCopyExists, false);
     assert.equal(status.response, undefined);
+    assert.equal(status.title, undefined);
     assert.equal(status.rounds, undefined);
     assert.equal(tasks.find(task => task.taskId === expired.taskId).cleanup.status, 'cleaned');
     await assert.rejects(caller.tool('continue_task', { taskId: expired.taskId, prompt: 'too late' }), /expired|cannot continue/i);
@@ -1756,6 +1757,7 @@ test('clearing records of a full-expiry task retains only the metadata needed to
   const directory = path.join(root, 'owner/sharing/tasks', pair.pairId, task.taskId);
   assert.deepEqual(await fs.readdir(directory), ['state.json']);
   const remaining = (await owner.tool('list_shared_tasks')).tasks.find(item => item.taskId === task.taskId);
+  assert.equal(remaining.title, undefined);
   assert.equal(remaining.rounds, undefined);
   assert.equal(remaining.cleanup.nativeHistory, 'retained');
   await fs.writeFile(clockFile, String(initialTime + 2 * 86400000));

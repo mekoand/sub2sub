@@ -19,9 +19,9 @@
 
 </div>
 
-sub2sub 通过任务代理共享已有 AI 订阅，提高个人与团队的资源利用率。
+在当前对话中，把任务交给自己或队友授权的电脑上的 Codex、Claude Code，答复与文件取回本机。订阅登录留在共享端。
 
-在当前对话中委托任务，由自己或队友授权的设备执行，答复与成果返回原对话，并可继续追加修改。各方自主决定共享对象、工具和模型。
+**一个完整案例：**队友生成邀请，你连接并确认任务文件范围。你选出项目文件，委托修复一个 Bug；对方电脑在独立副本中修改并完成可用检查。答复和文件取回本机，你决定何时采用改动，再在同一任务追加修改。
 
 ![sub2sub 通过任务代理共享 Codex 和 Claude Code 订阅：委托任务给已授权设备，执行后返回成果](docs/assets/resource-sharing.zh-CN.png)
 
@@ -86,7 +86,7 @@ irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | ie
 
 > 查询 sub2sub 状态和版本，不修改设置。
 
-确认加载版本，并按提示检查首次使用设置。接收任务前开启共享。
+确认加载版本，再用一张卡检查当前用途的主要设置：设备名、共享端执行工具与跨网络开关；高级设置按需展开。确认后继续原操作。连接后选择节点实际提供的模型，保存一次供新任务复用。
 
 以后在原应用中说“升级 sub2sub”，按升级结果提示重启应用或共享节点。配对与已保存成果保留。[安装、更新与故障排查](docs/install.md)
 
@@ -108,9 +108,9 @@ irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | ie
 
 ## 先试一个小任务
 
-选一份示例文本 `notes.txt`，在当前对话中说：
+插件自带短文本示例。连接并选择模型后，在当前对话中说：
 
-> 用 sub2sub 只把 notes.txt 交给「办公室 Mac」，整理成 summary.md，返回这个文件和简短答复。
+> 用 sub2sub 自带的 examples/first-task/notes.txt，只把这个文件交给「办公室 Mac」，整理成 summary.md，返回这个文件和简短答复。
 
 完成后，通过本地链接打开 `summary.md`。答复与文件保存到本机，源文件保持不变。
 

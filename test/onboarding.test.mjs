@@ -38,6 +38,24 @@ test('first-use summary shows both roles and advanced defaults without requiring
   assert.match(guide.nextStep, /confirm/);
 });
 
+test('client distinguishes implicit defaults from a saved model choice', async t => {
+  const { client } = await setup(t);
+  assert.equal((await client.call('caller_settings', {})).executionConfigured, false);
+  await client.call('caller_settings', { model: 'gpt-5.6-sol', reasoningEffort: 'high' });
+  assert.equal((await client.call('caller_settings', {})).executionConfigured, true);
+});
+
+test('first-use guide follows the requested role without starting sharing or connecting', async t => {
+  const { client } = await setup(t);
+  const invitation = await client.call('create_pairing', {});
+  assert.equal(invitation.onboarding.role, 'provider');
+  assert.equal(invitation.onboarding.sharing.status, 'stopped');
+  const connection = await client.call('pair_peer', { invitation: 'not-yet-used' });
+  assert.equal(connection.onboarding.role, 'caller');
+  assert.deepEqual(connection.onboarding.connections, []);
+  assert.equal((await client.call('onboarding', { role: 'provider' })).role, 'provider');
+});
+
 test('interrupted guide preserves changed settings and confirmation, skip and reopen survive new conversations', async t => {
   const { client, store, stateRoot } = await setup(t);
   await client.call('onboarding', {});

@@ -10,3 +10,5 @@ main{padding-top:32px}.pagehead,.sectionhead{display:flex;justify-content:space-
 @media(pointer:coarse){button{min-height:42px}.file{padding:7px 0}}
 
 .empty p+p{margin-top:5px;font-size:12px}.help{max-width:690px}.help section+section{border-top:1px solid var(--line);padding-top:22px;margin-top:26px}.steps{padding-left:23px;margin:20px 0}.steps li{padding-left:5px;margin-bottom:22px}.example{display:flex;gap:16px;align-items:flex-start;background:var(--soft);border-radius:5px;padding:10px 13px;margin:9px 0}.example p{margin:0;color:var(--text);font-size:12px}.example .link{margin-left:auto;flex-shrink:0;padding:0}.intro{margin-bottom:18px}.intro p{font-size:13px;margin-top:7px;color:var(--sub)}footer a{text-decoration:none}footer .link{color:var(--sub)}
+
+.task-title{font-size:13px;overflow-wrap:anywhere}.error,#notice{white-space:pre-line}.case-steps{padding-left:22px;margin:12px 0}.case-steps li{margin:6px 0}

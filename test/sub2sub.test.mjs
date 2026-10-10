@@ -27,6 +27,19 @@ async function setup(t) {
   return { root, source, config, client: new Client(config, config.stateRoot) };
 }
 
+test('task names come from the first instruction line and survive collection and follow-ups', async t => {
+  const { source, client } = await setup(t);
+  const copy = await client.call('prepare_work_copy', { workspace: source, paths: ['input.txt'] });
+  const started = await client.call('start_task', { peer: 'demo', snapshotId: copy.snapshotId, prompt: '\n# 修复登录页按钮失效\n请完成相关检查。' });
+  assert.equal((await client.call('list_tasks', {})).tasks[0].title, '修复登录页按钮失效');
+  assert.equal((await client.call('task_status', { taskId: started.taskId })).title, '修复登录页按钮失效');
+  assert.equal(started.revision, 1);
+  await client.call('collect_result', { taskId: started.taskId });
+  const continued = await client.call('continue_task', { taskId: started.taskId, prompt: '再调整按钮文案' });
+  assert.equal(continued.revision, 2);
+  assert.equal((await client.call('list_tasks', {})).tasks[0].title, '修复登录页按钮失效');
+});
+
 test('tracked default keeps current edits and excludes dependencies/secrets/untracked files', async t => {
   const { source } = await setup(t);
   await exec('git', ['init', '-q', source]);

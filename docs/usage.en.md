@@ -39,9 +39,9 @@ Open “Help” in the management footer for invitation, connection, small-file 
 
 ## First use
 
-On a new device, the assistant first explains and shows all current settings, including when you have already given it a task. The summary covers client defaults for Codex and Claude, the host's execution tool and model restrictions, input/result limits for both roles, retention and cleanup conditions, device name and advanced paths, existing connections and transfer consent, authorized clients, and current sharing state. Review it and confirm before connecting, sharing or delegating; the assistant then continues your original request.
+On a new device, review one card for your current intent: device name, the Host execution tool and the cross-network switch. Expand advanced limits, retention, paths and full state when needed. Confirmation resumes your original action, preserving invitations, aliases and task instructions. The normal path targets 1–3 confirmations/submissions per device after installation.
 
-Ask to change any setting before confirming. Unset Claude choices stay unset, and default models are not claimed to be available until the connected node's live catalog is checked. Reviewing the guide works without a local execution tool and does not start sharing or run a model. Approving settings does not authorize sending task files.
+Edit the main settings and approve them once. Cross-network service is off by default and requires explicit enablement on both devices. Approve task-file scope when connecting; settings approval is separate. After connecting, choose from the Host's actual models and effort levels and save a default for new tasks. Existing valid choices are preserved. Reviewing settings works without a local execution tool; model discovery does not execute a task.
 
 Confirmation and explicit skipping are remembered. An interrupted guide resumes with your saved settings; ask to reopen first-use settings whenever needed. Existing configurations, connections or task/sharing records are recognized on upgrade, preserving settings without forcing another introduction. Later ordinary settings queries remain concise; ask for advanced settings when needed.
 
@@ -210,3 +210,11 @@ Ask to rename this device in sub2sub, or edit its display name under Settings in
 Ask to inspect local storage, or open Settings → Local storage. Inspect task records, input snapshots, answers and outputs, and complete copies, including old versus current files. Shared paths count once in totals. Figures are file bytes; actual disk space reclaimed can differ.
 
 Preview paths, sizes and consequences before deletion. Clear old files only, or all local files, optionally removing the task record and its usage as well. In this version, clearing all local files prevents further collection or continuation of that task; start a new task from original inputs if needed. Source projects, remote data and native client history are preserved. Keeping the record marks it as locally cleared. Local cleanup is manual; host work copies retain their existing cleanup flow and retention policy.
+
+## First sample task
+
+The plugin includes `examples/first-task/notes.txt`. After connecting and approving the task-file scope, say in your conversation:
+
+> Use sub2sub's bundled examples/first-task/notes.txt. Send only this file to the selected Host, create summary.md, and collect the answer and results.
+
+Choose an actual available Host model first. This runs one real task using the Host's allowance. Open the saved summary.md and continue the same task for revisions. Management puts the answer and this collection’s changed files first; expand the complete copy when needed. New tasks use the first instruction line as a short name without a model request. Follow-ups preserve the name; old tasks keep their ID.
