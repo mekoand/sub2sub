@@ -12,7 +12,7 @@
 更多工具支持正在开发中。
 
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.9.4-6366f1)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.9.5-6366f1)](CHANGELOG.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 [English](README.md) · **简体中文** · [安装](docs/install.md) · [使用手册](docs/usage.md) · [参与贡献](CONTRIBUTING.zh-CN.md) · [安全报告](SECURITY.md)
@@ -164,7 +164,7 @@ irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | ie
 
 WorkBuddy 和其他应用尚未实测。[版本与验证详情](docs/validation.md)
 
-[v0.9.4](https://github.com/mekoand/sub2sub/releases/tag/v0.9.4) 更新了续作文件传输、传输性能和升级维护；具体变更与实测范围见发行说明。
+[v0.9.5](https://github.com/mekoand/sub2sub/releases/tag/v0.9.5) 简化首次设置和模型选择，增加本地任务名称，让已保存的答复和文件更容易找到。具体变更与验证范围见发行说明。
 
 ## 开发
 

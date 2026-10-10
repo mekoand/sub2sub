@@ -1,6 +1,6 @@
 {
   "name": "sub2sub",
-  "version": "0.9.4",
+  "version": "0.9.5",
   "description": "Share Codex and Claude Code subscriptions across devices through a task proxy.",
   "author": {
     "name": "mekoand"
