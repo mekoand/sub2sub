@@ -156,13 +156,13 @@ irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | ie
 
 使用端应用与共享端执行工具可以分别选择。
 
-| 系统 | 使用端应用 | 共享端执行工具 | 验证情况 |
+| 系统 | 使用端应用 | 共享端执行工具 | 已记录范围 |
 | --- | --- | --- | --- |
-| macOS（Apple Silicon / Intel） | Codex Desktop、Codex CLI、Claude Code | Codex、Claude Code | Apple Silicon 已验证真实任务和 Mac 间传输；Intel 实机验证待补充。 |
-| Windows x64 | Codex、Claude Code | Codex | 已验证安装、平台测试及 Mac 到 Windows 的 Codex 任务；Windows 使用端完整流程待补充验证。 |
-| Linux | 仅源码开发，暂无发行包 | 暂未支持 | 已通过源码 CI。 |
+| macOS（Apple Silicon / Intel） | Codex Desktop、Codex CLI、Claude Code | Codex、Claude Code | [仅 Apple Silicon 上的 Codex](docs/validation.md)：0.9.0 跨网络基线，以及 0.9.4 局域网取回 5,002 个文件 / 50.66 MB。Intel Mac 未验证。 |
+| Windows x64 | Codex、Claude Code | Codex | [更早的安装、平台测试，以及 Mac 到 Windows 的 Codex 任务](docs/validation.md)。Windows 使用端端到端未验证。 |
+| Linux | 仅源码开发，暂无发行包 | 暂未支持 | [源码 CI](docs/validation.md)。Linux 双机未验证。 |
 
-WorkBuddy 和其他应用尚未实测。[版本与验证详情](docs/validation.md)
+WorkBuddy 和其他应用尚未实测。Claude 跨网络执行未验证。该范围中的 0.9.5 首次设置使用浏览器里的模拟共享端，不是实机验收。[验证范围](docs/validation.md)
 
 [v0.9.5](https://github.com/mekoand/sub2sub/releases/tag/v0.9.5) 简化首次设置和模型选择，增加本地任务名称，让已保存的答复和文件更容易找到。具体变更与验证范围见发行说明。
 

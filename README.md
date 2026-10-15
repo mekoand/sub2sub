@@ -9,6 +9,8 @@
 
 **Share Codex and Claude Code subscriptions across devices, task by task, without sharing account credentials.**
 
+More tool support is in development.
+
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-0.9.5-6366f1)](CHANGELOG.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
@@ -154,13 +156,13 @@ Enable cross-network service on both devices, then exchange an invitation as usu
 
 Choose the Client app and Host execution tool independently.
 
-| System | Client apps | Host execution | Validation |
+| System | Client apps | Host execution | Recorded scope |
 | --- | --- | --- | --- |
-| macOS (Apple Silicon / Intel) | Codex Desktop, Codex CLI, Claude Code | Codex, Claude Code | Real tasks and Mac-to-Mac transfers tested on Apple Silicon; Intel device testing remains pending. |
-| Windows x64 | Codex, Claude Code | Codex | Installation, platform tests and Mac-to-Windows Codex tasks tested; full Windows Client validation remains pending. |
-| Linux | Source development only; no release package | Not yet supported | Source CI passes. |
+| macOS (Apple Silicon / Intel) | Codex Desktop, Codex CLI, Claude Code | Codex, Claude Code | [Apple Silicon Codex only](docs/validation.md): 0.9.0 cross-network baseline and 0.9.4 LAN collection of 5,002 files / 50.66 MB. Intel Mac unverified. |
+| Windows x64 | Codex, Claude Code | Codex | [Earlier install, platform tests, and Mac-to-Windows Codex tasks](docs/validation.md). Windows Client end-to-end unverified. |
+| Linux | Source development only; no release package | Not yet supported | [Source CI](docs/validation.md). Linux dual-machine unverified. |
 
-WorkBuddy and other apps remain untested. [Versions and validation details](docs/validation.md)
+WorkBuddy and other apps remain untested. Claude cross-network execution is unverified. The 0.9.5 first-run setup in that scope used a simulated Host in the browser, not a device acceptance. [Validation scope](docs/validation.md)
 
 [v0.9.5](https://github.com/mekoand/sub2sub/releases/tag/v0.9.5) simplifies first-use settings and model selection, adds local task names, and makes saved answers and files easier to find. See the release notes for changes and validation scope.
 
