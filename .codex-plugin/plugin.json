@@ -8,7 +8,7 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "sub2sub",
-    "shortDescription": "无需交换账号，任务级跨设备共享 Codex、Claude Code 订阅",
+    "shortDescription": "Share Codex and Claude tasks without sharing accounts. 无需交换账号，任务级共享。",
     "longDescription": "sub2sub 通过任务代理共享已有 AI 订阅，提高个人与团队的资源利用率。在当前对话中委托任务，由自己或队友授权的设备执行，答复与成果返回原对话，并可继续追加修改。各方自主决定共享对象、工具和模型。目前支持 Codex 和 Claude Code，更多工具支持正在开发中。",
     "developerName": "mekoand",
     "category": "Productivity",

@@ -52,11 +52,46 @@
 
 **macOS · 终端**（自动识别 Apple Silicon / Intel）
 
+已发布的 `SHA256SUMS` 列出平台安装包（`sub2sub-darwin-arm64.tar.gz`、`sub2sub-darwin-x64.tar.gz`、`sub2sub-win32-x64.zip`），不包含 `install.sh`。从同一发行版本下载安装脚本和 `SHA256SUMS`，按安装器的方式校验安装包，再运行已保存的脚本。脚本在安装前会再次校验该安装包。
+
+```sh
+base=https://github.com/mekoand/sub2sub/releases/latest/download
+curl -fsSL -o install.sh "$base/install.sh"
+curl -fsSL -o SHA256SUMS "$base/SHA256SUMS"
+case "$(uname -m)" in
+  arm64) asset=sub2sub-darwin-arm64.tar.gz ;;
+  x86_64) asset=sub2sub-darwin-x64.tar.gz ;;
+  *) echo 'Unsupported Mac architecture.' >&2; exit 1 ;;
+esac
+curl -fsSL -o "$asset" "$base/$asset"
+awk -v name="$asset" '$2 == name { print }' SHA256SUMS > selected.sha256 && test -s selected.sha256 && shasum -a 256 -c selected.sha256
+/bin/bash install.sh
+```
+
+快捷方式：脚本仍会校验安装包，但在你阅读脚本之前就会运行。
+
 ```sh
 /bin/bash -o pipefail -c 'curl -fsSL https://github.com/mekoand/sub2sub/releases/latest/download/install.sh | /bin/bash'
 ```
 
 **Windows x64 · PowerShell**
+
+`SHA256SUMS` 列出的是 `sub2sub-win32-x64.zip`，不是 `install.ps1`。
+
+```powershell
+$base = 'https://github.com/mekoand/sub2sub/releases/latest/download'
+$asset = 'sub2sub-win32-x64.zip'
+Invoke-WebRequest -UseBasicParsing "$base/install.ps1" -OutFile install.ps1
+Invoke-WebRequest -UseBasicParsing "$base/SHA256SUMS" -OutFile SHA256SUMS
+Invoke-WebRequest -UseBasicParsing "$base/$asset" -OutFile $asset
+$line = @(Get-Content -Raw SHA256SUMS -split "`n" | Where-Object { $_.Trim() -match ('^[a-f0-9]{64}\s+' + [regex]::Escape($asset) + '$') })
+if ($line.Count -ne 1) { throw 'The release checksum is missing or ambiguous.' }
+$expected = ($line[0] -split '\s+')[0]
+if ((Get-FileHash -LiteralPath $asset -Algorithm SHA256).Hash -ne $expected) { throw 'The downloaded release checksum does not match.' }
+./install.ps1
+```
+
+快捷方式：
 
 ```powershell
 irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | iex
@@ -66,13 +101,27 @@ irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | ie
 
 ### Claude Code
 
+先完成与上面相同的下载和安装包校验，再运行已保存的脚本。
+
 **macOS · 终端**（Apple Silicon / Intel）
+
+```sh
+/bin/bash install.sh claude
+```
+
+快捷方式：
 
 ```sh
 /bin/bash -o pipefail -c 'curl -fsSL https://github.com/mekoand/sub2sub/releases/latest/download/install.sh | /bin/bash -s -- claude'
 ```
 
 **Windows x64 · PowerShell**
+
+```powershell
+./install.ps1 -Target claude
+```
+
+快捷方式：
 
 ```powershell
 & ([scriptblock]::Create((irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1))) -Target claude
@@ -112,7 +161,7 @@ irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | ie
 
 > 用 sub2sub 自带的 examples/first-task/notes.txt，只把这个文件交给「办公室 Mac」，整理成 summary.md，返回这个文件和简短答复。
 
-完成后，通过本地链接打开 `summary.md`。答复与文件保存到本机，源文件保持不变。
+完成后，通过本地链接打开 `summary.md`。答复与文件保存到本机，源文件保持不变。[examples/offline-summary](examples/offline-summary/README.md) 给出这份示例的手写 `summary.md`，只用于离线对照成果样子，不是某次模型运行的记录。
 
 继续修改：
 
@@ -156,13 +205,13 @@ irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | ie
 
 使用端应用与共享端执行工具可以分别选择。
 
-| 系统 | 使用端应用 | 共享端执行工具 | 验证情况 |
+| 系统 | 使用端应用 | 共享端执行工具 | 已记录范围 |
 | --- | --- | --- | --- |
-| macOS（Apple Silicon / Intel） | Codex Desktop、Codex CLI、Claude Code | Codex、Claude Code | Apple Silicon 已验证真实任务和 Mac 间传输；Intel 实机验证待补充。 |
-| Windows x64 | Codex、Claude Code | Codex | 已验证安装、平台测试及 Mac 到 Windows 的 Codex 任务；Windows 使用端完整流程待补充验证。 |
-| Linux | 仅源码开发，暂无发行包 | 暂未支持 | 已通过源码 CI。 |
+| macOS（Apple Silicon / Intel） | Codex Desktop、Codex CLI、Claude Code | Codex、Claude Code | [仅 Apple Silicon 上的 Codex](docs/validation.md)：0.9.0 跨网络基线，以及 0.9.4 局域网取回 5,002 个文件 / 50.66 MB。Intel Mac 未验证。 |
+| Windows x64 | Codex、Claude Code | Codex | [更早的安装、平台测试，以及 Mac 到 Windows 的 Codex 任务](docs/validation.md)。Windows 使用端端到端未验证。 |
+| Linux | 仅源码开发，暂无发行包 | 暂未支持 | [源码 CI](docs/validation.md)。Linux 双机未验证。 |
 
-WorkBuddy 和其他应用尚未实测。[版本与验证详情](docs/validation.md)
+WorkBuddy 和其他应用尚未实测。Claude 跨网络执行未验证。该范围中的 0.9.5 首次设置使用浏览器里的模拟共享端，不是实机验收。[验证范围](docs/validation.md)
 
 [v0.9.5](https://github.com/mekoand/sub2sub/releases/tag/v0.9.5) 简化首次设置和模型选择，增加本地任务名称，让已保存的答复和文件更容易找到。具体变更与验证范围见发行说明。
 

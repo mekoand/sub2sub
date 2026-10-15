@@ -9,6 +9,8 @@
 
 **Share Codex and Claude Code subscriptions across devices, task by task, without sharing account credentials.**
 
+More tool support is in development.
+
 [![CI](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml/badge.svg)](https://github.com/mekoand/sub2sub/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-0.9.5-6366f1)](CHANGELOG.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
@@ -50,11 +52,46 @@ Or install manually below.
 
 **macOS · Terminal** (Apple Silicon or Intel, detected automatically)
 
+Published releases include `SHA256SUMS` for the platform archives (`sub2sub-darwin-arm64.tar.gz`, `sub2sub-darwin-x64.tar.gz`, `sub2sub-win32-x64.zip`), not for `install.sh`. Download the script and `SHA256SUMS` from the same release, verify the archive the way the installer does, then run the saved script. The script checks that archive again before installing.
+
+```sh
+base=https://github.com/mekoand/sub2sub/releases/latest/download
+curl -fsSL -o install.sh "$base/install.sh"
+curl -fsSL -o SHA256SUMS "$base/SHA256SUMS"
+case "$(uname -m)" in
+  arm64) asset=sub2sub-darwin-arm64.tar.gz ;;
+  x86_64) asset=sub2sub-darwin-x64.tar.gz ;;
+  *) echo 'Unsupported Mac architecture.' >&2; exit 1 ;;
+esac
+curl -fsSL -o "$asset" "$base/$asset"
+awk -v name="$asset" '$2 == name { print }' SHA256SUMS > selected.sha256 && test -s selected.sha256 && shasum -a 256 -c selected.sha256
+/bin/bash install.sh
+```
+
+Shortcut: the script still checks the archive, and it runs before you can read it.
+
 ```sh
 /bin/bash -o pipefail -c 'curl -fsSL https://github.com/mekoand/sub2sub/releases/latest/download/install.sh | /bin/bash'
 ```
 
 **Windows x64 · PowerShell**
+
+`SHA256SUMS` lists `sub2sub-win32-x64.zip`, not `install.ps1`.
+
+```powershell
+$base = 'https://github.com/mekoand/sub2sub/releases/latest/download'
+$asset = 'sub2sub-win32-x64.zip'
+Invoke-WebRequest -UseBasicParsing "$base/install.ps1" -OutFile install.ps1
+Invoke-WebRequest -UseBasicParsing "$base/SHA256SUMS" -OutFile SHA256SUMS
+Invoke-WebRequest -UseBasicParsing "$base/$asset" -OutFile $asset
+$line = @(Get-Content -Raw SHA256SUMS -split "`n" | Where-Object { $_.Trim() -match ('^[a-f0-9]{64}\s+' + [regex]::Escape($asset) + '$') })
+if ($line.Count -ne 1) { throw 'The release checksum is missing or ambiguous.' }
+$expected = ($line[0] -split '\s+')[0]
+if ((Get-FileHash -LiteralPath $asset -Algorithm SHA256).Hash -ne $expected) { throw 'The downloaded release checksum does not match.' }
+./install.ps1
+```
+
+Shortcut:
 
 ```powershell
 irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | iex
@@ -64,13 +101,27 @@ After installation, **fully quit and reopen Codex Desktop**, or exit and restart
 
 ### Claude Code
 
+Use the same download and archive check, then run the saved script for Claude Code.
+
 **macOS · Terminal** (Apple Silicon or Intel)
+
+```sh
+/bin/bash install.sh claude
+```
+
+Shortcut:
 
 ```sh
 /bin/bash -o pipefail -c 'curl -fsSL https://github.com/mekoand/sub2sub/releases/latest/download/install.sh | /bin/bash -s -- claude'
 ```
 
 **Windows x64 · PowerShell**
+
+```powershell
+./install.ps1 -Target claude
+```
+
+Shortcut:
 
 ```powershell
 & ([scriptblock]::Create((irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1))) -Target claude
@@ -110,7 +161,7 @@ The plugin includes a small sample file. After connecting and choosing a model, 
 
 > Use sub2sub’s bundled examples/first-task/notes.txt; send only this file to office-mac. Summarize it in summary.md and return that file and a short answer.
 
-Open the local `summary.md` link when it finishes. Responses and files are saved on your device; the source file stays unchanged.
+Open the local `summary.md` link when it finishes. Responses and files are saved on your device; the source file stays unchanged. [examples/offline-summary](examples/offline-summary/README.md) is a hand-written `summary.md` for that sample, for an offline shape check. It is not a recorded model result.
 
 To revise it:
 
@@ -154,13 +205,13 @@ Enable cross-network service on both devices, then exchange an invitation as usu
 
 Choose the Client app and Host execution tool independently.
 
-| System | Client apps | Host execution | Validation |
+| System | Client apps | Host execution | Recorded scope |
 | --- | --- | --- | --- |
-| macOS (Apple Silicon / Intel) | Codex Desktop, Codex CLI, Claude Code | Codex, Claude Code | Real tasks and Mac-to-Mac transfers tested on Apple Silicon; Intel device testing remains pending. |
-| Windows x64 | Codex, Claude Code | Codex | Installation, platform tests and Mac-to-Windows Codex tasks tested; full Windows Client validation remains pending. |
-| Linux | Source development only; no release package | Not yet supported | Source CI passes. |
+| macOS (Apple Silicon / Intel) | Codex Desktop, Codex CLI, Claude Code | Codex, Claude Code | [Apple Silicon Codex only](docs/validation.md): 0.9.0 cross-network baseline and 0.9.4 LAN collection of 5,002 files / 50.66 MB. Intel Mac unverified. |
+| Windows x64 | Codex, Claude Code | Codex | [Earlier install, platform tests, and Mac-to-Windows Codex tasks](docs/validation.md). Windows Client end-to-end unverified. |
+| Linux | Source development only; no release package | Not yet supported | [Source CI](docs/validation.md). Linux dual-machine unverified. |
 
-WorkBuddy and other apps remain untested. [Versions and validation details](docs/validation.md)
+WorkBuddy and other apps remain untested. Claude cross-network execution is unverified. The 0.9.5 first-run setup in that scope used a simulated Host in the browser, not a device acceptance. [Validation scope](docs/validation.md)
 
 [v0.9.5](https://github.com/mekoand/sub2sub/releases/tag/v0.9.5) simplifies first-use settings and model selection, adds local task names, and makes saved answers and files easier to find. See the release notes for changes and validation scope.
 
