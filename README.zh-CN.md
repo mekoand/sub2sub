@@ -161,7 +161,7 @@ irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | ie
 
 > 用 sub2sub 自带的 examples/first-task/notes.txt，只把这个文件交给「办公室 Mac」，整理成 summary.md，返回这个文件和简短答复。
 
-完成后，通过本地链接打开 `summary.md`。答复与文件保存到本机，源文件保持不变。
+完成后，通过本地链接打开 `summary.md`。答复与文件保存到本机，源文件保持不变。[examples/offline-summary](examples/offline-summary/README.md) 给出这份示例的手写 `summary.md`，只用于离线对照成果样子，不是某次模型运行的记录。
 
 继续修改：
 

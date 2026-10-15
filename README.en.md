@@ -161,7 +161,7 @@ The plugin includes a small sample file. After connecting and choosing a model, 
 
 > Use sub2sub’s bundled examples/first-task/notes.txt; send only this file to office-mac. Summarize it in summary.md and return that file and a short answer.
 
-Open the local `summary.md` link when it finishes. Responses and files are saved on your device; the source file stays unchanged.
+Open the local `summary.md` link when it finishes. Responses and files are saved on your device; the source file stays unchanged. [examples/offline-summary](examples/offline-summary/README.md) is a hand-written `summary.md` for that sample, for an offline shape check. It is not a recorded model result.
 
 To revise it:
 
