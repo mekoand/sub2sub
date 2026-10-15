@@ -18,7 +18,25 @@ The assistant chooses the installation method for your host and system. If it ca
 
 Install and sign in to a plugin-capable Codex version first. Packages support Apple Silicon / Intel Macs and Windows x64, and include Node and certificate-generation dependencies.
 
-macOS, in Terminal:
+Published releases include `SHA256SUMS`. That file lists the platform archives (`sub2sub-darwin-arm64.tar.gz`, `sub2sub-darwin-x64.tar.gz`, `sub2sub-win32-x64.zip`). It does not list `install.sh` or `install.ps1`. Download the installer and `SHA256SUMS` from the same release, verify the archive the same way the installer does, then run the saved script. The script repeats that archive check before installing.
+
+macOS, in Terminal. Apple Silicon and Intel use different archives:
+
+```sh
+base=https://github.com/mekoand/sub2sub/releases/latest/download
+curl -fsSL -o install.sh "$base/install.sh"
+curl -fsSL -o SHA256SUMS "$base/SHA256SUMS"
+case "$(uname -m)" in
+  arm64) asset=sub2sub-darwin-arm64.tar.gz ;;
+  x86_64) asset=sub2sub-darwin-x64.tar.gz ;;
+  *) echo 'Unsupported Mac architecture.' >&2; exit 1 ;;
+esac
+curl -fsSL -o "$asset" "$base/$asset"
+awk -v name="$asset" '$2 == name { print }' SHA256SUMS > selected.sha256 && test -s selected.sha256 && shasum -a 256 -c selected.sha256
+/bin/bash install.sh
+```
+
+Shortcut: the script still checks the archive, and it runs before you can read it.
 
 ```sh
 /bin/bash -o pipefail -c 'curl -fsSL https://github.com/mekoand/sub2sub/releases/latest/download/install.sh | /bin/bash'
@@ -27,12 +45,27 @@ macOS, in Terminal:
 Windows, in the desktop user's PowerShell session:
 
 ```powershell
+$base = 'https://github.com/mekoand/sub2sub/releases/latest/download'
+$asset = 'sub2sub-win32-x64.zip'
+Invoke-WebRequest -UseBasicParsing "$base/install.ps1" -OutFile install.ps1
+Invoke-WebRequest -UseBasicParsing "$base/SHA256SUMS" -OutFile SHA256SUMS
+Invoke-WebRequest -UseBasicParsing "$base/$asset" -OutFile $asset
+$line = @(Get-Content -Raw SHA256SUMS -split "`n" | Where-Object { $_.Trim() -match ('^[a-f0-9]{64}\s+' + [regex]::Escape($asset) + '$') })
+if ($line.Count -ne 1) { throw 'The release checksum is missing or ambiguous.' }
+$expected = ($line[0] -split '\s+')[0]
+if ((Get-FileHash -LiteralPath $asset -Algorithm SHA256).Hash -ne $expected) { throw 'The downloaded release checksum does not match.' }
+./install.ps1
+```
+
+Shortcut:
+
+```powershell
 irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | iex
 ```
 
 After `Installed sub2sub` appears, **fully quit and reopen the Codex desktop app**. Closing a window or starting a new conversation may retain the old plugin process. CLI users should exit and restart `codex`. Ask “Show sub2sub status and version without changing settings,” then follow the [README pairing steps](../README.md#connect-your-work-nodes).
 
-The installer downloads and checks the release, locates Codex, and installs through its native plugin commands. No manual directories, JSON editing, or npm commands are needed. Git is only needed for selecting a whole Git repository; explicitly selecting files or directories works without it.
+The saved script downloads the archive for its built-in version, checks it against that release's `SHA256SUMS`, locates Codex, and installs through its native plugin commands. No manual directories, JSON editing, or npm commands are needed. Git is only needed for selecting a whole Git repository; explicitly selecting files or directories works without it.
 
 Default program locations:
 
@@ -45,13 +78,27 @@ Download archives from [Releases](https://github.com/mekoand/sub2sub/releases). 
 
 Install the native Claude Code CLI and sign in, then run the command for your system. A computer that only sends tasks from Claude Code does not need Codex installed. A macOS work node can also execute through its Claude subscription: install Claude Code 2.1.263 or later, sign in, then ask sub2sub to select Claude as the host tool. This selection is independent of the app used to manage sub2sub. Claude execution on Windows is not supported yet.
 
+Use the same download and archive check as Codex, then run the saved script for Claude Code.
+
 macOS:
+
+```sh
+/bin/bash install.sh claude
+```
+
+Shortcut:
 
 ```sh
 /bin/bash -o pipefail -c 'curl -fsSL https://github.com/mekoand/sub2sub/releases/latest/download/install.sh | /bin/bash -s -- claude'
 ```
 
 Windows PowerShell:
+
+```powershell
+./install.ps1 -Target claude
+```
+
+Shortcut:
 
 ```powershell
 & ([scriptblock]::Create((irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1))) -Target claude

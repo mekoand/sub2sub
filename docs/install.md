@@ -18,7 +18,25 @@
 
 先安装并登录支持插件的 Codex。安装包适用于 macOS（Apple Silicon / Intel）和 Windows x64，包含 Node 运行时和证书生成依赖。
 
-macOS，在 Terminal 运行：
+已发布的 `SHA256SUMS` 列出平台安装包（`sub2sub-darwin-arm64.tar.gz`、`sub2sub-darwin-x64.tar.gz`、`sub2sub-win32-x64.zip`），不包含 `install.sh` 或 `install.ps1`。从同一发行版本下载安装脚本和 `SHA256SUMS`，按安装器的方式校验安装包，再运行已保存的脚本。脚本在安装前会再次校验该安装包。
+
+macOS，在终端运行。Apple Silicon 与 Intel 使用不同的安装包：
+
+```sh
+base=https://github.com/mekoand/sub2sub/releases/latest/download
+curl -fsSL -o install.sh "$base/install.sh"
+curl -fsSL -o SHA256SUMS "$base/SHA256SUMS"
+case "$(uname -m)" in
+  arm64) asset=sub2sub-darwin-arm64.tar.gz ;;
+  x86_64) asset=sub2sub-darwin-x64.tar.gz ;;
+  *) echo 'Unsupported Mac architecture.' >&2; exit 1 ;;
+esac
+curl -fsSL -o "$asset" "$base/$asset"
+awk -v name="$asset" '$2 == name { print }' SHA256SUMS > selected.sha256 && test -s selected.sha256 && shasum -a 256 -c selected.sha256
+/bin/bash install.sh
+```
+
+快捷方式：脚本仍会校验安装包，但在你阅读脚本之前就会运行。
 
 ```sh
 /bin/bash -o pipefail -c 'curl -fsSL https://github.com/mekoand/sub2sub/releases/latest/download/install.sh | /bin/bash'
@@ -27,12 +45,27 @@ macOS，在 Terminal 运行：
 Windows，在桌面登录用户的 PowerShell 中运行：
 
 ```powershell
+$base = 'https://github.com/mekoand/sub2sub/releases/latest/download'
+$asset = 'sub2sub-win32-x64.zip'
+Invoke-WebRequest -UseBasicParsing "$base/install.ps1" -OutFile install.ps1
+Invoke-WebRequest -UseBasicParsing "$base/SHA256SUMS" -OutFile SHA256SUMS
+Invoke-WebRequest -UseBasicParsing "$base/$asset" -OutFile $asset
+$line = @(Get-Content -Raw SHA256SUMS -split "`n" | Where-Object { $_.Trim() -match ('^[a-f0-9]{64}\s+' + [regex]::Escape($asset) + '$') })
+if ($line.Count -ne 1) { throw 'The release checksum is missing or ambiguous.' }
+$expected = ($line[0] -split '\s+')[0]
+if ((Get-FileHash -LiteralPath $asset -Algorithm SHA256).Hash -ne $expected) { throw 'The downloaded release checksum does not match.' }
+./install.ps1
+```
+
+快捷方式：
+
+```powershell
 irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | iex
 ```
 
 看到 `Installed sub2sub` 后，**完整退出并重新打开 Codex 桌面应用**；仅关闭窗口或新建对话可能仍使用旧插件进程。CLI 用户退出并重新启动 `codex`。先说“查询 sub2sub 状态和版本，不修改设置”，确认当前对话已加载插件，再按 [README](../README.zh-CN.md#连接工作节点) 配对。
 
-安装器下载对应系统的发行包、校验下载内容、定位 Codex，并通过原生插件命令安装。无需自己建目录、编辑 JSON 或运行 npm。Git 仅在按整个 Git 仓库选择文件时需要；明确选择文件或目录无需 Git。
+已保存的脚本会按其内置版本下载安装包，对照该发行版本的 `SHA256SUMS` 校验，定位 Codex，并通过原生插件命令安装。无需自己建目录、编辑 JSON 或运行 npm。Git 仅在按整个 Git 仓库选择文件时需要；明确选择文件或目录无需 Git。
 
 程序默认安装到：
 
@@ -45,13 +78,27 @@ irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | ie
 
 先安装并登录原生 Claude Code CLI，再运行对应命令。只从 Claude Code 发起任务的电脑无需安装 Codex；macOS 工作节点也可以使用自己的 Claude 订阅执行：安装 Claude Code 2.1.263 或更高版本并登录，再让 sub2sub 将共享端执行工具切换为 Claude。选择与管理 sub2sub 所用的宿主无关。暂不支持 Windows 上的 Claude 执行。
 
+先完成与 Codex 相同的下载和安装包校验，再运行已保存的脚本。
+
 macOS：
+
+```sh
+/bin/bash install.sh claude
+```
+
+快捷方式：
 
 ```sh
 /bin/bash -o pipefail -c 'curl -fsSL https://github.com/mekoand/sub2sub/releases/latest/download/install.sh | /bin/bash -s -- claude'
 ```
 
 Windows PowerShell：
+
+```powershell
+./install.ps1 -Target claude
+```
+
+快捷方式：
 
 ```powershell
 & ([scriptblock]::Create((irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1))) -Target claude

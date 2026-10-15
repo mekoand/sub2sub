@@ -52,11 +52,46 @@
 
 **macOS · 终端**（自动识别 Apple Silicon / Intel）
 
+已发布的 `SHA256SUMS` 列出平台安装包（`sub2sub-darwin-arm64.tar.gz`、`sub2sub-darwin-x64.tar.gz`、`sub2sub-win32-x64.zip`），不包含 `install.sh`。从同一发行版本下载安装脚本和 `SHA256SUMS`，按安装器的方式校验安装包，再运行已保存的脚本。脚本在安装前会再次校验该安装包。
+
+```sh
+base=https://github.com/mekoand/sub2sub/releases/latest/download
+curl -fsSL -o install.sh "$base/install.sh"
+curl -fsSL -o SHA256SUMS "$base/SHA256SUMS"
+case "$(uname -m)" in
+  arm64) asset=sub2sub-darwin-arm64.tar.gz ;;
+  x86_64) asset=sub2sub-darwin-x64.tar.gz ;;
+  *) echo 'Unsupported Mac architecture.' >&2; exit 1 ;;
+esac
+curl -fsSL -o "$asset" "$base/$asset"
+awk -v name="$asset" '$2 == name { print }' SHA256SUMS > selected.sha256 && test -s selected.sha256 && shasum -a 256 -c selected.sha256
+/bin/bash install.sh
+```
+
+快捷方式：脚本仍会校验安装包，但在你阅读脚本之前就会运行。
+
 ```sh
 /bin/bash -o pipefail -c 'curl -fsSL https://github.com/mekoand/sub2sub/releases/latest/download/install.sh | /bin/bash'
 ```
 
 **Windows x64 · PowerShell**
+
+`SHA256SUMS` 列出的是 `sub2sub-win32-x64.zip`，不是 `install.ps1`。
+
+```powershell
+$base = 'https://github.com/mekoand/sub2sub/releases/latest/download'
+$asset = 'sub2sub-win32-x64.zip'
+Invoke-WebRequest -UseBasicParsing "$base/install.ps1" -OutFile install.ps1
+Invoke-WebRequest -UseBasicParsing "$base/SHA256SUMS" -OutFile SHA256SUMS
+Invoke-WebRequest -UseBasicParsing "$base/$asset" -OutFile $asset
+$line = @(Get-Content -Raw SHA256SUMS -split "`n" | Where-Object { $_.Trim() -match ('^[a-f0-9]{64}\s+' + [regex]::Escape($asset) + '$') })
+if ($line.Count -ne 1) { throw 'The release checksum is missing or ambiguous.' }
+$expected = ($line[0] -split '\s+')[0]
+if ((Get-FileHash -LiteralPath $asset -Algorithm SHA256).Hash -ne $expected) { throw 'The downloaded release checksum does not match.' }
+./install.ps1
+```
+
+快捷方式：
 
 ```powershell
 irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | iex
@@ -66,13 +101,27 @@ irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | ie
 
 ### Claude Code
 
+先完成与上面相同的下载和安装包校验，再运行已保存的脚本。
+
 **macOS · 终端**（Apple Silicon / Intel）
+
+```sh
+/bin/bash install.sh claude
+```
+
+快捷方式：
 
 ```sh
 /bin/bash -o pipefail -c 'curl -fsSL https://github.com/mekoand/sub2sub/releases/latest/download/install.sh | /bin/bash -s -- claude'
 ```
 
 **Windows x64 · PowerShell**
+
+```powershell
+./install.ps1 -Target claude
+```
+
+快捷方式：
 
 ```powershell
 & ([scriptblock]::Create((irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1))) -Target claude

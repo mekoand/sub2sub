@@ -52,11 +52,46 @@ Or install manually below.
 
 **macOS · Terminal** (Apple Silicon or Intel, detected automatically)
 
+Published releases include `SHA256SUMS` for the platform archives (`sub2sub-darwin-arm64.tar.gz`, `sub2sub-darwin-x64.tar.gz`, `sub2sub-win32-x64.zip`), not for `install.sh`. Download the script and `SHA256SUMS` from the same release, verify the archive the way the installer does, then run the saved script. The script checks that archive again before installing.
+
+```sh
+base=https://github.com/mekoand/sub2sub/releases/latest/download
+curl -fsSL -o install.sh "$base/install.sh"
+curl -fsSL -o SHA256SUMS "$base/SHA256SUMS"
+case "$(uname -m)" in
+  arm64) asset=sub2sub-darwin-arm64.tar.gz ;;
+  x86_64) asset=sub2sub-darwin-x64.tar.gz ;;
+  *) echo 'Unsupported Mac architecture.' >&2; exit 1 ;;
+esac
+curl -fsSL -o "$asset" "$base/$asset"
+awk -v name="$asset" '$2 == name { print }' SHA256SUMS > selected.sha256 && test -s selected.sha256 && shasum -a 256 -c selected.sha256
+/bin/bash install.sh
+```
+
+Shortcut: the script still checks the archive, and it runs before you can read it.
+
 ```sh
 /bin/bash -o pipefail -c 'curl -fsSL https://github.com/mekoand/sub2sub/releases/latest/download/install.sh | /bin/bash'
 ```
 
 **Windows x64 · PowerShell**
+
+`SHA256SUMS` lists `sub2sub-win32-x64.zip`, not `install.ps1`.
+
+```powershell
+$base = 'https://github.com/mekoand/sub2sub/releases/latest/download'
+$asset = 'sub2sub-win32-x64.zip'
+Invoke-WebRequest -UseBasicParsing "$base/install.ps1" -OutFile install.ps1
+Invoke-WebRequest -UseBasicParsing "$base/SHA256SUMS" -OutFile SHA256SUMS
+Invoke-WebRequest -UseBasicParsing "$base/$asset" -OutFile $asset
+$line = @(Get-Content -Raw SHA256SUMS -split "`n" | Where-Object { $_.Trim() -match ('^[a-f0-9]{64}\s+' + [regex]::Escape($asset) + '$') })
+if ($line.Count -ne 1) { throw 'The release checksum is missing or ambiguous.' }
+$expected = ($line[0] -split '\s+')[0]
+if ((Get-FileHash -LiteralPath $asset -Algorithm SHA256).Hash -ne $expected) { throw 'The downloaded release checksum does not match.' }
+./install.ps1
+```
+
+Shortcut:
 
 ```powershell
 irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1 | iex
@@ -66,13 +101,27 @@ After installation, **fully quit and reopen Codex Desktop**, or exit and restart
 
 ### Claude Code
 
+Use the same download and archive check, then run the saved script for Claude Code.
+
 **macOS · Terminal** (Apple Silicon or Intel)
+
+```sh
+/bin/bash install.sh claude
+```
+
+Shortcut:
 
 ```sh
 /bin/bash -o pipefail -c 'curl -fsSL https://github.com/mekoand/sub2sub/releases/latest/download/install.sh | /bin/bash -s -- claude'
 ```
 
 **Windows x64 · PowerShell**
+
+```powershell
+./install.ps1 -Target claude
+```
+
+Shortcut:
 
 ```powershell
 & ([scriptblock]::Create((irm https://github.com/mekoand/sub2sub/releases/latest/download/install.ps1))) -Target claude
